@@ -344,3 +344,25 @@ verticals:
       3: "Imagen bastionada; parcheo del SO y aplicaciones dentro del SLA; sin administrador local; control de aplicaciones y medios extraíbles; bloqueo de puesto desatendido."
       4: "Cumplimiento de la línea base y del parcheo medido cada mes (>=95 %); excepciones de administrador local revisadas; desviaciones corregidas en plazo."
       5: "Gestión del puesto automatizada (despliegue y corrección de desviaciones); indicadores con objetivos; la línea base se revisa tras cada incidente o cambio de SO."
+  - id: VRT-GRC
+    nombre: Gobierno, riesgo y cumplimiento (GRC)
+    nis2: [NIS2-20.1, NIS2-20.2, NIS2-21.2.a, NIS2-21.2.f]
+    controles: [NIS2-20.1, NIS2-20.2, NIS2-21.2.a, NIS2-21.2.d, NIS2-21.2.f, ENS-org.1, ENS-org.2, ENS-org.3, ENS-org.4, ENS-op.pl.1, TRV-GOB-01, TRV-GOB-02, TRV-GOB-03, TRV-RGPD-01, TRV-RGPD-02, TRV-RGPD-03, TRV-DORA-01]
+    criterios:
+      - Aprobación y supervisión de las medidas por la dirección (NIS2 art. 20), con acta y reporte periódico
+      - Formación periódica de la dirección en ciberseguridad
+      - Política de seguridad aprobada y marco normativo (normativa y procedimientos) vigente
+      - Análisis y tratamiento de riesgos revisado, con registro de riesgos y aceptación formal del riesgo residual por la dirección
+      - Declaración de aplicabilidad y gestión de excepciones con caducidad y responsable
+      - Indicadores y cuadro de mando de cumplimiento revisados por la dirección
+      - Auditorías planificadas (ENS bienal en categoría MEDIA/ALTA, ISO 27001) con seguimiento de no conformidades
+      - Requisitos de seguridad y protección de datos en los contratos con terceros
+      - Registro de actividades de tratamiento (RGPD) y notificación a autoridades en plazo
+      - Seguimiento normativo (transposición de NIS2, cambios en guías CCN-STIC)
+    niveles:
+      0: "Sin política de seguridad aprobada ni análisis de riesgos; la dirección no recibe información de seguridad."
+      1: "Política redactada pero sin aprobar o sin difundir; análisis de riesgos puntual o ya caducado (>3 años); sin registro de riesgos ni de excepciones."
+      2: "Política aprobada por la dirección y roles de seguridad nombrados; análisis de riesgos realizado en los últimos 3 años; registro de actividades de tratamiento (RGPD) existente; sin calendario de auditorías."
+      3: "Marco documentado (política, normativa y procedimientos); riesgos revisados al menos una vez al año; declaración de aplicabilidad aprobada; riesgo residual aceptado por escrito por la dirección; excepciones registradas con responsable y caducidad; dirección formada en los últimos 2 años."
+      4: "Indicadores de cumplimiento medidos al menos cada trimestre e informados al comité de seguridad; auditoría interna o externa en los últimos 12 meses (o 24 si es ENS) con plan de acción de las no conformidades; contratos de proveedores críticos revisados con requisitos de seguridad y datos; procedimiento de notificación a autoridades probado."
+      5: "Cuadro de mando con indicadores revisado por la dirección al menos cada trimestre con decisiones registradas; auditorías sin no conformidades mayores abiertas; seguimiento normativo continuo con responsable y cambios aplicados en plazo; formación anual de la dirección; excepciones revisadas al vencer."

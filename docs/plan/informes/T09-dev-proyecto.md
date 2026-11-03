@@ -32,7 +32,7 @@ Solo la lista pública del contexto: EDR (edr-visual-app), FW (Basic_Firewalls),
 - Cubierto: controles existentes en catálogos; URLs dentro de la lista (copia literal en el test, independiente del módulo); agregación NIS2 en un caso a mano (21.2.g = 7/3 = 2.33); `no_evaluable` sin motivo da error; ejemplos y plantilla pasan `analyse` y `evaluar`.
 
 ## Contraprueba
-Cambiando en `soc/verticals.yaml` la URL de wafforge por `https://github.com/pedri77/repo-privado` (repo privado): 3 tests en rojo (`test_catalogo_valido`, `test_urls_dentro_de_la_lista_publica`, `test_url_fuera_de_la_lista_pone_rojo` pasa a rojo por la línea final). Revertido. También hay contraprueba en memoria (URL privada inyectada en `validar_catalogo`) y para el doble cómputo de VRT-NET.
+Cambiando en `soc/verticals.yaml` la URL de wafforge por `un repo privado` (repo privado): 3 tests en rojo (`test_catalogo_valido`, `test_urls_dentro_de_la_lista_publica`, `test_url_fuera_de_la_lista_pone_rojo` pasa a rojo por la línea final). Revertido. También hay contraprueba en memoria (URL privada inyectada en `validar_catalogo`) y para el doble cómputo de VRT-NET.
 
 ## Queda
 Integración (cli/informes/dashboard) en T14; corregir cifra "12 verticales" en README.
@@ -40,4 +40,4 @@ Integración (cli/informes/dashboard) en T14; corregir cifra "12 verticales" en 
 ## Verificación del coordinador (2026-11-03)
 - Verifica: pytest en worktree 106 passed; en main tras fusionar: 106 passed.
 - Superficies: OK. Toca: sin ficheros fuera. gitleaks: sin hallazgos.
-- Contraprueba: URL de wafforge -> repo privado repo-privado -> 3 failed, 103 passed; restaurada, 106 passed.
+- Contraprueba: URL de wafforge -> un repo privado -> 3 failed, 103 passed; restaurada, 106 passed.

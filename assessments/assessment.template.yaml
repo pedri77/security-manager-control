@@ -32,4 +32,5 @@ plan_accion:
 # no_evaluable exige `motivo` y no puntúa. Sin sección = todo sin evaluar.
 verticales:
   VRT-EDR: {madurez: 0, producto: "", notas: ""}
+  VRT-GRC: {madurez: 0, producto: "", notas: ""}
   VRT-MDM: {madurez: no_evaluable, motivo: "<por qué no se puede evaluar>"}
