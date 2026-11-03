@@ -125,7 +125,7 @@ def test_h3_parcial_igual_y_corregido_de_verdad_no():
 
 def _sist(**kw):
     base = {"id": "IA-T", "nombre": "Prueba", "rol": "proveedor", "nivel_riesgo": "alto_riesgo_anexo_iii",
-            "en_mercado_desde": "2026-03-01"}
+            "en_mercado_desde": "2026-03-01", "cambios_significativos": False}
     base.update(kw)
     return {"organizacion": "Ficticia", "sistemas": [base]}
 
@@ -147,6 +147,8 @@ def test_h4_sistema_preexistente_sin_cambios_no_esta_obligado_y_aviso():
     a, res = _aia070()
     assert a is not None and a.aplica_desde == date(2027, 12, 2)
     assert "Sin cambios significativos de diseño no está obligado" in a.nota
+    a, res = _aia070(cambios_significativos=None)                         # T36: ausente = no consta, con aviso
+    assert "No consta si hay cambios significativos" in a.nota
     assert any("cambios_significativos" in w for w in res.warnings)
 
 

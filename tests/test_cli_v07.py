@@ -363,10 +363,10 @@ def test_ztna_privado_sin_url_y_sin_nombrar_el_repo():
 # ------------------------------------------------------------------ versión y documentación
 
 def test_version_070():
-    assert __version__ == "0.8.0"
-    assert 'version = "0.8.0"' in (ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    assert "## 0.8.0" in (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
-    assert "versión-0.8.0" in (ROOT / "README.md").read_text(encoding="utf-8")
+    assert __version__ == "0.8.1"
+    assert 'version = "0.8.1"' in (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    assert "## 0.8.1" in (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+    assert "versión-0.8.1" in (ROOT / "README.md").read_text(encoding="utf-8")
 
 
 def _readme():

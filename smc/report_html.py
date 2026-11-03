@@ -133,6 +133,11 @@ def _marco(an: Analisis, r, h: int) -> str:
     if r.sin_evidencia:
         out.append(f"<h{h + 1}>Implementados sin evidencia ({len(r.sin_evidencia)})</h{h + 1}><ul class=\"cols\">"
                    + "".join(f"<li>{_e(c.id)} · {_e(c.titulo)}</li>" for c in r.sin_evidencia) + "</ul>")
+    if r.evidencia_caducada:
+        out.append(f"<h{h + 1}>Evidencia caducada ({len(r.evidencia_caducada)})</h{h + 1}>")
+        out.append('<p class="nota">Todas las evidencias de estos controles han caducado; renovarlas. '
+                   'No afecta a la puntuación de cumplimiento.</p>')
+        out.append('<ul class="cols">' + "".join(f"<li>{_e(c.id)} · {_e(c.titulo)}</li>" for c in r.evidencia_caducada) + "</ul>")
     if r.sin_evaluar_detalle:
         out.append(f"<h{h + 1}>Sin evaluar ({len(r.sin_evaluar_detalle)})</h{h + 1}>")
         out.append('<p class="nota">Controles aplicables sin evaluación. No son brechas confirmadas.</p>')
@@ -499,7 +504,8 @@ def render_evolucion(comp, h: int = 2) -> str:
                        for m in comp.marcos]))
     out.append(_tabla(["Controles", "Nº", "IDs"],
                       [[t, str(len(l)), ids(l)] for t, l in (("Cerrados", comp.cerrados), ("Mejoran", comp.mejoran),
-                                                             ("Empeoran", comp.empeoran), ("Nuevas brechas", comp.nuevas_brechas))]
+                                                             ("Empeoran", comp.empeoran), ("Nuevas brechas", comp.nuevas_brechas),
+                                                             ("Dejan de evaluarse", comp.dejan_de_evaluarse))]
                       + [["Sin cambio", str(len(comp.sin_cambio)), "—"]]))
     out.append(f"<p>Brechas P1: antes {len(comp.p1_antes)} ({_e(', '.join(comp.p1_antes) or 'ninguna')}), "
                f"después {len(comp.p1_despues)} ({_e(', '.join(comp.p1_despues) or 'ninguna')}).</p>")
@@ -629,5 +635,8 @@ def run_html(path: Path, hoy: date | None = None, registry=None, pentest=None, p
     if anterior is not None:
         from . import compare
         extras = dict(extras or {})
-        extras["evolucion"] = compare.comparar(_load(anterior), datos, an.hoy)
+        previo = _load(anterior)
+        if not isinstance(previo, dict):
+            raise ValueError(f"{anterior}: la evaluación anterior no es un mapa YAML")
+        extras["evolucion"] = compare.comparar(previo, datos, an.hoy)
     return render_html(an, registry, None, extras)
