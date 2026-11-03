@@ -669,8 +669,8 @@ protocolos:
   - NET-SEG-01
   - NET-MON-02
   attack:
-  - T0855
-  - T0856
+  - T1692.001
+  - T1692.002
   - T0842
   consulta:
     nvd: https://nvd.nist.gov/vuln/search?keyword=Modbus&resultType=records
@@ -705,7 +705,7 @@ protocolos:
   - NET-INV-02
   - NET-MON-02
   attack:
-  - T0855
+  - T1692.001
   - T0846
   consulta:
     nvd: https://nvd.nist.gov/vuln/search?keyword=S7comm&resultType=records
@@ -740,8 +740,8 @@ protocolos:
   - NET-SEG-01
   - NET-MON-02
   attack:
-  - T0855
-  - T0856
+  - T1692.001
+  - T1692.002
   consulta:
     nvd: https://nvd.nist.gov/vuln/search?keyword=DNP3&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=DNP3
@@ -808,7 +808,7 @@ protocolos:
   - NET-CRY-01
   - ENS-op.exp.10
   attack:
-  - T0855
+  - T1692.001
   consulta:
     nvd: https://nvd.nist.gov/vuln/search?keyword=OPC%20UA&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=OPC%20UA
