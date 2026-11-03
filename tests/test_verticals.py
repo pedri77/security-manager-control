@@ -16,7 +16,8 @@ NUEVOS = ["VRT-HUNT", "VRT-MDM", "VRT-ENDUSER", "VRT-FW", "VRT-SASE", "VRT-ZTNA"
 LISTA_PUBLICA = {
     "https://pedri77.github.io/edr-visual-app/", "https://pedri77.github.io/sase-visual-app/",
     "https://pedri77.github.io/Basic_Firewalls/", "https://pedri77.github.io/Basicos_Proteccion_Capas_OSI/",
-    "https://pedri77.github.io/modelo_OSI/", "https://pedri77.github.io/ics-security-studio/",
+    "https://pedri77.github.io/modelo_OSI/",
+    "https://pedri77.github.io/vulnerabilidades-capas-osi/", "https://pedri77.github.io/ics-security-studio/",
     "https://pedri77.github.io/wafforge/", "https://pedri77.github.io/Basicos_email/",
     "https://github.com/pedri77/kev_dash_project", "https://github.com/pedri77/threat-intelligence-feeds",
 }
@@ -63,8 +64,11 @@ def test_control_inexistente_se_detecta():
 def test_pendientes_sin_url():
     pend = [e for v in V.cargar_verticales() for e in v.estado_recursos]
     textos = " ".join(e["proyecto"] for e in pend)
-    for clave in ("ZTNA", "capa OSI", "3D"):
+    for clave in ("ZTNA", "3D"):
         assert clave in textos
+    assert "capa OSI" not in textos  # publicado: ya es recurso, no pendiente
+    osi = next(v for v in V.cargar_verticales() if v.id == "VRT-OSI")
+    assert "https://pedri77.github.io/vulnerabilidades-capas-osi/" in [r["url"] for r in osi.recursos]
     assert all(e["estado"] == "pendiente" and "url" not in e for e in pend)
 
 
