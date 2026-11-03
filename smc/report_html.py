@@ -397,6 +397,11 @@ def render_pentest(e, h: int = 2) -> str:
         out.append(_tabla(["ID", "Título", "Sev. efectiva", "Días", "SLA", "Activo", "Control"],
                           [[_e(f.hallazgo.id), _e(f.hallazgo.titulo), _e(f.severidad_efectiva), _e(f.dias), _e(f.sla_dias),
                             _e(f.hallazgo.activo or "—"), _e(f.hallazgo.control or "—")] for f in e.fuera_sla]))
+    if e.retest_fallido:
+        out.append(f"<h{h + 1}>Retest fallido</h{h + 1}>")
+        out.append(_tabla(["ID", "Título", "Resultado del retest", "Fecha de retest", "Detección", "Activo", "Control"],
+                          [[_e(x.id), _e(x.titulo), _e(x.resultado_retest), _e(_f(x.fecha_retest)), _e(_f(x.fecha_deteccion)),
+                            _e(x.activo or "—"), _e(x.control or "—")] for x in e.retest_fallido]))
     for titulo, lista in (("Pendientes de retest", e.pendientes_retest), ("Aceptados sin fecha de revisión", e.aceptados_sin_revision)):
         if lista:
             out.append(f"<h{h + 1}>{_e(titulo)}</h{h + 1}>" + _lista([f"<strong>{_e(x.id)}</strong> {_e(x.titulo)}" for x in lista]))
