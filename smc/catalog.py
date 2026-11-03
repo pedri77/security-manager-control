@@ -76,3 +76,67 @@ def validate() -> list[str]:
                 if ref not in seen:
                     errors.append(f"{c.id}: relación a control inexistente {ref}")
     return errors
+
+
+UC_ESTADOS = ("activo", "en_desarrollo", "propuesto", "retirado")
+UC_DETECCION = ("sin", "regla", "probada")
+
+
+def validar_casos_uso(uc_path: Path | None = None, root: Path | None = None,
+                      verticales: set[str] | None = None) -> list[str]:
+    """Casos de uso: IDs únicos, técnicas Txxxx, deteccion válida, playbook existente, vertical existente."""
+    import re
+    from . import mitre
+    from .verticals import cargar_verticales
+    uc_path = uc_path or mitre.UC_FILE
+    root = root or ROOT
+    if verticales is None:
+        verticales = {v.id for v in cargar_verticales()}
+    data = yaml.safe_load(Path(uc_path).read_text(encoding="utf-8")) or {}
+    errores, vistos = [], set()
+    for i, u in enumerate(data.get("use_cases") or []):
+        uid = u.get("id") if isinstance(u, dict) else None
+        if not uid:
+            errores.append(f"use_cases[{i}]: falta 'id'")
+            continue
+        if uid in vistos:
+            errores.append(f"{uid}: ID de caso de uso duplicado")
+        vistos.add(uid)
+        if u.get("estado") not in UC_ESTADOS:
+            errores.append(f"{uid}: estado no válido '{u.get('estado')}'")
+        if u.get("deteccion", "sin") not in UC_DETECCION:
+            errores.append(f"{uid}: deteccion no válida '{u.get('deteccion')}'")
+        tecnicas = u.get("mitre")
+        if not tecnicas or not isinstance(tecnicas, list):
+            errores.append(f"{uid}: sin técnicas ATT&CK")
+        else:
+            errores += [f"{uid}: técnica ATT&CK no válida '{t}'" for t in tecnicas
+                        if not re.fullmatch(r"T\d{4}(\.\d{3})?", str(t))]
+        if not u.get("tactica"):
+            errores.append(f"{uid}: sin táctica")
+        pb = u.get("playbook")
+        if u.get("estado") != "retirado" and not (pb and (Path(root) / pb).is_file()):
+            errores.append(f"{uid}: playbook inexistente '{pb}'")
+        if u.get("vertical") and u["vertical"] not in verticales:
+            errores.append(f"{uid}: vertical inexistente {u['vertical']}")
+    return errores
+
+
+def validar_v05() -> list[str]:
+    """Validaciones de la ola 5: verticales, protocolos/fuentes, RSS/ecosistema, casos de uso y verticales referenciadas."""
+    from . import protocols, resources
+    from .verticals import cargar_verticales, validar_catalogo
+    vs = cargar_verticales()
+    ids = {v.id for v in vs}
+    errores = [f"verticales: {e}" for e in validar_catalogo(vs)]
+    errores += [f"protocolos: {e}" for e in protocols.validar()]
+    errores += [f"recursos: {e}" for e in resources.validar()]
+    errores += [f"casos de uso: {e}" for e in validar_casos_uso(verticales=ids)]
+    errores += [f"RSS {f.get('id')}: vertical inexistente {f['vertical']}"
+                for f in resources.cargar_rss() if f.get("vertical") and f["vertical"] not in ids]
+    reg = ROOT / "technologies" / "registry.template.yaml"
+    if reg.is_file():
+        from .tech import _tecnologias
+        errores += [f"tecnologías {t.get('id')}: vertical inexistente {t['vertical']}"
+                    for t in _tecnologias(reg) if t.get("vertical") and t["vertical"] not in ids]
+    return errores
