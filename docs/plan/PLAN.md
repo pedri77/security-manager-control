@@ -262,14 +262,14 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 
 ## Ola 12 (v0.7)
 
-- [~] **T24** — Pentesting (seguimiento) y purple team
+- [x] **T24** — Pentesting (seguimiento) y purple team
   - Hace: módulo `smc/offensive.py` y carpeta `offensive/` con: plantilla `pentest.template.yaml` (campañas de pentest: alcance, tipo interno/externo/web/red team, proveedor, fechas; hallazgos con id, severidad, CVSS opcional, CWE, activo, control SMC relacionado, estado abierto/en_remediacion/corregido/aceptado/falso_positivo, fecha_deteccion, fecha_retest, resultado_retest) con SLA por severidad tomado de `vulnerabilities/policy.yaml` (reutiliza, no duplica); plantilla `purple.template.yaml` (ejercicios purple team: técnica ATT&CK, caso de uso del SOC de `soc/use-cases/catalog.yaml`, fecha, resultado detectado/parcial/no_detectado, tiempo de detección, mejora acordada y su estado). Funciones: `cargar_pentest`, `estado_hallazgos(datos, hoy)` (abiertos, fuera de SLA, pendientes de retest, aceptados sin fecha de revisión), `purple(datos, hoy)` (cobertura por táctica, técnicas no detectadas, mejoras abiertas, ejercicios con más de 12 meses) y `render_markdown`. Validación: ids ATT&CK con regex y casos de uso existentes. Ejemplos ficticios.
   - No hace: no toca `smc/cli.py`, `smc/mitre.py` ni catálogos existentes (no sube la madurez MITRE con ejercicios purple: lo decide T28).
   - Toca: `offensive/`, `smc/offensive.py`, `tests/test_offensive.py`, `docs/plan/informes/T24-dev-proyecto.md`
   - Depende: T23
   - Verifica: tests con `hoy` inyectado; contraprueba: un hallazgo crítico abierto más allá del SLA aparece fuera de SLA y un caso de uso inexistente en purple da error.
   - Prod: —
-  - Estado: reservada por coordinador 2026-11-03
+  - Estado: hecha en a2fda17 · evidencia informes/T24-dev-proyecto.md
 
 - [~] **T25** — Verticales de identidad, dato, IA y seguridad ofensiva
   - Hace: añade a `soc/verticals.yaml`, con el formato vigente (nis2, controles existentes, criterios y `niveles` 0-5 concretos): `VRT-IAM` (identidad y su seguridad: IGA y ciclo de vida, MFA resistente a phishing, PAM, identidades no humanas y de servicio, ITDR, revisión de accesos, AD/Entra hardening), `VRT-DATA` (seguridad del dato: clasificación, DSPM, DLP en endpoint/correo/nube, identidades y permisos con acceso al dato, cifrado y claves, retención), `VRT-AI` (IA: inventario de sistemas y modelos, clasificación según el RIA, gobierno, seguridad de agentes y LLM según OWASP Top 10 for LLM Applications y MITRE ATLAS, permisos y herramientas de agentes, registro y supervisión humana) y `VRT-OFF` (pentesting y purple team: plan anual, retest, ejercicios purple, red team). Controles solo con IDs existentes en los catálogos. Recursos solo de la lista pública (si no hay, ninguno). Añade las 4 a la plantilla y a los dos ejemplos ficticios. Cifras: 24 verticales.
