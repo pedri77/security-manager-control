@@ -33,6 +33,9 @@ technologies:
     integraciones: [SIEM]
     casos_uso: [UC-003, UC-004, UC-006]
     playbook: vulnerabilities/playbooks/tecnologia/PB-TEC-template.md
+    evaluacion: {cobertura_pct: 92, configuracion: bastionada, madurez: 3}
+    reglas: {estado: no_evaluable, motivo: "Exclusiones y políticas gestionadas por el MSSP; sin acceso a la consola (ejemplo ficticio)", ultima_revision: "", n_reglas: 0, reglas_any_any: 0, reglas_sin_uso: 0}
+    suscripcion: {proveedor: "Proveedor A", coste_anual: 18000, moneda: EUR, renovacion: "2027-01-31", propietario: "Responsable de seguridad", unidades_contratadas: 500, unidades_en_uso: 462, autorrenovacion: true}
 
   - id: TEC-0002
     nombre: Firewall perimetral
@@ -51,3 +54,43 @@ technologies:
     integraciones: [SIEM]
     casos_uso: [UC-005, UC-007]
     playbook: ""
+    evaluacion: {cobertura_pct: 100, configuracion: por_defecto, madurez: 2}
+    reglas: {estado: sin_revisar, ultima_revision: "2025-11-01", n_reglas: 240, reglas_any_any: 6, reglas_sin_uso: 58}
+    suscripcion: {proveedor: "Proveedor B", coste_anual: 9500, moneda: EUR, renovacion: "2026-12-15", propietario: "Sistemas", unidades_contratadas: 2, unidades_en_uso: 2, autorrenovacion: false}
+
+  # Los datos de abajo son ficticios (sin datos reales de ningún cliente).
+  - id: TEC-0003
+    nombre: Firewall de sede secundaria
+    fabricante: "<fabricante>"
+    producto: "<producto>"
+    version: "x.y"
+    vertical: VRT-NET
+    propietario: "Sistemas"
+    gestionado_por: interno
+    evaluacion: {cobertura_pct: 100, configuracion: bastionada, madurez: 4}
+    reglas: {estado: revisadas, ultima_revision: "2026-09-15", n_reglas: 85, reglas_any_any: 0, reglas_sin_uso: 4}
+    suscripcion: {proveedor: "Proveedor B", coste_anual: 4200, moneda: EUR, renovacion: "2027-06-30", propietario: "Sistemas", unidades_contratadas: 1, unidades_en_uso: 1, autorrenovacion: false}
+
+  - id: TEC-0004
+    nombre: Gestión de dispositivos móviles
+    fabricante: "<fabricante>"
+    producto: "<producto>"
+    version: "x.y"
+    vertical: VRT-MDM
+    propietario: "Equipo de puesto de usuario"
+    gestionado_por: interno
+    evaluacion: {cobertura_pct: 85, configuracion: desconocida, madurez: 2}
+    reglas: {estado: revisadas, ultima_revision: "2026-08-01", n_reglas: 30, reglas_any_any: 0, reglas_sin_uso: 0}
+    suscripcion: {proveedor: "Proveedor C", coste_anual: 6000, moneda: EUR, renovacion: "2027-03-31", propietario: "Equipo de puesto de usuario", unidades_contratadas: 300, unidades_en_uso: 320, autorrenovacion: true}
+
+  - id: TEC-0005
+    nombre: Acceso seguro a la nube (SASE)
+    fabricante: "<fabricante>"
+    producto: "<producto>"
+    version: "x.y"
+    vertical: VRT-SASE
+    propietario: "Responsable de seguridad"
+    gestionado_por: "MSSP:<nombre>"
+    evaluacion: {cobertura_pct: 40, configuracion: por_defecto, madurez: 1}
+    reglas: {estado: sin_revisar, ultima_revision: "2026-05-20", n_reglas: 60, reglas_any_any: 0, reglas_sin_uso: 12}
+    suscripcion: {proveedor: "Proveedor D", coste_anual: 30000, moneda: EUR, renovacion: "2026-12-01", propietario: "Responsable de seguridad", unidades_contratadas: 100, unidades_en_uso: 40, autorrenovacion: true}

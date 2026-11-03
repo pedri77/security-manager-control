@@ -16,6 +16,15 @@ Registro único de las tecnologías de seguridad (y las de negocio que las suste
 - **Provisión y despliegues** — entornos, cobertura (%), método (manual, IaC, GPO, MDM), pendientes.
 - **Relaciones** — vertical, casos de uso que alimenta, playbooks asociados, CVEs abiertos.
 
+## Campos v0.5 (ejemplos ficticios en la plantilla)
+
+- `vertical`: ID de vertical (se valida más adelante).
+- `evaluacion`: `cobertura_pct`, `configuracion` (`bastionada | por_defecto | desconocida`), `madurez` 0-5.
+- `reglas`: `estado` (`revisadas | sin_revisar | no_evaluable`), `ultima_revision`, `n_reglas`, `reglas_any_any`, `reglas_sin_uso`. Si `estado: no_evaluable`, `motivo` es **obligatorio** (p. ej. «sin acceso a la consola»): si no se pueden evaluar las reglas, se dice explícitamente y por qué. Revisadas hace más de 180 días cuentan como sin revisar.
+- `suscripcion`: `proveedor`, `coste_anual`, `moneda`, `renovacion`, `propietario` (rol), `unidades_contratadas`, `unidades_en_uso`, `autorrenovacion`. Infrautilizada = uso por debajo del 70 %.
+
+API (`smc/tech.py`, `hoy` inyectable): `evaluar_tecnologias`, `reglas`, `suscripciones` y sus `render_*` en Markdown.
+
 ## CLI
 
 ```bash
