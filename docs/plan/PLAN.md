@@ -25,7 +25,7 @@ Revisión de ola: 3
 | Grupo | Coordinador | Tareas |
 |---|---|---|
 | smc | coordinador | T01, T02, T03, T04, T05, T06, T07, T08 |
-| smc-v05 | coordinador | T09, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28, T29, T30, T31, T32, T33, T34, T35 |
+| smc-v05 | coordinador | T09, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28, T29, T30, T31, T32, T33, T34, T35, T36 |
 
 ## Ola 1
 
@@ -378,6 +378,16 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en cb3ead8 · evidencia informes/T35-dev-proyecto.md
 
+## Ola 17 (v0.8.1)
+
+- [ ] **T36** — Endurecer v0.8 (hallazgos de revisor-ola olas 15-16)
+  - Hace: corrige los hallazgos 1-9 de `informes/ola-15-16-revisor-ola.md`. Decisiones: (a) `cambios_significativos`, `autoridad_publica` y `en_mercado_desde` se validan: los dos primeros solo bool (otro tipo = error de validación en `validar_inventario`); **ausente no recorta** (cuenta como «no consta»: las obligaciones del capítulo III se emiten como pendientes, con aviso de que, si no hay cambios significativos, aplicaría el régimen transitorio); actualiza la plantilla y la nota pública de AIA-070 sin jerga del plan; (b) `smc/soa.py` usa `smc.evidencias.normalizar` y `estado` (una sola lógica de caducidad; fechas con hora, cadenas sin guiones y `vigencia_dias` fuera de rango no rompen y dan aviso; el CLI captura los errores de datos con rc=2, sin traceback); (c) el XLSX filtra todos los caracteres no válidos en XML 1.0 (incluidos `\uFFFE`, `\uFFFF` y surrogates sueltos); (d) `smc/compare.py` clasifica solo controles aplicables según `analyse` de cada evaluación y añade el grupo «dejan de evaluarse» (presentes antes, ausentes ahora) y «sin catálogo» para IDs inexistentes (aviso); los totales cuadran con los porcentajes; (e) `smc report --anterior` valida que el fichero sea un mapa (rc=2 si no); (f) el CI ejecuta también `compare`, `soa` (tres formatos), `evidencias` y `report --anterior`, y la matriz incluye Python 3.10; (g) el CSV de soa neutraliza también celdas cuyo primer carácter no blanco sea `= + - @` o su variante de ancho completo, y las que empiezan por `\n`; (h) la caducidad de evidencias sale en el informe HTML (sección de cada marco, escapada); (i) CHANGELOG corregido. Versión 0.8.1 y CHANGELOG.
+  - No hace: no añade funciones nuevas.
+  - Toca: `smc/ai_act.py`, `ai/inventario.template.yaml`, `frameworks/ai-act/obligaciones.yaml`, `smc/soa.py`, `smc/evidencias.py`, `smc/compare.py`, `smc/cli.py`, `smc/report_html.py`, `.github/workflows/tests.yml`, `tests/`, `README.md`, `CHANGELOG.md`, `pyproject.toml`, `smc/__init__.py`, `docs/prd/PRD-SMC-001-v1.md`, `docs/plan/informes/T36-dev-proyecto.md`
+  - Depende: T35
+  - Verifica: un test por hallazgo con su contraprueba anotada (los escenarios del informe del revisor reproducidos); todos los tests verdes; comandos del README rc=0.
+  - Prod: —
+
 ## Libro
 
 ### Hechos
@@ -445,6 +455,8 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 
 - 2026-11-03 · Ola 15 fusionada (576 tests). Notas para T35: (1) `render_ia` del HTML debe mostrar `regimen_transitorio` (T34); (2) aviso de evidencia caducada va en el Markdown de gap, no en `Analisis.warnings` (T33); (3) el CSV de `smc soa` lleva solo aplicabilidad, las evidencias van en XLSX (T32); (4) el art. 111.2 habla de «el presente Reglamento»: el recorte se limita al capítulo III por prudencia (arts. 4, 5, 50 y 72-73 se siguen emitiendo); revisar con asesoría jurídica · sesión principal
 
+- 2026-11-03 · Olas 15-16 revisadas (APTA con reservas): T36 con hallazgos 1-9. Decisiones conservadoras: art. 111.2 con dato ausente no recorta; compare lista «dejan de evaluarse»; caducidad de evidencias en el informe HTML; Python 3.10 en la matriz de CI · sesión principal
+
 ### Atasco
 - Ola 1: 0
 - Ola 2: 0
@@ -462,3 +474,4 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 - Ola 14: 0
 - Ola 15: 0
 - Ola 16: 0
+- Ola 17: 0
