@@ -62,7 +62,8 @@ def test_contraprueba_intercambio_invierte_signo_y_avisa_fechas():
     assert m["NIS2"].delta == -3.3 and m["RED"].delta == -5.0
     assert ids(c.cerrados) == ["NIS2-23.notificacion"]
     assert ids(c.nuevas_brechas) == ["NIS2-21.2.j"]
-    assert ids(c.mejoran) == ["TRV-TI-01"] and set(ids(c.empeoran)) == {"NET-ACC-01", "NIS2-20.2", "TRV-EDR-01"}
+    assert ids(c.mejoran) == ["TRV-TI-01"] and set(ids(c.empeoran)) == {"NIS2-20.2", "TRV-EDR-01"}
+    assert ids(c.dejan_de_evaluarse) == ["NET-ACC-01"]            # T36: antes se contaba como «empeora»
     assert c.madurez_delta == -0.38
     assert c.acciones_cerradas == []
     assert any("más antigua" in w for w in c.avisos)

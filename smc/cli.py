@@ -96,7 +96,7 @@ def _comando_v08(args) -> int:
         if args.base is not None and not args.base.is_dir():
             return _error(args.base, "--base no es un directorio")
         print(evidencias.render_markdown(datos, args.hoy, args.base), end="")
-    except _ERRORES_DATOS as exc:
+    except _ERRORES_DATOS + (TypeError, OverflowError) as exc:
         return _error(ruta, exc)
     return 0
 

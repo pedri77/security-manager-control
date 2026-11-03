@@ -1,8 +1,8 @@
 """Salida para auditor: declaración de aplicabilidad y registro de evidencias (CSV, XLSX, HTML).
 
 Parte de `smc.gap.analyse` (no reimplementa el análisis). Solo stdlib y PyYAML (vía gap).
-Las evidencias son texto o un dict {ref, fecha, caduca | vigencia_dias, sha256}; se leen aquí sin
-depender de `smc/evidencias.py`.
+Las evidencias son texto o un dict {ref, fecha, caduca | vigencia_dias, sha256}; la caducidad se calcula con
+`smc.evidencias` (una sola lógica).
 """
 from __future__ import annotations
 
@@ -11,9 +11,10 @@ import html as _html
 import io
 import re
 import zipfile
-from datetime import date, timedelta
+from datetime import date
 from xml.sax.saxutils import escape as _xml_escape
 
+from . import evidencias as _ev
 from . import gap as _gap
 from . import mapping as _mapping
 
@@ -26,40 +27,12 @@ CABECERA_APLICABILIDAD = ("Marco", "Control", "Título", "Aplica", "Justificaci�
 COLUMNAS_EVIDENCIAS = ("control", "evidencia", "fecha", "caduca", "estado")
 CABECERA_EVIDENCIAS = ("Control", "Evidencia", "Fecha", "Caduca", "Estado de la evidencia")
 
-_ISO_FECHA = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-
-
-def _fecha(v) -> date | None:
-    if isinstance(v, date):
-        return v
-    if isinstance(v, str) and _ISO_FECHA.match(v.strip()):
-        try:
-            return date.fromisoformat(v.strip())
-        except ValueError:
-            return None
-    return None
-
-
 def _evidencia(e, hoy: date) -> dict:
-    """Normaliza una evidencia (texto o dict) a {ref, fecha, caduca, estado}."""
-    if isinstance(e, dict):
-        ref = str(e.get("ref", "") if e.get("ref") is not None else "")
-        f = _fecha(e.get("fecha"))
-        c = _fecha(e.get("caduca"))
-        vig = e.get("vigencia_dias")
-        if c is None and f is not None and isinstance(vig, int) and not isinstance(vig, bool):
-            c = f + timedelta(days=vig)
-    else:
-        ref, f, c = str(e if e is not None else ""), None, None
-    if c is None:
-        estado = "sin_fecha"
-    elif c < hoy:
-        estado = "caducada"
-    elif (c - hoy).days <= 30:
-        estado = "caduca_pronto"
-    else:
-        estado = "vigente"
-    return {"ref": ref, "fecha": f.isoformat() if f else "", "caduca": c.isoformat() if c else "", "estado": estado}
+    """Normaliza una evidencia (texto o dict) a {ref, fecha, caduca, estado, avisos} con la lógica de `smc.evidencias`."""
+    n = _ev.normalizar(e)
+    return {"ref": n["ref"], "fecha": n["fecha"].isoformat() if n["fecha"] else "",
+            "caduca": n["caduca"].isoformat() if n["caduca"] else "", "estado": _ev.estado(e, hoy),
+            "avisos": n["avisos"]}
 
 
 def _evidencias_de(ev) -> list:
@@ -99,7 +72,7 @@ def declaracion(assessment: dict, hoy: date | None = None) -> dict:
     evals = evals if isinstance(evals, dict) else {}
     from .catalog import load_all
     catalogos = load_all()
-    filas, hoja = [], []
+    filas, hoja, avisos_ev = [], [], []
     for r in an.results:
         brecha = {b.control.id: b for b in r.brechas}
         no_aplica_cat = {c.id for c in r.no_aplican}
@@ -133,22 +106,29 @@ def declaracion(assessment: dict, hoy: date | None = None) -> dict:
                             refuerzos = ", ".join(d.refuerzos)
             evs = [_evidencia(e, hoy) for e in _evidencias_de(ev)] if aplica == "sí" else []
             for e in evs:
+                avisos_ev += [f"{c.id}: {a}" for a in e["avisos"]]
                 hoja.append({"control": c.id, "evidencia": e["ref"], "fecha": e["fecha"],
                              "caduca": e["caduca"], "estado": e["estado"]})
             filas.append({"marco": r.framework, "id": c.id, "titulo": c.titulo, "aplica": aplica,
                           "justificacion": just, "estado": estado_txt,
                           "evidencias": "; ".join(_texto_ev(e) for e in evs), "prioridad": prioridad,
                           "refuerzos_ens": refuerzos, "mapeo": _mapeo(c)})
-    return {"aplicabilidad": filas, "evidencias": hoja, "avisos": list(an.warnings), "aviso": AVISO,
+    return {"aplicabilidad": filas, "evidencias": hoja, "avisos": list(an.warnings) + avisos_ev, "aviso": AVISO,
             "cliente": an.cliente, "fecha": hoy.isoformat()}
 
 
 # --- Exportadores -------------------------------------------------------------------------------
 
 def _seguro(v) -> str:
-    """Neutraliza inyección de fórmulas: celdas que empiezan por = + - @ o tabulador (o CR) se prefijan con '."""
+    """Neutraliza inyección de fórmulas: celdas cuyo primer carácter no blanco es = + - @ (o su variante de ancho
+    completo), o que empiezan por tabulador, CR o salto de línea, se prefijan con '."""
     s = "" if v is None else str(v)
-    return "'" + s if s and s[0] in "=+-@\t\r" else s
+    if not s:
+        return s
+    if s[0] in "\t\r\n":
+        return "'" + s
+    p = s.lstrip()
+    return "'" + s if p and p[0] in _INICIO_FORMULA else s
 
 
 def _filas_de(filas) -> list[dict]:
@@ -166,8 +146,10 @@ def a_csv(filas) -> str:
     return "﻿" + buf.getvalue()
 
 
+_INICIO_FORMULA = "=+-@\uff1d\uff0b\uff0d\uff20"
 _NOMBRE_HOJA_MAL = re.compile(r"[\[\]:*?/\\]")
-_CONTROL_XML = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
+# Caracteres no válidos en XML 1.0: todo menos #x9 #xA #xD #x20-#xD7FF #xE000-#xFFFD #x10000-#x10FFFF
+_CONTROL_XML = re.compile("[^\x09\x0a\x0d\x20-\ud7ff\ue000-\ufffd\U00010000-\U0010ffff]")
 
 
 def _nombre_hoja(n: str, usados: set) -> str:

@@ -86,7 +86,8 @@ Un centro de control que, a partir del perfil del cliente, determine los marcos 
 - RF-42 `smc soa <evaluación> --formato csv|xlsx|html -o <fichero>` genera la declaración de aplicabilidad y el registro de evidencias para el auditor: CSV UTF-8 con BOM, XLSX con dos hojas (stdlib, sin dependencias) y HTML imprimible. Sin inyección de fórmulas, con escape y con el aviso de que la declaración formal la firma el responsable de seguridad.
 - RF-43 Las evidencias admiten `{ref, fecha, caduca | vigencia_dias, sha256}`; `smc evidencias <evaluación> [--base <dir>] [--hoy]` informa de su estado (vigente, caduca pronto, caducada, sin fecha) y verifica las huellas sin leer fuera de la base. Una evidencia caducada avisa pero no cambia la puntuación.
 - RF-44 El informe HTML de IA muestra el régimen transitorio del art. 111.2 del RIA (obligaciones del capítulo III que no se emiten como pendientes) y el de pentest la tabla de retest fallido.
-- RF-45 CI en GitHub Actions (tests, `smc validate` y comandos de ejemplo) y política de versiones en `docs/release.md`.
+- RF-45 CI en GitHub Actions (tests, `smc validate` y comandos de ejemplo, incluidos `compare`, `soa`, `evidencias` y `report --anterior`; Python 3.10 a 3.12) y política de versiones en `docs/release.md`.
+- RF-46 (0.8.1) El régimen transitorio del art. 111.2 solo se aplica con `cambios_significativos: false` declarado; `cambios_significativos` y `autoridad_publica` solo admiten booleanos (otro tipo es error de validación) y un dato ausente cuenta como «no consta». La caducidad de evidencias tiene una sola implementación (`smc.evidencias`) y sale también en el informe HTML. `smc compare` clasifica solo controles aplicables en las dos evaluaciones y lista los que dejan de evaluarse.
 
 ## 6. Requisitos no funcionales
 

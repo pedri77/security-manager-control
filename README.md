@@ -9,9 +9,9 @@
 Qué exige la normativa a cada cliente, qué tiene ya implantado, con qué evidencias y qué falta, priorizado.<br>
 NIS2 · ENS · ISO 27001 · SOC · verticales · tecnologías · vulnerabilidades por protocolo · mapa de red · pentest y purple team · IA (RIA) · PMO · evolución entre evaluaciones · salida para auditor. En local, sin servidor y sin que los datos salgan de tu equipo.
 
-[![versión](https://img.shields.io/badge/versión-0.8.0-3cf58a?style=for-the-badge&labelColor=07090c)](CHANGELOG.md)
+[![versión](https://img.shields.io/badge/versión-0.8.1-3cf58a?style=for-the-badge&labelColor=07090c)](CHANGELOG.md)
 [![CI](https://github.com/pedri77/security-manager-control/actions/workflows/tests.yml/badge.svg)](https://github.com/pedri77/security-manager-control/actions/workflows/tests.yml)
-[![tests](https://img.shields.io/badge/tests-595%20en%20verde-3cf58a?style=for-the-badge&labelColor=07090c)](tests/)
+[![tests](https://img.shields.io/badge/tests-635%20en%20verde-3cf58a?style=for-the-badge&labelColor=07090c)](tests/)
 [![python](https://img.shields.io/badge/python-3.10+-3cf58a?style=for-the-badge&logo=python&logoColor=3cf58a&labelColor=07090c)](pyproject.toml)
 [![dependencias](https://img.shields.io/badge/dependencias-solo%20PyYAML-3cf58a?style=for-the-badge&labelColor=07090c)](pyproject.toml)
 
@@ -241,7 +241,7 @@ Las fechas son las vigentes tras el **Ómnibus Digital sobre IA, Reglamento (UE)
 > [!IMPORTANT]
 > **Esto no es asesoramiento jurídico.** SMC orienta; el texto que obliga es el publicado en el DOUE. El informe lo repite al principio.
 
-Además, `smc ai` revisa cada agente con herramientas (seis comprobaciones AGT-01 a AGT-06: límite de llamadas, permisos, supervisión humana, registro, prompt injection y exfiltración) con su correspondencia en OWASP Top 10 for LLM Applications 2025 y MITRE ATLAS. Un dato ausente cuenta como «no consta», nunca como cumplido. El catálogo está en [`frameworks/ai-act/obligaciones.yaml`](frameworks/ai-act/obligaciones.yaml) y la plantilla en [`ai/inventario.template.yaml`](ai/inventario.template.yaml).
+Además, `smc ai` revisa cada agente con herramientas (seis comprobaciones AGT-01 a AGT-06: límite de llamadas, permisos, supervisión humana, registro, prompt injection y exfiltración) con su correspondencia en OWASP Top 10 for LLM Applications 2025 y MITRE ATLAS. Un dato ausente cuenta como «no consta», nunca como cumplido. Para un sistema de alto riesgo ya en el mercado antes de la fecha del capítulo III (art. 111.2), solo `cambios_significativos: false` declarado pasa sus obligaciones del capítulo III al régimen transitorio; si el campo falta, se emiten como pendientes con un aviso, y un valor que no sea `true` o `false` (también `autoridad_publica`) es un error de validación. El catálogo está en [`frameworks/ai-act/obligaciones.yaml`](frameworks/ai-act/obligaciones.yaml) y la plantilla en [`ai/inventario.template.yaml`](ai/inventario.template.yaml).
 
 ## Evolución, salida para auditor y evidencias
 
@@ -261,9 +261,9 @@ flowchart LR
     style R fill:#0d1117,stroke:#3cf58a,color:#e6edf3
 ```
 
-- **Comparación.** `smc compare <anterior> <actual>` reutiliza el análisis de brechas sobre las dos evaluaciones y da el cumplimiento por marco antes, después y delta; los controles cerrados, que mejoran, que empeoran y las nuevas brechas; las brechas P1 y la madurez de verticales en cada fecha; y las acciones del plan cerradas. Avisa si los clientes no coinciden, si la evaluación «actual» es anterior a la otra o si la categoría ENS cambia (el delta ENS no es comparable). Con el par ficticio del repositorio: NIS2 pasa de 50,0 % a 53,3 % y red de 15,0 % a 20,0 %. `smc report ... --anterior <evaluación>` añade al informe HTML la sección «Evolución».
-- **Salida para el auditor.** `smc soa <evaluación> --formato csv|xlsx|html -o <fichero>` genera la declaración de aplicabilidad: una fila por control de cada marco con si aplica, la justificación si no aplica, estado, evidencias, prioridad, refuerzos ENS y mapeo a otros marcos. El CSV es UTF-8 con BOM (Excel) y solo lleva la aplicabilidad; el XLSX trae dos hojas, «Aplicabilidad» y «Evidencias»; el HTML se imprime a PDF desde el navegador. Las celdas que empiezan por `=`, `+`, `-` o `@` se prefijan con `'` para que Excel no las ejecute como fórmula. Es un documento de trabajo: la declaración formal la firma el responsable de seguridad.
-- **Evidencias con fecha y huella.** Una evidencia puede ser texto o `{ref, fecha, caduca | vigencia_dias, sha256}`. `smc evidencias` la clasifica en vigente, caduca pronto (30 días o menos), caducada o sin fecha; con `--base <directorio>` calcula el sha256 de los ficheros referenciados (solo rutas relativas dentro de la base, nunca `..`, rutas absolutas ni enlaces que salgan) y avisa si no coincide. Una evidencia caducada se avisa y se lista en el informe de brechas y en el dashboard, pero **no cambia la puntuación**.
+- **Comparación.** `smc compare <anterior> <actual>` reutiliza el análisis de brechas sobre las dos evaluaciones y da el cumplimiento por marco antes, después y delta; los controles cerrados, que mejoran, que empeoran, las nuevas brechas y los que dejan de evaluarse (evaluados antes, ausentes ahora; quitar una brecha del fichero no la cierra); las brechas P1 y la madurez de verticales en cada fecha; y las acciones del plan cerradas. Solo clasifica controles aplicables en las dos evaluaciones (un control ENS que deja de aplicar por la categoría no es una brecha nueva) y avisa de los IDs que no existen en el catálogo. Avisa si los clientes no coinciden, si la evaluación «actual» es anterior a la otra o si la categoría ENS cambia (el delta ENS no es comparable). Con el par ficticio del repositorio: NIS2 pasa de 50,0 % a 53,3 % y red de 15,0 % a 20,0 %. `smc report ... --anterior <evaluación>` añade al informe HTML la sección «Evolución».
+- **Salida para el auditor.** `smc soa <evaluación> --formato csv|xlsx|html -o <fichero>` genera la declaración de aplicabilidad: una fila por control de cada marco con si aplica, la justificación si no aplica, estado, evidencias, prioridad, refuerzos ENS y mapeo a otros marcos. El CSV es UTF-8 con BOM (Excel) y solo lleva la aplicabilidad; el XLSX trae dos hojas, «Aplicabilidad» y «Evidencias»; el HTML se imprime a PDF desde el navegador. Las celdas cuyo primer carácter no blanco es `=`, `+`, `-` o `@` (o su variante de ancho completo), o que empiezan por tabulador, retorno o salto de línea, se prefijan con `'` para que Excel no las ejecute como fórmula; el XLSX descarta los caracteres que XML 1.0 no admite. Es un documento de trabajo: la declaración formal la firma el responsable de seguridad.
+- **Evidencias con fecha y huella.** Una evidencia puede ser texto o `{ref, fecha, caduca | vigencia_dias, sha256}`. `smc evidencias` la clasifica en vigente, caduca pronto (30 días o menos), caducada o sin fecha; con `--base <directorio>` calcula el sha256 de los ficheros referenciados (solo rutas relativas dentro de la base, nunca `..`, rutas absolutas ni enlaces que salgan) y avisa si no coincide. Una evidencia caducada se avisa y se lista en el informe de brechas y en el dashboard, pero **no cambia la puntuación**. La caducidad sale en una sola lógica (`smc.evidencias`) en el informe de brechas, el HTML de cada marco, el dashboard y `smc soa`; las fechas deben ir como `AAAA-MM-DD` (una con hora se reduce a su día) y un valor no válido da un aviso, no un error.
 
 Los ficheros de evidencia no se suben al repositorio: solo se referencian.
 
@@ -337,7 +337,7 @@ security-manager-control/
 ├── ai/                  plantilla de inventario de IA
 ├── pmo/                 plantilla de proyecto + ejemplo
 ├── smc/                 CLI (gap, plan, report, dashboard, compare, soa, evidencias, soc, mitre, pentest, purple, ai, pmo, mapa, visor…) · assets/ three.js vendorizado
-├── tests/               595 tests
+├── tests/               635 tests
 └── docs/                PRD · ADR · plan del enjambre · imágenes
 ```
 
@@ -353,6 +353,7 @@ security-manager-control/
 | v0.6 | Visor 3D offline del mapa (`smc visor`), informe y dashboard con tecnologías, reglas, suscripciones y madurez MITRE (`--registry`), Anexo II del ENS contrastado con el BOE (45 de 73 medidas) | ✅ |
 | v0.7 | Pentesting y purple team (`smc pentest`, `smc purple`, madurez MITRE con `--purple`), RIA con las fechas del Ómnibus Digital y seguridad de agentes (`smc ai`), PMO con valor ganado y calendario (`smc pmo`), 22 verticales, informe y dashboard con las secciones nuevas | ✅ |
 | v0.8 | Comparación entre evaluaciones (`smc compare`, sección «Evolución» con `--anterior`), salida para auditor (`smc soa` en CSV, XLSX y HTML), evidencias con fecha, caducidad y huella (`smc evidencias`), evidencia caducada en el dashboard, CI en GitHub Actions y régimen transitorio del art. 111.2 del RIA | ✅ |
+| v0.8.1 | Endurecimiento de v0.8: art. 111.2 solo con `cambios_significativos: false` declarado (dato ausente no recorta), una sola lógica de caducidad, XLSX válido, comparación solo de controles aplicables, CSV más estricto, caducidad en el informe HTML y CI con los comandos nuevos y Python 3.10 | ✅ |
 | v0.9 | Contrastar las 28 medidas ENS que dependen de las dimensiones C/I/T/A/D con las guías CCN-STIC; probar el visor en GPU integrada y móvil; conectores de evidencias, ingesta NVD/KEV/EPSS, cumplimiento por dominio | 📋 |
 
 ## Limitaciones conocidas
