@@ -25,7 +25,7 @@ Revisión de ola: 3
 | Grupo | Coordinador | Tareas |
 |---|---|---|
 | smc | coordinador | T01, T02, T03, T04, T05, T06, T07, T08 |
-| smc-v05 | coordinador | T09, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22 |
+| smc-v05 | coordinador | T09, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23 |
 
 ## Ola 1
 
@@ -249,6 +249,17 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en a2b7aef · evidencia informes/T22-dev-proyecto.md
 
+## Ola 11 (v0.6.1)
+
+- [~] **T23** — Endurecer v0.6 antes de publicar (hallazgos de revisor-ola ola 9)
+  - Hace: corrige los hallazgos 1-6 y 8 de `informes/ola-9-revisor-ola.md`. Decisiones de la sesión principal: (a) emparejamiento registro-evaluación en el dashboard: gana el stem de evaluación más largo que case, y si dos casan igual, aviso y sin asociar; test con `acme`/`acme_sur`; (b) visor: validar como enteros no negativos `resumen.dispositivos` y `resumen.por_semaforo.*` (si faltan o no son enteros, ValueError y rc=2 sin traceback), escapar todo lo que entre en la cabecera, y CSP `script-src 'sha256-…'` calculado sobre el script constante en lugar de `'unsafe-inline'` (comprobar en Chrome que sigue dibujando); (c) texto del aviso ENS en `gap.py` y `report_html.py`: las 73 medidas están contrastadas con el Anexo II del BOE; las 28 marcadas dependen de las dimensiones C/I/T/A/D y faltan las guías CCN-STIC; actualizar `tests/test_t08.py`; (d) `proveedor`, `moneda` y demás campos de texto del registro se convierten con `str()` antes de escapar: nunca TypeError; (e) el HTML del visor incluye el texto completo de la licencia MIT de three.js en un comentario; (f) la tabla accesible del visor incluye CVE fuera de SLA, reglas (total, no evaluables, sin uso), semáforo de zona, avisos y totales del resumen; (g) la sección MITRE del informe de cliente lleva la etiqueta «Catálogo de casos de uso del SOC (común a todos los clientes)». Los refuerzos ENS se muestran tal cual la celda del BOE (decisión). Versión 0.6.1 y CHANGELOG.
+  - No hace: no cambia catálogos ni el esquema `smc-mapa/1`.
+  - Toca: `smc/dashboard.py`, `smc/visor.py`, `smc/assets/visor-app.js`, `smc/gap.py`, `smc/report_html.py`, `tests/`, `CHANGELOG.md`, `pyproject.toml`, `smc/__init__.py`, `README.md`, `docs/plan/informes/T23-dev-proyecto.md`
+  - Depende: T22
+  - Verifica: un test por hallazgo con su contraprueba anotada; el visor sigue dibujando en Chrome con la CSP nueva (0 errores de consola, `data-listo`); todos los tests verdes.
+  - Prod: —
+  - Estado: reservada por coordinador 2026-11-03
+
 ## Libro
 
 ### Hechos
@@ -302,6 +313,8 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 
 - 2026-11-03 · v0.6: informe y dashboard con tecnologías/reglas/suscripciones/MITRE, visor 3D offline con three.js vendorizado, ENS contrastado con BOE · David («Hacemos el resto?»)
 
+- 2026-11-03 · Ola 9 revisada (APTA con reservas): emparejamiento registro por stem más largo, CSP del visor con hash, refuerzos ENS tal cual la celda del BOE, MITRE del informe etiquetado como catálogo común; ATT&CK ICS T0855/T0856 renumeradas a T1692.001/.002 · sesión principal
+
 ### Atasco
 - Ola 1: 0
 - Ola 2: 0
@@ -313,3 +326,4 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 - Ola 8: 0
 - Ola 9: 0
 - Ola 10: 0
+- Ola 11: 0
