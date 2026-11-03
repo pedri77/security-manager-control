@@ -17,3 +17,6 @@ smc = "smc.cli:main"
 
 [tool.setuptools]
 packages = ["smc"]
+
+[tool.setuptools.package-data]
+smc = ["assets/*"]
