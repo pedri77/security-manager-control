@@ -169,22 +169,23 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en 7f12649 · evidencia informes/T14-dev-proyecto.md
 
-- [~] **T15** — Mapa 3D de dispositivos: contrato de datos y adaptación de teardown
+- [x] **T15** — Mapa 3D de dispositivos: contrato de datos y adaptación de teardown
   - Hace: `smc/mapa.py` + `smc mapa <registry> [--evaluacion] -o mapa.json`: exporta dispositivos (de `technologies/registry` y `resources/internal`) con zona de red, capa OSI, vertical, estado de reglas, vulnerabilidades abiertas del tracker y semáforo, en un JSON versionado (`schema: smc-mapa/1`). `docs/mapa-3d.md`: diseño de la adaptación de la skill teardown (origen: elvarofficial/teardown, MIT, sobre whaleyxbt/claude-motion, MIT): la «máquina» es la red del cliente, cada zona un subsistema que se abre, paneles que leen los números reales del JSON, visita automática; qué se reutiliza y qué se cambia; todo offline. `docs/adr/ADR-003-mapa-3d-desde-teardown.md`. El prototipo HTML queda como siguiente paso.
   - No hace: no construye aún el visor 3D; no copia código de teardown al repo.
   - Toca: `smc/mapa.py`, `smc/cli.py`, `tests/test_mapa.py`, `docs/mapa-3d.md`, `docs/adr/ADR-003-mapa-3d-desde-teardown.md`, `docs/plan/informes/T15-dev-proyecto.md`
   - Depende: T14
   - Verifica: el JSON del ejemplo valida contra el esquema descrito (test); sin rutas absolutas ni datos fuera del registro. Contraprueba: un dispositivo sin zona aparece en `sin_zona` y no rompe.
   - Prod: —
-  - Estado: reservada por coordinador 2026-11-03
+  - Estado: hecha en 1acd498 · evidencia informes/T15-dev-proyecto.md
 
-- [ ] **T16** — Documentación y versión 0.5.0
+- [~] **T16** — Documentación y versión 0.5.0
   - Hace: README (mantén el estilo actual con imágenes y badges; actualiza cifras, tabla de módulos, comandos, hoja de ruta v0.5 hecha y v0.6 con lo pendiente, sección «Ecosistema» con las Pages públicas), PRD (RF nuevos), CHANGELOG 0.5.0, versión 0.5.0.
   - No hace: no regenera imágenes.
-  - Toca: `README.md`, `docs/prd/PRD-SMC-001-v1.md`, `CHANGELOG.md`, `pyproject.toml`, `smc/__init__.py`, `docs/plan/informes/T16-dev-proyecto.md`
+  - Toca: `README.md`, `soc/README.md`, `docs/prd/PRD-SMC-001-v1.md`, `CHANGELOG.md`, `pyproject.toml`, `smc/__init__.py`, `technologies/registry.template.yaml`, `resources/internal/inventory.template.yaml`, `docs/plan/informes/T16-dev-proyecto.md` (UPDATE 1: añadir `zona` y `capa_osi` ficticias a las plantillas para que `smc mapa` muestre zonas; corregir «12 verticales»)
   - Depende: T15
   - Verifica: todos los comandos del README rc=0 sobre los ejemplos; badges con cifras reales (tests, controles, verticales, protocolos).
   - Prod: —
+  - Estado: reservada por coordinador 2026-11-03
 
 ## Libro
 
