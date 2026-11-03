@@ -1,6 +1,6 @@
 # Mapa 3D de dispositivos (diseño y contrato de datos)
 
-Estado: contrato implementado (`smc mapa`, T15); visor 3D pendiente. Decisión: [ADR-003](adr/ADR-003-mapa-3d-desde-teardown.md).
+Estado: contrato implementado (`smc mapa`, T15) y visor 3D offline implementado (`python -m smc.visor`, T20; el subcomando `smc visor` llega con T22). Decisión: [ADR-003](adr/ADR-003-mapa-3d-desde-teardown.md).
 
 ## Idea
 
@@ -137,6 +137,24 @@ Vista por capas OSI (cada dispositivo sube o baja según `capa_osi`; los de capa
 
 Visita automática: orden por semáforo (rojo primero), 6 s por zona, panel con las cifras; el primer gesto cede el control y 25 s de calma lo devuelven. Los `no_evaluable` se muestran con un candado y su `motivo` en el panel. Cada elemento visual tiene su equivalente en texto (tabla) para accesibilidad e impresión.
 
+## Visor (T20)
+
+```
+python -m smc.visor mapa.json -o visor.html     # sin -o escribe en stdout; rc=2 si el JSON no es un smc-mapa/1 válido
+```
+
+En código: `from smc.visor import generar_visor; html = generar_visor(mapa_dict)` (lanza `ValueError` si el mapa no cumple el esquema).
+
+![Visor](img/visor.png)
+
+- Una sola página (~565 KiB) con three.js y el JSON incrustados: sin red, sin CDN, sin `fetch`; lleva una CSP `default-src 'none'`.
+- Una zona = una plataforma con un botón que la abre y acerca la cámara; los dispositivos son piezas coloreadas por semáforo (gris nunca se pinta verde; un valor desconocido cae en gris). `sin_zona` se dibuja en una plataforma aparte.
+- Vistas: general, planta, capas OSI (las piezas suben según `capa_osi`; capa desconocida, franja inferior) y «solo rojos». Clic en una pieza muestra su detalle.
+- Visita automática: zonas en rojo primero, 6 s por zona; cualquier clic, rueda o tecla cede el control y 25 s de calma la devuelven. Con `prefers-reduced-motion` no hay visita automática ni transiciones.
+- Panel: lee los números del JSON (resumen, reglas no evaluables con su motivo, KEV fuera de SLA). Todo texto del JSON entra al DOM con `textContent`; el JSON va en `<script type="application/json">` con `<` escapado como `\u003c`.
+- Alternativa en texto: tabla con la misma información (se genera en el servidor con `html.escape`, funciona sin JavaScript ni WebGL).
+- three.js está vendorizado en `smc/assets/` (ADR-004).
+
 ## Siguiente paso
 
-Prototipo HTML autocontenido (<1 MB) que lee un `mapa.json` embebido, con datos ficticios; se prueba en una GPU integrada y en móvil vertical. Antes, añadir `zona` y `capa_osi` a las plantillas de registro e inventario (T16 o posterior).
+Cablear `smc visor` en el CLI (T22) y probar el visor en una GPU integrada y en móvil vertical.
