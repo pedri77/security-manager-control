@@ -189,14 +189,14 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 
 ## Ola 7 (v0.5.1)
 
-- [~] **T17** — Endurecer v0.5 antes de publicar (hallazgos de revisor-ola olas 5-6)
+- [x] **T17** — Endurecer v0.5 antes de publicar (hallazgos de revisor-ola olas 5-6)
   - Hace: corrige los hallazgos 1-10 y 12 de `informes/ola-5-6-revisor-ola.md`. Decisiones de la sesión principal: (a) KEV se trata como crítica a efectos de SLA (7 días) según `vulnerabilities/policy.yaml`, y toda KEV o crítica abierta pone el dispositivo al menos en ámbar aunque esté dentro de SLA; (b) severidad normalizada (minúsculas, sin tildes) y la desconocida cuenta como crítica con aviso; (c) `reglas()` devuelve una lista `any_any` con independencia del estado y el Markdown la destaca; (d) VRT-NET con subverticales evaluadas se muestra como «no puntúa (detallada en FW, SASE, ZTNA y OSI)» en Markdown y HTML; (e) baremo 0-5: cada vertical lleva `niveles` con un descriptor por nivel 0-5 (validado: 6 niveles) además de los `criterios`; (f) mapeos ENS: VRT-EDR a ENS-op.exp.6 y VRT-ENDUSER a ENS-op.exp.4; (g) firewalls de la plantilla a VRT-FW; (h) madurez por táctica = mínimo de los casos activos (documentado) y se expone en el CLI; los casos no activos se marcan aparte; (i) `coste_anual` no numérico da aviso; (j) escape de `<`, `>` y `|` en el Markdown de verticales; (k) corrige la atribución del informe T15. Sube la versión a 0.5.1 y añade la entrada al CHANGELOG.
   - No hace: no añade secciones nuevas al informe HTML ni al dashboard (v0.6); no construye el visor 3D.
   - Toca: `smc/`, `tests/`, `soc/verticals.yaml`, `technologies/registry.template.yaml`, `docs/mapa-3d.md`, `docs/plan/informes/T15-dev-proyecto.md`, `CHANGELOG.md`, `pyproject.toml`, `README.md`, `docs/plan/informes/T17-dev-proyecto.md`
   - Depende: T16
   - Verifica: un test por hallazgo con su contraprueba anotada en el informe; los 196 tests previos verdes salvo cambios justificados.
   - Prod: —
-  - Estado: reservada por coordinador 2026-11-03
+  - Estado: hecha en a329797 · evidencia informes/T17-dev-proyecto.md
 
 ## Libro
 
