@@ -9,12 +9,12 @@
 Qué exige la normativa a cada cliente, qué tiene ya implantado, con qué evidencias y qué falta, priorizado.<br>
 NIS2 · ENS · ISO 27001 · SOC · verticales · tecnologías · vulnerabilidades por protocolo · mapa de red. En local, sin servidor y sin que los datos salgan de tu equipo.
 
-[![versión](https://img.shields.io/badge/versión-0.5.1-3cf58a?style=for-the-badge&labelColor=07090c)](CHANGELOG.md)
+[![versión](https://img.shields.io/badge/versión-0.5.2-3cf58a?style=for-the-badge&labelColor=07090c)](CHANGELOG.md)
 [![tests](https://img.shields.io/badge/tests-214%20en%20verde-3cf58a?style=for-the-badge&labelColor=07090c)](tests/)
 [![python](https://img.shields.io/badge/python-3.10+-3cf58a?style=for-the-badge&logo=python&logoColor=3cf58a&labelColor=07090c)](pyproject.toml)
 [![dependencias](https://img.shields.io/badge/dependencias-solo%20PyYAML-3cf58a?style=for-the-badge&labelColor=07090c)](pyproject.toml)
 
-[![verticales](https://img.shields.io/badge/verticales-19-ffb020?style=flat-square&labelColor=07090c)](soc/verticals.yaml)
+[![verticales](https://img.shields.io/badge/verticales-20-ffb020?style=flat-square&labelColor=07090c)](soc/verticals.yaml)
 [![protocolos](https://img.shields.io/badge/protocolos-28-ffb020?style=flat-square&labelColor=07090c)](vulnerabilities/protocols.yaml)
 [![RSS](https://img.shields.io/badge/RSS-17%20feeds%20·%2013%20verificados-ffb020?style=flat-square&labelColor=07090c)](resources/rss.yaml)
 [![NIS2](https://img.shields.io/badge/NIS2-15%20controles-ffb020?style=flat-square&labelColor=07090c)](frameworks/nis2/controls.yaml)
@@ -104,7 +104,7 @@ Estado: no implementado 1, sin evaluar 0,75, parcial 0,5. Entidad: esencial 1, i
 |---|---|---|
 | 🛰️ **SOC** | SLA por severidad y tier, MTTD, MTTA, MTTC, MTTR | `smc soc` |
 | 🎯 **MITRE ATT&CK** | Cobertura y madurez (niveles 1-5) de 8 casos de uso con playbook; capa para ATT&CK Navigator | `smc mitre`, `smc mitre --navigator` |
-| 🧩 **Verticales** | 19 verticales (EDR/XDR, IAM, red, firewall, SASE, ZTNA, capas OSI, Threat Hunting, MDM, puesto de usuario, correo, cloud, datos, copias, OT…) con madurez 0-5 o «no evaluable» con motivo, clasificadas por medida NIS2 21.2 | `smc verticals` |
+| 🧩 **Verticales** | 20 verticales (EDR/XDR, IAM, red, firewall, SASE, ZTNA, capas OSI, Threat Hunting, MDM, puesto de usuario, correo, cloud, datos, copias, OT…) con madurez 0-5 o «no evaluable» con motivo, clasificadas por medida NIS2 21.2 | `smc verticals` |
 | 🔑 **Tecnologías** | Licencias, fin de soporte, certificados, sobredespliegue; evaluación de cada producto y estado de sus reglas (any-any, sin uso, revisión caducada) | `smc expiring`, `smc tech` |
 | 💶 **Suscripciones** | Coste, renovaciones a 90 días y uso por debajo del 70 % de lo contratado | `smc subs` |
 | 🩹 **Vulnerabilidades** | CVEs con SLA de remediación (KEV, EPSS, CVSS) y playbooks por tecnología y caso de uso | `smc vulns` |
@@ -207,13 +207,13 @@ security-manager-control/
 ├── mappings/            nis2-ens-iso27001.csv
 ├── network/             módulo de red
 ├── normativa/           NIS2 completa · guías CCN-CERT
-├── soc/                 SLA · métricas · 19 verticales · casos de uso MITRE
+├── soc/                 SLA · métricas · 20 verticales · casos de uso MITRE
 ├── technologies/        registro de tecnologías
 ├── vulnerabilities/     política · tracker · 28 protocolos · playbooks
 ├── resources/           inventario interno y de terceros · RSS · ecosistema
 ├── assessments/         plantilla + ejemplos ficticios
 ├── smc/                 CLI (gap, plan, report, dashboard, soc, mitre, mapa…)
-├── tests/               214 tests
+├── tests/               222 tests
 └── docs/                PRD · ADR · plan del enjambre · imágenes
 ```
 
@@ -225,7 +225,7 @@ security-manager-control/
 | v0.2 | Aplicabilidad ENS por categoría, priorización por riesgo, mapeos completos | ✅ |
 | v0.3 | Informe HTML/PDF y plan de acción | ✅ |
 | v0.4 | Dashboard multicliente (estático, local) | ✅ |
-| v0.5 | 19 verticales (Threat Hunting, MDM, puesto, firewall, SASE, ZTNA, capas OSI), evaluación de tecnologías, reglas y suscripciones, 28 protocolos con fuentes oficiales, madurez MITRE con 8 playbooks y capa Navigator, 17 feeds RSS, ecosistema y mapa de red (`smc mapa`) | ✅ |
+| v0.5 | 20 verticales (Threat Hunting, MDM, puesto, firewall, SASE, ZTNA, capas OSI), evaluación de tecnologías, reglas y suscripciones, 28 protocolos con fuentes oficiales, madurez MITRE con 8 playbooks y capa Navigator, 17 feeds RSS, ecosistema y mapa de red (`smc mapa`) | ✅ |
 | v0.6 | Visor 3D del mapa desde teardown, contraste del Anexo II del ENS con el BOE, conectores de evidencias, ingesta NVD/KEV/EPSS, cumplimiento por dominio | 📋 |
 
 ## Limitaciones conocidas
