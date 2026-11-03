@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Borrador |
+| Estado | Borrador. Roadmap v0.1 a v0.4 implementado (v0.4.0); v0.5 pendiente |
 | Versión | v1 |
 | Fecha | 2026-11-02 |
 | Autor | David Moya García |
@@ -45,7 +45,7 @@ Un centro de control que, a partir del perfil del cliente, determine los marcos 
 - RF-04 Marcar controles "implementados" sin evidencia.
 - RF-05 Mapear controles entre marcos para evaluar una vez y reutilizar (NIS2 ↔ ENS ↔ ISO 27001).
 - RF-06 Inventariar recursos internos y externos y enlazarlos a controles.
-- RF-07 Generar informe de brechas en Markdown (v0.1) y PDF/HTML (v0.3).
+- RF-07 Generar informe de brechas en Markdown (v0.1) y HTML imprimible a PDF (v0.3).
 - RF-08 Seguimiento del plan de acción (responsable, fecha, estado).
 - RF-09 Aplicabilidad ENS por categoría y refuerzos.
 - RF-10 Calcular MTTD/MTTA/MTTC/MTTR y % de cumplimiento de SLA por severidad desde exportación de incidentes.
@@ -66,15 +66,19 @@ Un centro de control que, a partir del perfil del cliente, determine los marcos 
 
 ## 7. Roadmap
 
-| Versión | Entregable |
-|---|---|
-| v0.1 | Catálogos YAML, plantillas, CLI `smc gap` |
-| v0.2 | Aplicabilidad ENS por categoría, priorización por riesgo, mapeos completos |
-| v0.3 | Informe HTML/PDF y plan de acción |
-| v0.4 | Dashboard web (centro de control) multicliente |
-| v0.5 | Conectores de evidencias (EDR, SIEM, escáneres, EASM, firewall); ingesta NVD/KEV/EPSS; capa ATT&CK Navigator |
+| Versión | Entregable | Estado |
+|---|---|---|
+| v0.1 | Catálogos YAML, plantillas, CLI `smc gap` | Hecha |
+| v0.2 | Aplicabilidad ENS por categoría, priorización por riesgo, mapeos completos | Hecha (con 39 medidas ENS por verificar, ver sección 8) |
+| v0.3 | Informe HTML y plan de acción (`smc report`, `smc plan`). PDF: se obtiene imprimiendo el HTML desde el navegador | Hecha |
+| v0.4 | Dashboard estático multicliente (`smc dashboard`), ver ADR-002 | Hecha |
+| v0.5 | Conectores de evidencias (EDR, SIEM, escáneres, EASM, firewall); ingesta NVD/KEV/EPSS; capa ATT&CK Navigator | Pendiente |
+
+Nota: el dashboard de v0.4 se resolvió como sitio estático generado en local, no como aplicación web con servidor (ADR-002).
 
 ## 8. Riesgos y supuestos
 
 - La ley española de transposición de NIS2 sigue en tramitación (nov. 2026): revisar catálogo al publicarse en el BOE.
-- La aplicabilidad exacta por categoría ENS debe validarse contra el Anexo II y guías CCN-STIC.
+- La aplicabilidad exacta por categoría ENS debe validarse contra el Anexo II y guías CCN-STIC. Estado a v0.4.0: 39 de 73 medidas con `verificar: true` y posible discrepancia de ID entre `op.exp.10` y `op.exp.11`.
+- Las criticidades NIS2 son un juicio inicial sin fuente normativa.
+- «Sin evaluar» pesa 0.75 en la prioridad y puntúa como no cumplido: las evaluaciones incompletas salen en rojo en el dashboard.
