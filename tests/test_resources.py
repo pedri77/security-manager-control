@@ -61,7 +61,7 @@ def test_id_duplicado_y_http_y_pendiente_con_url():
 
 def test_pendientes_requeridos():
     pend = {p["id"] for p in R.cargar_ecosistema() if p["estado"] == "pendiente"}
-    assert pend == {"ECO-ZTNA", "ECO-VULN-OSI", "ECO-MAPA3D"}
+    assert pend == {"ECO-ZTNA", "ECO-MAPA3D"}
 
 
 def test_markdown():
