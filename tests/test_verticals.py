@@ -27,7 +27,7 @@ def test_catalogo_ids_conservados_y_nuevos():
     ids = [v.id for v in V.cargar_verticales()]
     assert len(ids) == len(set(ids))
     assert set(ANTIGUOS) <= set(ids) and set(NUEVOS) <= set(ids)
-    assert len(ids) == 24
+    assert len(ids) == 22
 
 
 def test_catalogo_valido():
@@ -80,7 +80,7 @@ def test_net_agrupa_los_cuatro_subverticales():
 def test_sin_seccion_todo_sin_evaluar():
     r = V.evaluar({"cliente": {}})
     assert r.madurez_media is None and r.warnings == []
-    assert len(r.sin_evaluar) == 24 and not r.no_evaluables
+    assert len(r.sin_evaluar) == 22 and not r.no_evaluables
 
 
 def test_agregacion_nis2_caso_conocido():

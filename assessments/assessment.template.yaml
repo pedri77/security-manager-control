@@ -33,8 +33,8 @@ plan_accion:
 verticales:
   VRT-EDR: {madurez: 0, producto: "", notas: ""}
   VRT-GRC: {madurez: 0, producto: "", notas: ""}
-  VRT-IDSEC: {madurez: 0, producto: "", notas: ""}
-  VRT-DSPM: {madurez: 0, producto: "", notas: ""}
+  VRT-IAM: {madurez: 0, producto: "", notas: ""}
+  VRT-DATA: {madurez: 0, producto: "", notas: ""}
   VRT-AI: {madurez: 0, producto: "", notas: ""}
   VRT-OFF: {madurez: 0, producto: "", notas: ""}
   VRT-MDM: {madurez: no_evaluable, motivo: "<por qué no se puede evaluar>"}

@@ -49,8 +49,8 @@ verticales:
   VRT-FW: {madurez: 4, producto: "Firewall ejemplo"}
   VRT-ZTNA: {madurez: 1, notas: "Piloto con un grupo de usuarios"}
   VRT-GRC: {madurez: 4, notas: "Indicadores trimestrales al comité; auditoría anual con plan de acción"}
-  VRT-IDSEC: {madurez: 4, notas: "PAM con grabación de sesiones; recertificación medida"}
-  VRT-DSPM: {madurez: 3, notas: "DLP en correo y endpoint; DSPM sin desplegar"}
+  VRT-IAM: {madurez: 4, notas: "PAM con grabación de sesiones; recertificación medida"}
+  VRT-DATA: {madurez: 3, notas: "DLP en correo y endpoint; DSPM sin desplegar"}
   VRT-AI: {madurez: 2, notas: "Inventario con propietario y política de uso; sin clasificación RIA"}
   VRT-OFF: {madurez: 3, notas: "Pentest externo e interno anual con retest de críticos"}
   VRT-HUNT: {madurez: no_evaluable, motivo: "Sin telemetría centralizada para cazar"}
