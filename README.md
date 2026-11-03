@@ -10,7 +10,7 @@ Qué exige la normativa a cada cliente, qué tiene ya implantado, con qué evide
 NIS2 · ENS · ISO 27001 · SOC · verticales · tecnologías · vulnerabilidades por protocolo · mapa de red. En local, sin servidor y sin que los datos salgan de tu equipo.
 
 [![versión](https://img.shields.io/badge/versión-0.6.1-3cf58a?style=for-the-badge&labelColor=07090c)](CHANGELOG.md)
-[![tests](https://img.shields.io/badge/tests-346%20en%20verde-3cf58a?style=for-the-badge&labelColor=07090c)](tests/)
+[![tests](https://img.shields.io/badge/tests-363%20en%20verde-3cf58a?style=for-the-badge&labelColor=07090c)](tests/)
 [![python](https://img.shields.io/badge/python-3.10+-3cf58a?style=for-the-badge&logo=python&logoColor=3cf58a&labelColor=07090c)](pyproject.toml)
 [![dependencias](https://img.shields.io/badge/dependencias-solo%20PyYAML-3cf58a?style=for-the-badge&labelColor=07090c)](pyproject.toml)
 
@@ -181,13 +181,13 @@ SMC enlaza con material público del mismo autor. Solo páginas públicas y repo
 | EDR/XDR | [EDR/XDR visual](https://pedri77.github.io/edr-visual-app/) |
 | SASE | [SASE visual](https://pedri77.github.io/sase-visual-app/) |
 | Firewalls | [Firewalls básicos](https://pedri77.github.io/Basic_Firewalls/) |
-| Capas OSI | [Protección por capas OSI](https://pedri77.github.io/Basicos_Proteccion_Capas_OSI/) · [Modelo OSI](https://pedri77.github.io/modelo_OSI/) |
+| Capas OSI | [Protección por capas OSI](https://pedri77.github.io/Basicos_Proteccion_Capas_OSI/) · [Modelo OSI](https://pedri77.github.io/modelo_OSI/) · [Vulnerabilidades por capa OSI](https://pedri77.github.io/vulnerabilidades-capas-osi/) |
 | ICS/OT | [ICS/OT security studio](https://pedri77.github.io/ics-security-studio/) |
 | WAF | [WAF forge](https://pedri77.github.io/wafforge/) |
 | Correo | [Correo básico](https://pedri77.github.io/Basicos_email/) |
 | Inteligencia de amenazas | [KEV dashboard](https://github.com/pedri77/kev_dash_project) (repo) · [Threat intelligence feeds](https://github.com/pedri77/threat-intelligence-feeds) (repo) |
 
-**En preparación** (sin enlace hasta que sean públicos): un pack de evaluación **ZTNA** y un catálogo de **vulnerabilidades por capa OSI**. El visor 3D del mapa ya está en SMC (véase más abajo).
+**En preparación** (sin enlace hasta que sea público): un pack de evaluación **ZTNA**. El visor 3D del mapa ya está en SMC (véase más abajo).
 
 ## Visor 3D del mapa de red
 
