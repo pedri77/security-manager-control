@@ -12,6 +12,8 @@ Endurecimiento tras la revisión de la ola 9 (T23). No cambia catálogos ni el e
 - Aviso ENS (Markdown y HTML): las 73 medidas están contrastadas con el Anexo II del BOE; las 28 marcadas dependen de las dimensiones C/I/T/A/D y faltan las guías CCN-STIC. Los refuerzos se muestran tal cual la celda del BOE.
 - `smc report --registry`: `proveedor`, `moneda` y demás textos no str ya no provocan TypeError.
 - La sección MITRE del informe de cliente lleva la etiqueta «Catálogo de casos de uso del SOC (común a todos los clientes)».
+- ATT&CK ICS: T0855 y T0856 renumeradas por MITRE a T1692.001 y T1692.002 en `vulnerabilities/protocols.yaml`.
+- VRT-OSI y el ecosistema enlazan el catálogo público [Vulnerabilidades por capa OSI](https://pedri77.github.io/vulnerabilidades-capas-osi/).
 
 ## 0.6.0 (2026-11-03)
 
