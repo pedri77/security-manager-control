@@ -97,7 +97,9 @@ def _dispositivos(registry: dict, inventario: dict, avisos: list[str]) -> list[d
 
 
 def _vulns(tracker, hoy: date, avisos: list[str]) -> dict[str, dict]:
-    """Por tecnologia_id: abiertas, fuera de SLA, KEV y peor severidad."""
+    """Por tecnologia_id: abiertas, fuera de SLA, KEV y peor severidad.
+
+    La severidad se normaliza y se usa la efectiva (KEV = crítica; desconocida = crítica con aviso)."""
     if tracker is None:
         return {}
     policy = yaml.safe_load(POLICY_FILE.read_text(encoding="utf-8"))
@@ -108,22 +110,26 @@ def _vulns(tracker, hoy: date, avisos: list[str]) -> dict[str, dict]:
         if (r.get("estado") or "").strip() == "remediada":
             continue
         tid = (r.get("tecnologia_id") or "").strip()
-        sev = (r.get("severidad") or "").strip()
+        crudo = (r.get("severidad") or "").strip()
+        kev = str(r.get("kev")).strip().lower() == "true"
+        sev, av = tech.severidad_efectiva(crudo, kev, sla)
+        avisos += [f"{r.get('cve') or '?'}: {x}" for x in av]
         try:
             dias = (hoy - date.fromisoformat((r.get("detectado") or "").strip())).days
         except ValueError:
             avisos.append(f"{r.get('cve') or '?'}: fecha 'detectado' no válida, no se evalúa su SLA")
             dias = None
         limite = sla.get(sev)
-        if sev not in sla:
-            avisos.append(f"{r.get('cve') or '?'}: severidad '{sev}' sin SLA definido")
-        v = res.setdefault(tid, {"abiertas": 0, "fuera_sla": 0, "kev_fuera_sla": 0, "peor_severidad": None, "cves_fuera_sla": []})
+        v = res.setdefault(tid, {"abiertas": 0, "fuera_sla": 0, "kev_fuera_sla": 0, "kev_o_criticas_abiertas": 0,
+                                 "peor_severidad": None, "cves_fuera_sla": []})
         v["abiertas"] += 1
+        if sev == "critica":
+            v["kev_o_criticas_abiertas"] += 1
         fuera = dias is not None and limite is not None and dias > limite
         if fuera:
             v["fuera_sla"] += 1
             v["cves_fuera_sla"].append(r.get("cve"))
-            if str(r.get("kev")).strip().lower() == "true":
+            if kev:
                 v["kev_fuera_sla"] += 1
             if sev in SEVERIDADES and (v["peor_severidad"] is None or SEVERIDADES.index(sev) < SEVERIDADES.index(v["peor_severidad"])):
                 v["peor_severidad"] = sev
@@ -150,7 +156,8 @@ def semaforo(reglas: dict, vulns: dict) -> tuple[str, list[str]]:
     """Reglas del semáforo (documentadas en docs/mapa-3d.md).
 
     rojo : vulnerabilidad fuera de SLA que es crítica o está en KEV, o reglas any-any > 0.
-    ambar: cualquier otra vulnerabilidad fuera de SLA, o reglas sin revisar / revisión caducada.
+    ambar: cualquier otra vulnerabilidad fuera de SLA, KEV o crítica abierta aunque esté dentro de SLA,
+           o reglas sin revisar / revisión caducada.
     gris : sin rojo ni ámbar pero reglas no evaluables o sin datos (no se puede afirmar que esté bien).
     verde: reglas revisadas, sin any-any y sin vulnerabilidades fuera de SLA.
     """
@@ -165,6 +172,8 @@ def semaforo(reglas: dict, vulns: dict) -> tuple[str, list[str]]:
         return "rojo", rojo
     if vulns["fuera_sla"]:
         ambar.append(f"{vulns['fuera_sla']} vulnerabilidad(es) fuera de SLA")
+    if vulns.get("kev_o_criticas_abiertas"):
+        ambar.append(f"{vulns['kev_o_criticas_abiertas']} vulnerabilidad(es) KEV o crítica(s) abierta(s)")
     if reglas["estado"] == "sin_revisar":
         ambar.append("reglas sin revisar o con revisión caducada")
     if ambar:
@@ -213,7 +222,8 @@ def construir_mapa(registry, inventario=None, tracker=None, evaluacion=None,
         decl = d.pop("_zona_decl")
         r = reg_reglas.get(d["id"]) or {"estado": "sin_datos", "n_reglas": None, "reglas_any_any": 0,
                                          "reglas_sin_uso": 0, "dias_sin_revisar": None}
-        v = vul.get(d["id"]) or {"abiertas": 0, "fuera_sla": 0, "kev_fuera_sla": 0, "peor_severidad": None, "cves_fuera_sla": []}
+        v = vul.get(d["id"]) or {"abiertas": 0, "fuera_sla": 0, "kev_fuera_sla": 0, "kev_o_criticas_abiertas": 0,
+                                 "peor_severidad": None, "cves_fuera_sla": []}
         sem, motivos = semaforo(r, v)
         e = ev_tec.get(d["id"])
         d.update({

@@ -55,12 +55,12 @@ def test_playbook_inexistente_no_sube_nivel(tmp_path):
     assert mitre.sin_playbook(f, r) == ["UC-X"]
 
 
-def test_tecnica_y_tactica_toman_el_maximo(tmp_path):
+def test_tecnica_toma_el_maximo_y_tactica_el_minimo(tmp_path):   # T17: la táctica pasa de máximo a mínimo
     casos = [_caso(id="A", deteccion="regla"),
              _caso(id="B", deteccion="regla", playbook=PB)]
     f, r = _root(tmp_path, casos, ["PB-UC-900.md"])
     m = mitre.madurez(f, HOY, r)
-    assert m["tecnicas"]["T1059"] == 3 and m["tacticas"]["execution"] == 3
+    assert m["tecnicas"]["T1059"] == 3 and m["tacticas"]["execution"] == 2
 
 
 def test_retirado_no_cuenta_y_huerfanos(tmp_path):

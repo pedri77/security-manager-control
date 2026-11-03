@@ -129,7 +129,7 @@ def test_no_evaluable_sin_motivo_invalida_el_esquema():
 
 def test_semaforo_rojo_por_kev_fuera_de_sla():
     d = por_id(construir_mapa(REG, None, TRK, None, HOY))["TEC-0002"]
-    assert d["vulnerabilidades"] == {"abiertas": 1, "fuera_sla": 1, "kev_fuera_sla": 1,
+    assert d["vulnerabilidades"] == {"abiertas": 1, "fuera_sla": 1, "kev_fuera_sla": 1, "kev_o_criticas_abiertas": 1,
                                      "peor_severidad": "critica", "cves_fuera_sla": ["CVE-0000-0001"]}
     assert d["semaforo"] == "rojo"
     # la tecnología tiene además 6 reglas any-any
@@ -171,13 +171,13 @@ def test_semaforo_de_zona_es_el_peor(tmp_path):
 
 def test_capa_osi_declarada_o_por_vertical():
     m = por_id(construir_mapa(REG_SIN, None, None, None, HOY))
-    assert m["TEC-0002"]["capa_osi"] == 3 and m["TEC-0002"]["capa_osi_origen"] == "vertical"
+    assert m["TEC-0002"]["capa_osi"] == 4 and m["TEC-0002"]["capa_osi_origen"] == "vertical"   # VRT-FW (T17)
     assert m["TEC-0001"]["capa_osi"] == 7
     data = yaml.safe_load(REG_SIN.read_text(encoding="utf-8"))
-    data["technologies"][1]["capa_osi"] = 4
+    data["technologies"][1]["capa_osi"] = 2
     data["technologies"][0]["capa_osi"] = 9           # inválida: se ignora y cae a la vertical
     m = por_id(construir_mapa(data, None, None, None, HOY))
-    assert m["TEC-0002"]["capa_osi"] == 4 and m["TEC-0002"]["capa_osi_origen"] == "declarada"
+    assert m["TEC-0002"]["capa_osi"] == 2 and m["TEC-0002"]["capa_osi_origen"] == "declarada"
     assert m["TEC-0001"]["capa_osi"] == 7 and m["TEC-0001"]["capa_osi_origen"] == "vertical"
 
 

@@ -64,7 +64,7 @@ Dispositivo (de `technologies/registry` y de `activos` del inventario; mismo for
   "origen": "registro" | "inventario",
   "zona": "perimetro" | null,
   "capa_osi": 3 | null, "capa_osi_origen": "declarada" | "vertical" | "desconocida",
-  "vertical": "VRT-NET" | null,
+  "vertical": "VRT-FW" | null,
   "reglas": {
     "estado": "revisadas" | "sin_revisar" | "no_evaluable" | "sin_datos",
     "n_reglas": 240, "reglas_any_any": 6, "reglas_sin_uso": 58,
@@ -74,6 +74,7 @@ Dispositivo (de `technologies/registry` y de `activos` del inventario; mismo for
   },
   "vulnerabilidades": {                     // solo las no remediadas del tracker
     "abiertas": 1, "fuera_sla": 1, "kev_fuera_sla": 1,
+    "kev_o_criticas_abiertas": 1,           // KEV o crítica efectiva, dentro o fuera de SLA
     "peor_severidad": "critica" | "alta" | "media" | "baja" | null,
     "cves_fuera_sla": ["CVE-0000-0001"]
   },
@@ -98,9 +99,11 @@ Un dispositivo sin `zona` o con una zona fuera del catálogo va a `sin_zona` con
 Se evalúan en este orden y gana la primera que se cumple:
 
 1. **Rojo**: alguna vulnerabilidad abierta fuera de SLA está en KEV o es crítica, o hay reglas any-any (> 0).
-2. **Ámbar**: hay otras vulnerabilidades fuera de SLA, o las reglas están sin revisar o con la revisión caducada (más de `umbral_revision_reglas_dias`).
+2. **Ámbar**: hay otras vulnerabilidades fuera de SLA, hay una KEV o crítica abierta aunque esté dentro de SLA, o las reglas están sin revisar o con la revisión caducada (más de `umbral_revision_reglas_dias`).
 3. **Gris**: las reglas son `no_evaluable` (con motivo) o `sin_datos`. No se sabe: nunca verde.
 4. **Verde**: reglas revisadas, sin any-any y sin vulnerabilidades fuera de SLA.
+
+Severidad efectiva (`policy.yaml`): se normaliza (minúsculas, sin tildes); una KEV cuenta como crítica (SLA de 7 días) y una severidad fuera de la política también, con un aviso en `avisos`.
 
 Fuera de SLA = días desde `detectado` estrictamente mayores que el SLA de la severidad en `vulnerabilities/policy.yaml`. El semáforo de una zona es el peor de sus dispositivos (rojo > ámbar > gris > verde); una zona vacía es gris.
 

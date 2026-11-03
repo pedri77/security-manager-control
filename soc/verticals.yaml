@@ -1,6 +1,7 @@
 # Verticales de seguridad, clasificadas por medida NIS2 Art. 21.2.
 # Madurez 0-5: 0 inexistente · 1 inicial · 2 repetible · 3 definida · 4 gestionada (medida) · 5 optimizada
 # Campos: id, nombre, nis2 (medidas), controles (IDs de los catálogos), criterios (lo que se puntúa),
+#   niveles (baremo: un descriptor comprobable por cada nivel 0-5; `smc.verticals.validar_catalogo` exige los 6),
 #   recursos ([{titulo, url}] solo páginas públicas de la lista de smc/verticals.py), estado_recursos
 #   (proyectos pendientes de crear: {proyecto, estado: pendiente}, sin URL).
 # VRT-NET es el paraguas de red y se conserva; lo detallan VRT-FW, VRT-SASE, VRT-ZTNA y VRT-OSI (campo `agrupa`).
@@ -11,13 +12,20 @@ verticals:
   - id: VRT-EDR
     nombre: Endpoint (EDR/XDR)
     nis2: [NIS2-21.2.b, NIS2-21.2.g]
-    controles: [TRV-EDR-01, TRV-DET-01, ENS-mp.eq.3]
+    controles: [TRV-EDR-01, TRV-DET-01, ENS-op.exp.6]
     criterios:
       - Cobertura de despliegue del agente en servidores y puestos (>=95 % para madurez 4)
       - Modo bloqueo/prevención activo, no solo detección
       - Telemetría integrada en el SIEM/XDR
       - Respuesta automatizada (aislamiento de equipo) probada
       - Exclusiones revisadas y justificadas
+    niveles:
+      0: "No hay EDR/XDR; solo antivirus clásico o nada."
+      1: "EDR en algunos equipos, sin inventario de cobertura ni modo bloqueo; alertas sin dueño."
+      2: "EDR en modo bloqueo en la mayoría de puestos y servidores (cobertura conocida >=70 %); alertas atendidas por una persona o equipo fijo."
+      3: "Política de EDR escrita; cobertura >=90 %; telemetría en el SIEM/XDR; exclusiones registradas y aprobadas; procedimiento de aislamiento de equipo."
+      4: "Cobertura >=95 % medida cada mes; aislamiento automático probado en los últimos 12 meses; exclusiones revisadas al menos cada año; tiempo de triaje medido."
+      5: "Cobertura >=98 % y casos de detección validados con emulación de adversario al menos cada año; la medición alimenta mejoras con fecha y responsable."
     recursos:
       - {titulo: "EDR/XDR (visual)", url: "https://pedri77.github.io/edr-visual-app/"}
   - id: VRT-IAM
@@ -29,6 +37,13 @@ verticals:
       - Cuentas privilegiadas custodiadas en PAM con tiering
       - Revisión periódica de accesos (al menos semestral)
       - Detección de anomalías de identidad (ITDR)
+    niveles:
+      0: "Cuentas compartidas o sin dueño; sin MFA en ningún acceso."
+      1: "MFA solo en algunos accesos remotos; cuentas privilegiadas sin inventario."
+      2: "MFA en todo acceso remoto; inventario de cuentas privilegiadas; altas y bajas con procedimiento."
+      3: "MFA en remoto y en cuentas privilegiadas; PAM con custodia de credenciales; revisión de accesos al menos semestral con acta."
+      4: "Tiering de administración aplicado; revisión de accesos medida (porcentaje de cuentas revisadas y revocadas); alertas de identidad anómala atendidas."
+      5: "Detección de anomalías de identidad (ITDR) con casos probados; acceso privilegiado justo a tiempo; revisión continua con indicadores que alimentan mejoras."
   - id: VRT-NET
     nombre: Red (paraguas; detalle en VRT-FW, VRT-SASE, VRT-ZTNA y VRT-OSI)
     nis2: [NIS2-21.2.a, NIS2-21.2.e]
@@ -39,6 +54,13 @@ verticals:
       - Segmentación por zonas aplicada y verificada
       - Visibilidad de tráfico (NDR/NetFlow) en puntos clave
       - Inventario de equipos de red con firmware y fin de soporte
+    niveles:
+      0: "Sin diagrama de red ni inventario de equipos de red."
+      1: "Diagrama de red desactualizado (>12 meses); sin zonas definidas."
+      2: "Diagrama vigente con zonas y flujos principales; inventario de equipos de red con modelo y firmware."
+      3: "Segmentación por zonas aplicada y documentada; fin de soporte de cada equipo registrado; monitorización de tráfico en el perímetro."
+      4: "Segmentación verificada con pruebas (escaneo entre zonas) al menos cada año; visibilidad NDR/NetFlow en puntos clave medida; equipos sin soporte con plan de sustitución."
+      5: "Pruebas de segmentación automatizadas y periódicas; desviaciones detectadas y corregidas con plazo; la arquitectura se revisa tras cada incidente o cambio mayor."
     estado_recursos:
       - {proyecto: "Mapa 3D de dispositivos (desde la skill teardown)", estado: pendiente}
   - id: VRT-FW
@@ -51,6 +73,13 @@ verticals:
       - Firmware al día y bastionado según guía CCN-STIC o CIS
       - Logs de firewall centralizados en el SIEM
       - Alta disponibilidad y copia de la configuración probadas
+    niveles:
+      0: "Sin cortafuegos gestionado, o reglas sin dueño ni documentación."
+      1: "Cortafuegos con reglas heredadas sin revisar (>12 meses) y presencia de reglas any-any."
+      2: "Política deny-by-default; reglas con dueño; revisión de reglas al menos anual; copia de la configuración guardada."
+      3: "Revisión de reglas al menos semestral con acta; cero reglas any-any; firmware dentro de soporte; logs en el SIEM; bastionado según CCN-STIC o CIS."
+      4: "Reglas sin uso y duplicadas medidas y eliminadas cada trimestre; alta disponibilidad y restauración de la configuración probadas en los últimos 12 meses; cambios con ticket y revisión."
+      5: "Revisión de reglas automatizada contra la política con informe de desviaciones; pruebas de cambios previas a producción; indicadores (reglas sin uso, tiempo de cambio) con objetivos y mejoras trazadas."
     recursos:
       - {titulo: "Firewalls básicos", url: "https://pedri77.github.io/Basic_Firewalls/"}
   - id: VRT-SASE
@@ -63,6 +92,13 @@ verticals:
       - Inspección TLS en las categorías adecuadas
       - Logs en el SIEM y revisión de excepciones
       - Continuidad ante caída del proveedor (plan alternativo)
+    niveles:
+      0: "Sin filtrado web ni DNS para usuarios remotos; sin control de SaaS."
+      1: "Filtrado en la sede solamente; usuarios en teletrabajo sin cobertura."
+      2: "Servicio SASE/SSE para la mayoría de usuarios, incluido teletrabajo; política de filtrado web y DNS escrita."
+      3: "Cobertura >=95 % de usuarios y sedes; CASB con política de aplicaciones SaaS; inspección TLS en categorías definidas; logs en el SIEM; excepciones con caducidad."
+      4: "Excepciones y bloqueos revisados cada trimestre con cifras; plan alternativo ante caída del proveedor probado en los últimos 12 meses; uso de SaaS no autorizado medido."
+      5: "Política ajustada continuamente con datos de uso y amenazas; pruebas periódicas de bypass; indicadores con objetivos y revisión de proveedor al menos anual."
     recursos:
       - {titulo: "SASE (visual)", url: "https://pedri77.github.io/sase-visual-app/"}
   - id: VRT-ZTNA
@@ -74,6 +110,13 @@ verticals:
       - MFA obligatorio en todo acceso remoto; sin RDP/SSH expuestos
       - Acceso de terceros temporal, mínimo y registrado
       - Política de mínimo privilegio revisada con periodicidad
+    niveles:
+      0: "Acceso remoto por VPN genérica de red completa o con RDP/SSH expuestos a Internet."
+      1: "ZTNA o similar en alguna aplicación piloto; el resto sigue por VPN de red."
+      2: "Acceso por aplicación con identidad en las aplicaciones críticas; MFA obligatorio; sin RDP/SSH expuestos."
+      3: "Postura del dispositivo evaluada en cada acceso; acceso de terceros temporal, mínimo y registrado; política de mínimo privilegio documentada."
+      4: "Cobertura de aplicaciones medida (>=90 % de las críticas); política de mínimo privilegio revisada al menos semestralmente con acta; accesos de terceros revisados y revocados a su vencimiento."
+      5: "Acceso adaptativo según riesgo del usuario y del dispositivo; revisión continua de accesos con indicadores; pruebas periódicas de intrusión sobre la capa de acceso."
     estado_recursos:
       - {proyecto: "Evaluación de productos ZTNA", estado: pendiente}
   - id: VRT-OSI
@@ -86,6 +129,13 @@ verticals:
       - "Capas 4-5: firewall con estado y antiDDoS en servicios publicados"
       - "Capas 6-7: TLS 1.2+, WAF y protocolos inseguros deshabilitados"
       - Cada capa con control propio y responsable asignado
+    niveles:
+      0: "Sin controles diferenciados por capa; solo cortafuegos perimetral."
+      1: "Controles aislados en algunas capas (por ejemplo, Wi-Fi o TLS) sin responsable asignado."
+      2: "Controles definidos en las capas 1-7 con responsable asignado para cada una; inventario de protocolos expuestos."
+      3: "Capas 1-2 con 802.1X/NAC y Wi-Fi WPA3; capa 3 con ACL entre zonas; capas 4-5 con cortafuegos con estado y antiDDoS; capas 6-7 con TLS 1.2+ y WAF; protocolos inseguros deshabilitados."
+      4: "Cada capa verificada con prueba (escaneo, auditoría Wi-Fi, test de TLS) al menos cada año; hallazgos con plazo y seguimiento; indicadores por capa."
+      5: "Verificación continua por capa con alertas de desviación; mejoras priorizadas por riesgo y revisión tras cada incidente o cambio de arquitectura."
     recursos:
       - {titulo: "Protección por capas OSI", url: "https://pedri77.github.io/Basicos_Proteccion_Capas_OSI/"}
       - {titulo: "Modelo OSI", url: "https://pedri77.github.io/modelo_OSI/"}
@@ -100,6 +150,13 @@ verticals:
       - Sandbox de adjuntos y enlaces
       - SPF, DKIM y DMARC en p=reject
       - Botón de reporte de phishing integrado con el SOC
+    niveles:
+      0: "Sin filtrado de correo más allá del proporcionado por defecto; sin SPF/DKIM/DMARC."
+      1: "SPF y DKIM publicados; DMARC en p=none o sin monitorizar."
+      2: "Filtrado antiphishing y antimalware activo; DMARC en p=quarantine; procedimiento para reportar phishing."
+      3: "DMARC en p=reject; sandbox de adjuntos y enlaces; botón de reporte de phishing integrado con el SOC; informes DMARC revisados."
+      4: "Tasa de phishing que llega al buzón, de clic y de reporte medida cada trimestre; respuesta a phishing reportado con tiempo objetivo cumplido."
+      5: "Detección y retirada automática de mensajes maliciosos ya entregados; simulaciones y mediciones alimentan mejoras con responsable; revisión anual de la arquitectura de correo."
     recursos:
       - {titulo: "Correo (básicos)", url: "https://pedri77.github.io/Basicos_email/"}
   - id: VRT-CLOUD
@@ -111,6 +168,13 @@ verticals:
       - Logs del plano de control en el SIEM
       - Gestión de derechos de la nube (CIEM)
       - Configuración base aplicada con infraestructura como código
+    niveles:
+      0: "Sin inventario de cuentas o suscripciones cloud; uso de SaaS sin control."
+      1: "Inventario parcial de cuentas cloud; configuración manual sin línea base."
+      2: "Inventario completo de cuentas y suscripciones con dueño; línea base de configuración escrita; logs del plano de control activados."
+      3: "Línea base aplicada con infraestructura como código; CSPM con alertas por desviación; logs del plano de control en el SIEM; revisión de permisos al menos semestral."
+      4: "Desviaciones de configuración medidas y corregidas dentro de plazo; gestión de derechos (CIEM) con permisos excesivos retirados; cifras trimestrales."
+      5: "Corrección automática de desviaciones críticas; política como código evaluada en cada despliegue; indicadores con objetivos y revisión tras incidente."
   - id: VRT-APP
     nombre: Aplicaciones y web
     nis2: [NIS2-21.2.e]
@@ -120,6 +184,13 @@ verticals:
       - SAST/DAST integrado en el ciclo de desarrollo
       - Gestión de dependencias y SBOM
       - Pentest periódico con seguimiento de hallazgos
+    niveles:
+      0: "Aplicaciones publicadas sin WAF ni pruebas de seguridad."
+      1: "WAF en modo detección en algunas aplicaciones; pruebas de seguridad solo puntuales."
+      2: "WAF en las aplicaciones publicadas; pentest anual de las críticas; inventario de aplicaciones y dueños."
+      3: "WAF en modo bloqueo; SAST/DAST en el ciclo de desarrollo; SBOM y gestión de dependencias; hallazgos de pentest con seguimiento y plazo."
+      4: "Hallazgos abiertos y su antigüedad medidos; el pipeline bloquea despliegues con vulnerabilidades críticas; pentest tras cambios mayores."
+      5: "Revisión de amenazas (modelado) en cada diseño relevante; reglas del WAF ajustadas con datos de ataques reales; indicadores de calidad de seguridad con objetivos."
     recursos:
       - {titulo: "WAF (wafforge)", url: "https://pedri77.github.io/wafforge/"}
   - id: VRT-DATA
@@ -131,6 +202,13 @@ verticals:
       - DLP sobre canales de salida (correo, web, USB)
       - Cifrado en reposo en sistemas con datos sensibles
       - Gestión de claves con custodia y rotación
+    niveles:
+      0: "Sin clasificación de la información ni cifrado sistemático."
+      1: "Clasificación definida pero sin aplicar; cifrado en algunos portátiles."
+      2: "Clasificación de la información aplicada a los sistemas principales; cifrado en reposo en los sistemas con datos sensibles."
+      3: "DLP en correo, web y USB; gestión de claves con custodia y rotación documentada; inventario de datos sensibles con dueño."
+      4: "Incidentes y bloqueos de DLP medidos y revisados cada trimestre; rotación de claves comprobada; cobertura de cifrado >=95 % en sistemas con datos sensibles."
+      5: "Descubrimiento automático de datos sensibles; políticas ajustadas con datos reales; revisión anual de claves y de flujos de salida con mejoras trazadas."
   - id: VRT-BCK
     nombre: Copias y recuperación
     nis2: [NIS2-21.2.c]
@@ -140,6 +218,13 @@ verticals:
       - Copia offline o aislada (3-2-1-1-0)
       - Pruebas de restauración con acta al menos anual
       - RTO y RPO medidos frente a los objetivos
+    niveles:
+      0: "Sin copias de seguridad probadas, o copias solo en el mismo sistema."
+      1: "Copias periódicas sin prueba de restauración; sin objetivos de RTO/RPO."
+      2: "Copias diarias de los sistemas críticos; RTO y RPO definidos; restauración probada al menos una vez."
+      3: "Copias inmutables y copia offline o aislada (3-2-1-1-0); prueba de restauración con acta al menos anual."
+      4: "RTO y RPO medidos en las pruebas frente a los objetivos; pruebas de restauración al menos semestrales; fallos de copia con alerta y respuesta."
+      5: "Restauración automatizada y probada de forma continua; simulacros de ransomware con tiempos registrados; objetivos revisados con el negocio cada año."
   - id: VRT-VULN
     nombre: Gestión de vulnerabilidades
     nis2: [NIS2-21.2.e]
@@ -149,6 +234,13 @@ verticals:
       - SLA de remediación por criticidad cumplido
       - Priorización por KEV/EPSS
       - Excepciones documentadas con fecha de caducidad
+    niveles:
+      0: "Sin escaneo de vulnerabilidades."
+      1: "Escaneo puntual y sin inventario completo; sin plazos de remediación."
+      2: "Escaneo periódico (al menos mensual) de la mayoría del inventario; plazos de remediación por severidad definidos."
+      3: "Cobertura >=90 % del inventario; priorización por KEV/EPSS; KEV tratada como crítica; excepciones con fecha de caducidad."
+      4: "SLA de remediación medido y cumplido en >=90 % de los casos; antigüedad media por severidad; informe mensual al responsable."
+      5: "Remediación automatizada para parches estándar; revisión de excepciones y de tendencias con objetivos; la política se ajusta con los incidentes."
     recursos:
       - {titulo: "Panel CISA KEV", url: "https://github.com/pedri77/kev_dash_project"}
   - id: VRT-OT
@@ -160,6 +252,13 @@ verticals:
       - Monitorización pasiva de la red OT
       - Segmentación IT/OT (Purdue / IEC 62443)
       - Acceso remoto a OT controlado y registrado
+    niveles:
+      0: "Sin inventario de activos OT/IoT."
+      1: "Inventario parcial u obsoleto (>12 meses); redes OT mezcladas con IT."
+      2: "Inventario OT actualizado en el último año; separación básica IT/OT con cortafuegos."
+      3: "Monitorización pasiva de la red OT; segmentación IT/OT (Purdue / IEC 62443); acceso remoto a OT controlado y registrado."
+      4: "Inventario OT reconciliado cada trimestre con la monitorización; accesos remotos revisados; alertas OT atendidas con procedimiento y tiempo medido."
+      5: "Detección de anomalías OT integrada con el SOC y probada con ejercicios; cambios en OT con evaluación de seguridad previa; indicadores con objetivos."
     recursos:
       - {titulo: "ICS/OT Security Studio", url: "https://pedri77.github.io/ics-security-studio/"}
   - id: VRT-TPRM
@@ -171,6 +270,13 @@ verticals:
       - Requisitos de seguridad en contrato
       - Evaluación periódica de proveedores críticos
       - Plan de salida y continuidad ante fallo de un proveedor
+    niveles:
+      0: "Sin inventario de proveedores."
+      1: "Lista de proveedores sin clasificar por criticidad."
+      2: "Inventario de proveedores con criticidad asignada; cláusulas básicas de seguridad en los contratos nuevos."
+      3: "Requisitos de seguridad en contrato de todos los proveedores críticos; evaluación inicial documentada; plan de salida de los críticos."
+      4: "Evaluación periódica (al menos anual) de proveedores críticos con resultados medidos; incidentes de terceros registrados; planes de salida probados en papel."
+      5: "Monitorización continua del riesgo de proveedores críticos; ejercicios de fallo de proveedor; indicadores que alimentan la selección y renovación de contratos."
   - id: VRT-AWARE
     nombre: Concienciación
     nis2: [NIS2-21.2.g, NIS2-20.2]
@@ -180,6 +286,13 @@ verticals:
       - Simulaciones de phishing
       - Tasa de clic y de reporte medidas
       - Formación de la dirección
+    niveles:
+      0: "Sin formación en seguridad."
+      1: "Formación puntual o solo al incorporarse, sin registro."
+      2: "Plan anual de formación con registro de asistencia."
+      3: "Plan anual cumplido por >=90 % del personal; simulaciones de phishing al menos dos veces al año; formación específica a la dirección."
+      4: "Tasa de clic y de reporte medidas por campaña y por colectivo; formación reforzada a quienes fallan; resultados presentados a la dirección cada año."
+      5: "Contenido adaptado a los incidentes reales y a los roles; la tasa de clic baja de forma sostenida en tres campañas; programa revisado cada año con objetivos."
   - id: VRT-HUNT
     nombre: Threat Hunting
     nis2: [NIS2-21.2.b, NIS2-21.2.f]
@@ -189,6 +302,13 @@ verticals:
       - Cacerías periódicas (al menos trimestrales) con registro de resultados
       - Hallazgos convertidos en reglas de detección
       - Inteligencia de amenazas como entrada de las hipótesis
+    niveles:
+      0: "No se hace caza de amenazas."
+      1: "Cacerías esporádicas sin hipótesis ni registro."
+      2: "Hipótesis de caza documentadas y ligadas a técnicas MITRE ATT&CK; al menos una cacería al año con registro de resultados."
+      3: "Cacerías al menos trimestrales con registro; hallazgos convertidos en reglas de detección; inteligencia de amenazas como entrada de las hipótesis."
+      4: "Número de hipótesis, hallazgos y reglas nuevas medido cada trimestre; cobertura de técnicas ATT&CK cazadas conocida; tiempo de conversión de hallazgo a regla medido."
+      5: "Cacerías automatizadas en parte y priorizadas por riesgo y por inteligencia propia; la tasa de reglas nuevas efectivas se revisa con objetivos."
     recursos:
       - {titulo: "Feeds de inteligencia de amenazas", url: "https://github.com/pedri77/threat-intelligence-feeds"}
   - id: VRT-MDM
@@ -200,13 +320,27 @@ verticals:
       - Política de cifrado, bloqueo de pantalla y versión mínima de SO
       - Borrado remoto probado
       - Acceso condicional según cumplimiento del dispositivo
+    niveles:
+      0: "Móviles y tabletas corporativos sin gestionar."
+      1: "MDM en parte de los dispositivos corporativos; BYOD sin política."
+      2: "Inscripción obligatoria de los móviles corporativos; política de cifrado, bloqueo de pantalla y versión mínima de SO."
+      3: "Inscripción también de BYOD con acceso a datos; borrado remoto probado; acceso condicional según cumplimiento del dispositivo."
+      4: "Cumplimiento medido (>=95 % de dispositivos conformes); dispositivos no conformes bloqueados o remediados dentro de plazo; borrado remoto probado cada año."
+      5: "Cumplimiento y riesgo del dispositivo alimentan el acceso en tiempo real; revisión de la política tras incidentes; indicadores con objetivos."
   - id: VRT-ENDUSER
     nombre: Puesto de usuario
     nis2: [NIS2-21.2.g, NIS2-21.2.i]
-    controles: [ENS-mp.eq.1, ENS-mp.eq.2, ENS-mp.eq.3, ENS-mp.sw.2, TRV-EDR-01]
+    controles: [ENS-mp.eq.1, ENS-mp.eq.2, ENS-mp.eq.3, ENS-op.exp.4, TRV-EDR-01]
     criterios:
       - Imagen base bastionada y cifrado de disco
       - Parcheo del SO y de las aplicaciones dentro del SLA
       - Usuarios sin derechos de administrador local
       - Control de aplicaciones y de medios extraíbles
       - Puesto desatendido bloqueado y política de mesa limpia
+    niveles:
+      0: "Puestos sin imagen base ni cifrado de disco."
+      1: "Imagen base sin bastionar; usuarios con derechos de administrador local; parcheo manual."
+      2: "Imagen base estándar con cifrado de disco; parcheo del SO periódico; política de puesto de trabajo escrita."
+      3: "Imagen bastionada; parcheo del SO y aplicaciones dentro del SLA; sin administrador local; control de aplicaciones y medios extraíbles; bloqueo de puesto desatendido."
+      4: "Cumplimiento de la línea base y del parcheo medido cada mes (>=95 %); excepciones de administrador local revisadas; desviaciones corregidas en plazo."
+      5: "Gestión del puesto automatizada (despliegue y corrección de desviaciones); indicadores con objetivos; la línea base se revisa tras cada incidente o cambio de SO."

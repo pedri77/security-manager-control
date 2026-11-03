@@ -46,7 +46,7 @@ technologies:
     fabricante: "<fabricante>"
     producto: "<producto>"
     version: "x.y"
-    vertical: VRT-NET
+    vertical: VRT-FW
     cpe: ""
     propietario: "Sistemas"
     gestionado_por: interno
@@ -70,7 +70,7 @@ technologies:
     fabricante: "<fabricante>"
     producto: "<producto>"
     version: "x.y"
-    vertical: VRT-NET
+    vertical: VRT-FW
     propietario: "Sistemas"
     gestionado_por: interno
     evaluacion: {cobertura_pct: 100, configuracion: bastionada, madurez: 4}

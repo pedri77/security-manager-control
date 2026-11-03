@@ -11,7 +11,7 @@ Agente: dev-proyecto v1.2 · Rama `t15` (desde f5caf91) · Tarea: docs/plan/PLAN
 ## Verifica
 - `uv run --no-project --with pytest --with pyyaml python -m pytest -q` -> 195 passed (172 + 23).
 - Esquema: el JSON generado con registro (con zonas añadidas en un temporal), inventario, tracker y evaluación de energía pasa `validar_mapa`; sin rutas absolutas ni ruta del temporal en el texto (`contiene_ruta_absoluta`, y comprobación explícita).
-- CLI sobre las plantillas con `--hoy 2026-11-03`: 6 dispositivos, 1 rojo (TEC-0002: KEV crítica fuera de SLA y 6 any-any), 2 ámbar, 1 gris (TEC-0001, no evaluable con motivo), 2 verdes.
+- CLI sobre las plantillas con `--hoy 2026-11-03`: 6 dispositivos, 1 rojo (TEC-0002: KEV crítica fuera de SLA y 6 any-any), 2 ámbar, 1 gris (AST-0001, activo del inventario sin datos de reglas; el no evaluable con motivo del registro es TEC-0001, que sale ámbar por una vulnerabilidad fuera de SLA), 2 verdes. Corregido en T17 (hallazgo 12 de revisor-ola).
 
 ## Contrapruebas (aplicadas y revertidas)
 - `dias > limite` -> `>=`: rojo `test_sla_estricto_en_el_limite`.

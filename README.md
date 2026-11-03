@@ -9,8 +9,8 @@
 Qué exige la normativa a cada cliente, qué tiene ya implantado, con qué evidencias y qué falta, priorizado.<br>
 NIS2 · ENS · ISO 27001 · SOC · verticales · tecnologías · vulnerabilidades por protocolo · mapa de red. En local, sin servidor y sin que los datos salgan de tu equipo.
 
-[![versión](https://img.shields.io/badge/versión-0.5.0-3cf58a?style=for-the-badge&labelColor=07090c)](CHANGELOG.md)
-[![tests](https://img.shields.io/badge/tests-196%20en%20verde-3cf58a?style=for-the-badge&labelColor=07090c)](tests/)
+[![versión](https://img.shields.io/badge/versión-0.5.1-3cf58a?style=for-the-badge&labelColor=07090c)](CHANGELOG.md)
+[![tests](https://img.shields.io/badge/tests-214%20en%20verde-3cf58a?style=for-the-badge&labelColor=07090c)](tests/)
 [![python](https://img.shields.io/badge/python-3.10+-3cf58a?style=for-the-badge&logo=python&logoColor=3cf58a&labelColor=07090c)](pyproject.toml)
 [![dependencias](https://img.shields.io/badge/dependencias-solo%20PyYAML-3cf58a?style=for-the-badge&labelColor=07090c)](pyproject.toml)
 
@@ -213,7 +213,7 @@ security-manager-control/
 ├── resources/           inventario interno y de terceros · RSS · ecosistema
 ├── assessments/         plantilla + ejemplos ficticios
 ├── smc/                 CLI (gap, plan, report, dashboard, soc, mitre, mapa…)
-├── tests/               196 tests
+├── tests/               214 tests
 └── docs/                PRD · ADR · plan del enjambre · imágenes
 ```
 
