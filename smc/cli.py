@@ -38,6 +38,11 @@ def main(argv: list[str] | None = None) -> int:
     rp.add_argument("-o", "--output", type=Path, required=True, help="Fichero HTML de salida")
     rp.add_argument("--hoy", type=_fecha, help="Fecha de referencia AAAA-MM-DD (por defecto, hoy)")
 
+    db = sub.add_parser("dashboard", help="Dashboard estático multicliente desde un directorio de evaluaciones")
+    db.add_argument("directorio", type=Path)
+    db.add_argument("-o", "--output", type=Path, required=True, help="Directorio de salida")
+    db.add_argument("--hoy", type=_fecha, help="Fecha de referencia AAAA-MM-DD (por defecto, hoy)")
+
     soc = sub.add_parser("soc", help="Métricas del SOC (MTTD/MTTA/MTTC/MTTR, SLA) desde CSV de incidentes")
     soc.add_argument("incidents", type=Path)
     sub.add_parser("mitre", help="Cobertura MITRE ATT&CK de los casos de uso")
@@ -95,6 +100,17 @@ def main(argv: list[str] | None = None) -> int:
         from .report_html import run_html
         args.output.write_text(run_html(args.assessment, args.hoy), encoding="utf-8")
         print(f"Informe escrito en {args.output}")
+        return 0
+
+    if args.cmd == "dashboard":
+        from .dashboard import generar
+        if not args.directorio.is_dir():
+            print(f"ERROR: {args.directorio} no es un directorio", file=sys.stderr)
+            return 2
+        res = generar(args.directorio, args.output, args.hoy)
+        for a in res.avisos:
+            print(f"AVISO: {a.fichero}: {a.motivo}", file=sys.stderr)
+        print(f"Dashboard escrito en {args.output / 'index.html'} ({len(res.filas)} cliente(s), {len(res.avisos)} aviso(s))")
         return 0
 
     if args.cmd == "gap":

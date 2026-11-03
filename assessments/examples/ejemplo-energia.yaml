@@ -1,0 +1,42 @@
+# Ejemplo ficticio — Distribuidora de energía, entidad esencial NIS2, fuera del sector público (sin ENS)
+cliente:
+  nombre: "Distribuidora Eléctrica Ejemplo, S.A."
+  sector: Energía (distribución eléctrica)
+  tamano: grande
+  tipo_entidad_nis2: esencial
+  sector_publico: false
+  fecha: "2026-10-28"
+  evaluador: "SMC demo"
+
+evaluaciones:
+  NIS2-20.1: {estado: implementado, evidencias: ["Acta del consejo 2026-03"]}
+  NIS2-20.2: {estado: parcial, notas: "Formación directiva solo a una parte del consejo"}
+  NIS2-21.2.a: {estado: implementado, evidencias: ["Análisis de riesgos ISO 27005 2026"]}
+  NIS2-21.2.b: {estado: implementado, evidencias: ["Procedimiento PR-INC-03", "Ejercicio de mesa 2026-06"]}
+  NIS2-21.2.c: {estado: parcial, evidencias: ["Plan de continuidad v3"], notas: "Pruebas de restauración solo en sistemas corporativos, no en OT"}
+  NIS2-21.2.d: {estado: no_implementado, notas: "Sin evaluación de riesgos de proveedores críticos de OT"}
+  NIS2-21.2.e: {estado: parcial}
+  NIS2-21.2.f: {estado: implementado, evidencias: ["Informe de auditoría interna 2026"]}
+  NIS2-21.2.j: {estado: implementado, evidencias: ["MFA en accesos remotos y administración"]}
+  NIS2-23.alerta: {estado: implementado, evidencias: ["Runbook de notificación 24 h"]}
+  NIS2-23.notificacion: {estado: parcial, notas: "Plantilla de notificación a las 72 h sin validar"}
+  TRV-GOB-01: {estado: implementado, evidencias: ["Política de seguridad v4"]}
+  TRV-RGPD-01: {estado: implementado, evidencias: ["Registro de actividades de tratamiento"]}
+  TRV-VUL-01: {estado: parcial, notas: "Parcheo mensual en TI, trimestral en OT"}
+  TRV-DET-01: {estado: implementado, evidencias: ["SIEM con cobertura 24x7"]}
+  TRV-EDR-01: {estado: parcial, notas: "EDR en el 70 % de los equipos"}
+  TRV-EMAIL-01: {estado: implementado, evidencias: ["DMARC en p=reject"]}
+  TRV-BCK-01: {estado: implementado, evidencias: ["Copias inmutables"]}
+  TRV-TI-01: {estado: no_implementado, notas: "Sin inventario de dependencias de terceros"}
+  NET-SEG-01: {estado: parcial, notas: "Separación TI/OT con cortafuegos, sin DMZ industrial"}
+  NET-SEG-02: {estado: no_implementado}
+  NET-OT-01: {estado: parcial, notas: "Inventario OT incompleto"}
+  NET-ACC-01: {estado: implementado, evidencias: ["VPN con MFA"]}
+  NET-MON-01: {estado: implementado, evidencias: ["Sensores de red en la frontera TI/OT"]}
+  NET-WIFI-01: {estado: implementado, evidencias: ["802.1X"]}
+
+plan_accion:
+  - {id: ENE-01, controles: [NIS2-21.2.d, TRV-TI-01], accion: "Evaluar a los proveedores críticos de OT y mantener el inventario de terceros", responsable: "Responsable de compras y CISO", fecha_objetivo: "2027-01-31", estado: en_curso}
+  - {id: ENE-02, controles: [NIS2-21.2.c], accion: "Probar la restauración de copias en sistemas OT", responsable: "Responsable de OT", fecha_objetivo: "2026-10-30", estado: en_curso}
+  - {id: ENE-03, controles: [NET-SEG-02, NET-SEG-01], accion: "Crear DMZ industrial y microsegmentar el entorno OT", responsable: "Responsable de redes", fecha_objetivo: "2027-06-30", estado: pendiente}
+  - {id: ENE-04, controles: [TRV-EDR-01], accion: "Completar el despliegue de EDR", responsable: "Responsable de puesto de trabajo", fecha_objetivo: "2026-09-30", estado: hecha}
