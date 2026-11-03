@@ -7,13 +7,16 @@
 **Todo el perímetro, en una sola pantalla.**
 
 Qué exige la normativa a cada cliente, qué tiene ya implantado, con qué evidencias y qué falta, priorizado.<br>
-NIS2 · ENS · ISO 27001 · SOC · tecnologías · vulnerabilidades. En local, sin servidor y sin que los datos salgan de tu equipo.
+NIS2 · ENS · ISO 27001 · SOC · verticales · tecnologías · vulnerabilidades por protocolo · mapa de red. En local, sin servidor y sin que los datos salgan de tu equipo.
 
-[![versión](https://img.shields.io/badge/versión-0.4.1-3cf58a?style=for-the-badge&labelColor=07090c)](CHANGELOG.md)
-[![tests](https://img.shields.io/badge/tests-78%20en%20verde-3cf58a?style=for-the-badge&labelColor=07090c)](tests/)
+[![versión](https://img.shields.io/badge/versión-0.5.0-3cf58a?style=for-the-badge&labelColor=07090c)](CHANGELOG.md)
+[![tests](https://img.shields.io/badge/tests-196%20en%20verde-3cf58a?style=for-the-badge&labelColor=07090c)](tests/)
 [![python](https://img.shields.io/badge/python-3.10+-3cf58a?style=for-the-badge&logo=python&logoColor=3cf58a&labelColor=07090c)](pyproject.toml)
 [![dependencias](https://img.shields.io/badge/dependencias-solo%20PyYAML-3cf58a?style=for-the-badge&labelColor=07090c)](pyproject.toml)
 
+[![verticales](https://img.shields.io/badge/verticales-19-ffb020?style=flat-square&labelColor=07090c)](soc/verticals.yaml)
+[![protocolos](https://img.shields.io/badge/protocolos-28-ffb020?style=flat-square&labelColor=07090c)](vulnerabilities/protocols.yaml)
+[![RSS](https://img.shields.io/badge/RSS-17%20feeds%20·%2013%20verificados-ffb020?style=flat-square&labelColor=07090c)](resources/rss.yaml)
 [![NIS2](https://img.shields.io/badge/NIS2-15%20controles-ffb020?style=flat-square&labelColor=07090c)](frameworks/nis2/controls.yaml)
 [![ENS](https://img.shields.io/badge/ENS-73%20medidas-ffb020?style=flat-square&labelColor=07090c)](frameworks/ens/controls.yaml)
 [![Transversal](https://img.shields.io/badge/ISO%2027001%20·%20RGPD%20·%20DORA%20·%20CIS-21%20controles-ffb020?style=flat-square&labelColor=07090c)](frameworks/transversal/controls.yaml)
@@ -21,7 +24,7 @@ NIS2 · ENS · ISO 27001 · SOC · tecnologías · vulnerabilidades. En local, s
 [![MITRE](https://img.shields.io/badge/MITRE%20ATT%26CK-cobertura%20por%20táctica-ff4d4d?style=flat-square&labelColor=07090c)](soc/use-cases/catalog.yaml)
 [![soberanía](https://img.shields.io/badge/soberanía-ejecución%20local%20UE-5ad1ff?style=flat-square&labelColor=07090c)](docs/adr/ADR-001-catalogos-como-datos-y-datos-de-cliente-fuera-del-repo.md)
 
-[**Ver la web**](https://pedri77.github.io/smc-cinematica/) · [Empezar en 1 minuto](#empezar-en-1-minuto) · [Comandos](#comandos) · [PRD](docs/prd/PRD-SMC-001-v1.md) · [Changelog](CHANGELOG.md)
+[**Ver la web**](https://pedri77.github.io/smc-cinematica/) · [Empezar en 1 minuto](#empezar-en-1-minuto) · [Comandos](#comandos) · [Ecosistema](#ecosistema) · [PRD](docs/prd/PRD-SMC-001-v1.md) · [Changelog](CHANGELOG.md)
 
 </div>
 
@@ -100,10 +103,14 @@ Estado: no implementado 1, sin evaluar 0,75, parcial 0,5. Entidad: esencial 1, i
 | Módulo | Qué mide | Dónde |
 |---|---|---|
 | 🛰️ **SOC** | SLA por severidad y tier, MTTD, MTTA, MTTC, MTTR | `smc soc` |
-| 🎯 **MITRE ATT&CK** | Cobertura de casos de uso por táctica | `smc mitre` |
-| 🧩 **Verticales** | 12 verticales (EDR/XDR, IAM, red, correo, cloud, datos, copias, OT…) clasificadas por medida NIS2 21.2 | `soc/verticals.yaml` |
-| 🔑 **Tecnologías** | Licencias, fin de soporte, certificados, sobredespliegue | `smc expiring` |
+| 🎯 **MITRE ATT&CK** | Cobertura y madurez (niveles 1-5) de 8 casos de uso con playbook; capa para ATT&CK Navigator | `smc mitre`, `smc mitre --navigator` |
+| 🧩 **Verticales** | 19 verticales (EDR/XDR, IAM, red, firewall, SASE, ZTNA, capas OSI, Threat Hunting, MDM, puesto de usuario, correo, cloud, datos, copias, OT…) con madurez 0-5 o «no evaluable» con motivo, clasificadas por medida NIS2 21.2 | `smc verticals` |
+| 🔑 **Tecnologías** | Licencias, fin de soporte, certificados, sobredespliegue; evaluación de cada producto y estado de sus reglas (any-any, sin uso, revisión caducada) | `smc expiring`, `smc tech` |
+| 💶 **Suscripciones** | Coste, renovaciones a 90 días y uso por debajo del 70 % de lo contratado | `smc subs` |
 | 🩹 **Vulnerabilidades** | CVEs con SLA de remediación (KEV, EPSS, CVSS) y playbooks por tecnología y caso de uso | `smc vulns` |
+| 🌐 **Protocolos** | 28 protocolos por capa OSI con sus debilidades típicas y 8 fuentes oficiales (NVD, ENISA, CISA KEV…) | `smc protocols` |
+| 📰 **RSS** | 17 feeds de seguridad, 13 verificados, exportables a OPML | `smc rss` |
+| 🗺️ **Mapa de red** | Dispositivos por zona y capa OSI con semáforo; JSON `smc-mapa/1` para un visor 3D | `smc mapa` |
 | ⚖️ **Normativa** | Base legal y guías CCN-CERT de cualquier control | `smc refs` |
 
 ## Lo que entregas
@@ -144,14 +151,42 @@ smc plan <evaluación.yaml> [--hoy AAAA-MM-DD]             # vencidas y brechas 
 smc report <evaluación.yaml> -o informe.html [--hoy AAAA-MM-DD]
 smc dashboard <dir_evaluaciones> -o <dir_salida> [--hoy AAAA-MM-DD]
 smc soc soc/incidents.template.csv                        # MTTD/MTTA/MTTC/MTTR y % SLA
-smc mitre                                                 # cobertura ATT&CK
+smc mitre [--navigator [-o capa.json]] [--hoy AAAA-MM-DD] # cobertura y madurez ATT&CK; capa Navigator
+smc verticals <evaluación.yaml>                           # madurez por vertical y por medida NIS2
+smc tech technologies/registry.template.yaml [--hoy AAAA-MM-DD] [--days 180]   # evaluación y estado de reglas
+smc subs technologies/registry.template.yaml [--hoy AAAA-MM-DD] [--days 90]    # suscripciones y renovaciones
 smc expiring technologies/registry.template.yaml --days 90
 smc vulns vulnerabilities/tracker.template.csv            # CVEs abiertos y fuera de SLA
+smc protocols [ID]                                        # protocolos por capa OSI y fuentes oficiales
+smc rss [--opml [-o feeds.opml]]                          # listado de feeds y export OPML
+smc mapa technologies/registry.template.yaml [--inventario resources/internal/inventory.template.yaml] \
+        [--tracker <tracker.csv>] [--evaluacion <evaluación.yaml>] [--hoy AAAA-MM-DD] [-o mapa.json]
 smc refs NIS2-21.2.b                                      # normativa y guías CCN-CERT
 smc --version
 ```
 
 Estados de control: `implementado` (1,0) · `parcial` (0,5) · `no_implementado` (0) · `no_aplica` (excluido) · sin evaluar (0, listado aparte; un estado no válido se trata igual, con aviso). Una acción `bloqueada` o `hecha` no cubre una brecha abierta.
+
+## Ecosistema
+
+SMC enlaza con material público del mismo autor. Solo páginas públicas y repos públicos; la lista vive en [`resources/ecosistema.yaml`](resources/ecosistema.yaml) y `smc validate` la comprueba.
+
+| Tema | Recurso |
+|---|---|
+| EDR/XDR | [EDR/XDR visual](https://pedri77.github.io/edr-visual-app/) |
+| SASE | [SASE visual](https://pedri77.github.io/sase-visual-app/) |
+| Firewalls | [Firewalls básicos](https://pedri77.github.io/Basic_Firewalls/) |
+| Capas OSI | [Protección por capas OSI](https://pedri77.github.io/Basicos_Proteccion_Capas_OSI/) · [Modelo OSI](https://pedri77.github.io/modelo_OSI/) |
+| ICS/OT | [ICS/OT security studio](https://pedri77.github.io/ics-security-studio/) |
+| WAF | [WAF forge](https://pedri77.github.io/wafforge/) |
+| Correo | [Correo básico](https://pedri77.github.io/Basicos_email/) |
+| Inteligencia de amenazas | [KEV dashboard](https://github.com/pedri77/kev_dash_project) (repo) · [Threat intelligence feeds](https://github.com/pedri77/threat-intelligence-feeds) (repo) |
+
+**Proyectos pendientes** (sin URL hasta que existan):
+
+- Evaluación de productos **ZTNA**.
+- Repositorio de **vulnerabilidades por capa OSI**.
+- **Visor 3D del mapa de red**, a partir de la skill [teardown](https://github.com/elvarofficial/teardown) (MIT, sobre [claude-motion](https://github.com/whaleyxbt/claude-motion), MIT). El contrato de datos ya está: `smc mapa` y [`docs/mapa-3d.md`](docs/mapa-3d.md).
 
 ## Los datos del cliente no salen de tu equipo
 
@@ -172,13 +207,13 @@ security-manager-control/
 ├── mappings/            nis2-ens-iso27001.csv
 ├── network/             módulo de red
 ├── normativa/           NIS2 completa · guías CCN-CERT
-├── soc/                 SLA · métricas · verticales · casos de uso MITRE
+├── soc/                 SLA · métricas · 19 verticales · casos de uso MITRE
 ├── technologies/        registro de tecnologías
-├── vulnerabilities/     política · tracker · playbooks
-├── resources/           inventario interno y de terceros
+├── vulnerabilities/     política · tracker · 28 protocolos · playbooks
+├── resources/           inventario interno y de terceros · RSS · ecosistema
 ├── assessments/         plantilla + ejemplos ficticios
-├── smc/                 CLI (gap, plan, report, dashboard, soc, mitre…)
-├── tests/               78 tests
+├── smc/                 CLI (gap, plan, report, dashboard, soc, mitre, mapa…)
+├── tests/               196 tests
 └── docs/                PRD · ADR · plan del enjambre · imágenes
 ```
 
@@ -190,13 +225,15 @@ security-manager-control/
 | v0.2 | Aplicabilidad ENS por categoría, priorización por riesgo, mapeos completos | ✅ |
 | v0.3 | Informe HTML/PDF y plan de acción | ✅ |
 | v0.4 | Dashboard multicliente (estático, local) | ✅ |
-| v0.5 | Verticales ampliadas (Threat Hunting, MDM, puesto, SASE/ZTNA), evaluación de tecnologías y suscripciones, vulnerabilidades por protocolo, madurez MITRE con playbooks, conectores de evidencias, ingesta NVD/KEV/EPSS | 🛠️ |
+| v0.5 | 19 verticales (Threat Hunting, MDM, puesto, firewall, SASE, ZTNA, capas OSI), evaluación de tecnologías, reglas y suscripciones, 28 protocolos con fuentes oficiales, madurez MITRE con 8 playbooks y capa Navigator, 17 feeds RSS, ecosistema y mapa de red (`smc mapa`) | ✅ |
+| v0.6 | Visor 3D del mapa desde teardown, contraste del Anexo II del ENS con el BOE, conectores de evidencias, ingesta NVD/KEV/EPSS, cumplimiento por dominio | 📋 |
 
 ## Limitaciones conocidas
 
 > [!WARNING]
 > **ENS pendiente de contrastar.** 39 de las 73 medidas llevan `verificar: true`: su categoría mínima y sus refuerzos se rellenaron sin la tabla del Anexo II del RD 311/2022 delante. Los informes las marcan con «(verificar)» y avisan en el resumen. Hay además una posible discrepancia de ID (`op.exp.10` / `op.exp.11`) y de numeración en `mp.info`.
 
+- Las verticales nuevas (mapeo NIS2, controles), la madurez de los casos de uso y los protocolos son juicio inicial sobre datos de muestra, sin fuente normativa ni SOC real. La capa OSI de TLS y BGP es una convención discutible.
 - Las criticidades NIS2 son un juicio inicial sin fuente normativa: afectan al orden de prioridad, no al cumplimiento.
 - «Sin evaluar» puntúa como no cumplido: una evaluación incompleta sale en rojo. Es lo esperado; el informe separa las brechas evaluadas de las pendientes.
 - La ley española de transposición de NIS2 (*Anteproyecto de Ley de Coordinación y Gobernanza de la Ciberseguridad*) sigue en tramitación: revisar el catálogo cuando se publique en el BOE.
