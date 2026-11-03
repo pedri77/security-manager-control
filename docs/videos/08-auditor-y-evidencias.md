@@ -1,6 +1,6 @@
 # SMC 8 · Declaración de aplicabilidad y evidencias para el auditor
 
-Duración: 1:34. Vídeo: pendiente de publicar.
+Duración: 1:34. Vídeo: https://youtu.be/2d7SAYrAee8
 
 Todos los datos que aparecen son ficticios (ejemplos del repositorio).
 

@@ -1,6 +1,6 @@
 # SMC 7 · PMO: tareas, horas, costes y presupuesto
 
-Duración: 1:26. Vídeo: pendiente de publicar.
+Duración: 1:26. Vídeo: https://youtu.be/Kz6LMawaUek
 
 Todos los datos que aparecen son ficticios (ejemplos del repositorio).
 
