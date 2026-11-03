@@ -1,0 +1,20 @@
+# Catálogo de feeds RSS/Atom de fuentes oficiales y de referencia (v0.5, T12).
+# `verificado: false` en todos: se escribió sin red; un humano debe comprobar cada url_feed.
+# `url_feed: null` = no se conoce con seguridad la ruta exacta del feed; se da la página de avisos en url_web.
+# Se exporta a OPML con `smc.resources.a_opml()` para el agregador interno (consumidor privado, sin enlace).
+feeds:
+  - {id: RSS-INCIBE-AVISOS, nombre: "INCIBE-CERT avisos de seguridad", organismo: INCIBE-CERT, url_feed: null, url_web: "https://www.incibe.es/incibe-cert/alerta-temprana/avisos", idioma: es, categoria: avisos, verificado: false}
+  - {id: RSS-INCIBE-BLOG, nombre: "INCIBE-CERT blog", organismo: INCIBE-CERT, url_feed: null, url_web: "https://www.incibe.es/incibe-cert/blog", idioma: es, categoria: noticias, verificado: false}
+  - {id: RSS-CCNCERT, nombre: "CCN-CERT alertas y avisos", organismo: CCN-CERT, url_feed: null, url_web: "https://www.ccn-cert.cni.es/", idioma: es, categoria: avisos, verificado: false}
+  - {id: RSS-ENISA, nombre: "ENISA noticias y publicaciones", organismo: ENISA, url_feed: null, url_web: "https://www.enisa.europa.eu/news", idioma: en, categoria: noticias, verificado: false}
+  - {id: RSS-CISA-ADVISORIES, nombre: "CISA Cybersecurity Advisories", organismo: CISA, url_feed: "https://www.cisa.gov/cybersecurity-advisories/all.xml", url_web: "https://www.cisa.gov/news-events/cybersecurity-advisories", idioma: en, categoria: avisos, verificado: false}
+  - {id: RSS-CISA-KEV, nombre: "CISA Known Exploited Vulnerabilities", organismo: CISA, url_feed: null, url_web: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog", idioma: en, categoria: vulnerabilidades, verificado: false}
+  - {id: RSS-NVD, nombre: "NIST NVD vulnerabilidades", organismo: NIST, url_feed: null, url_web: "https://nvd.nist.gov/vuln", idioma: en, categoria: vulnerabilidades, verificado: false}
+  - {id: RSS-CERTEU, nombre: "CERT-EU security advisories", organismo: CERT-EU, url_feed: null, url_web: "https://cert.europa.eu/publications/security-advisories/", idioma: en, categoria: avisos, verificado: false}
+  - {id: RSS-NCSC-UK, nombre: "NCSC UK noticias y avisos", organismo: NCSC UK, url_feed: "https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml", url_web: "https://www.ncsc.gov.uk/section/keep-up-to-date/threat-reports", idioma: en, categoria: noticias, verificado: false}
+  - {id: RSS-BSI, nombre: "BSI avisos y publicaciones", organismo: BSI, url_feed: null, url_web: "https://www.bsi.bund.de/EN/Home/home_node.html", idioma: en, categoria: avisos, verificado: false}
+  - {id: RSS-MITRE-ATTACK, nombre: "MITRE ATT&CK actualizaciones", organismo: MITRE, url_feed: null, url_web: "https://attack.mitre.org/resources/updates/", idioma: en, categoria: normativa, vertical: VRT-EDR, verificado: false}
+  - {id: RSS-MSRC, nombre: "Microsoft Security Response Center", organismo: Microsoft, url_feed: "https://api.msrc.microsoft.com/update-guide/rss", url_web: "https://msrc.microsoft.com/update-guide", idioma: en, categoria: vulnerabilidades, vertical: VRT-EDR, verificado: false}
+  - {id: RSS-CISCO-PSIRT, nombre: "Cisco Security Advisories", organismo: Cisco, url_feed: "https://sec.cloudapps.cisco.com/security/center/psirtrss20/CiscoSecurityAdvisory.xml", url_web: "https://sec.cloudapps.cisco.com/security/center/publicationListing.x", idioma: en, categoria: avisos, vertical: VRT-NET, verificado: false}
+  - {id: RSS-FORTINET-PSIRT, nombre: "Fortinet PSIRT advisories", organismo: Fortinet, url_feed: "https://filestore.fortinet.com/fortiguard/rss/ir.xml", url_web: "https://www.fortiguard.com/psirt", idioma: en, categoria: avisos, vertical: VRT-NET, verificado: false}
+  - {id: RSS-PALOALTO, nombre: "Palo Alto Networks security advisories", organismo: Palo Alto Networks, url_feed: "https://security.paloaltonetworks.com/rss.xml", url_web: "https://security.paloaltonetworks.com/", idioma: en, categoria: avisos, vertical: VRT-NET, verificado: false}
