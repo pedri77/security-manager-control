@@ -25,7 +25,7 @@ Revisión de ola: 3
 | Grupo | Coordinador | Tareas |
 |---|---|---|
 | smc | coordinador | T01, T02, T03, T04, T05, T06, T07, T08 |
-| smc-v05 | coordinador | T09, T10, T11, T12, T13, T14, T15, T16, T17 |
+| smc-v05 | coordinador | T09, T10, T11, T12, T13, T14, T15, T16, T17, T18 |
 
 ## Ola 1
 
@@ -198,6 +198,17 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en a329797 · evidencia informes/T17-dev-proyecto.md
 
+## Ola 8 (v0.5.2)
+
+- [~] **T18** — Vertical GRC (gobierno, riesgo y cumplimiento)
+  - Hace: añade `VRT-GRC` a `soc/verticals.yaml` con el mismo formato que las demás (nis2, controles existentes, criterios y `niveles` 0-5 concretos). Cubre: responsabilidad y supervisión de la dirección (NIS2 art. 20), formación de la dirección, política y marco normativo, análisis y tratamiento de riesgos, registro y aceptación de riesgos, gestión de excepciones, indicadores y cuadro de mando de cumplimiento, auditorías (ENS bienal en MEDIA/ALTA, ISO 27001), declaración de aplicabilidad, gestión de terceros desde el punto de vista contractual, registro de actividades y protección de datos (RGPD), notificación a autoridades, y seguimiento normativo (transposición de NIS2, cambios CCN-STIC). Controles relacionados solo con IDs existentes en los catálogos (NIS2-20.x, NIS2-21.2.a, NIS2-21.2.f, ENS-org.*, ENS-op.pl.1, controles TRV de ISO/RGPD/DORA que existan). Sin `recursos` (no hay páginas públicas de GRC; no enlazar repos privados). Añade la vertical a la sección `verticales:` de la plantilla y de los dos ejemplos ficticios. Quita además los nombres de repos privados de `docs/plan/informes/T09-dev-proyecto.md` y `docs/plan/informes/T12-dev-proyecto.md` (sustituir por «un repo privado»). Actualiza cifras (20 verticales) en README, `soc/README.md` y CHANGELOG 0.5.2; versión 0.5.2.
+  - No hace: no toca código de `smc/` salvo que un test de cifras o versión lo exija.
+  - Toca: `soc/verticals.yaml`, `soc/README.md`, `assessments/assessment.template.yaml`, `assessments/examples/`, `docs/plan/informes/T09-dev-proyecto.md`, `docs/plan/informes/T12-dev-proyecto.md`, `README.md`, `CHANGELOG.md`, `pyproject.toml`, `smc/__init__.py`, `tests/`, `docs/plan/informes/T18-dev-proyecto.md`
+  - Depende: T17
+  - Verifica: `smc validate` OK y `smc verticals` sobre los ejemplos muestra VRT-GRC agregada a NIS2 20/21.2; `git grep` de los nombres de repos privados fuera de `tests/` vacío. Contraprueba: un control inexistente en VRT-GRC pone un test en rojo.
+  - Prod: —
+  - Estado: reservada por coordinador 2026-11-03
+
 ## Libro
 
 ### Hechos
@@ -247,6 +258,8 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 
 - 2026-11-03 · v0.6 propuesta (revisor olas 5-6): visor 3D que lee mapa.json; secciones de tecnologías, reglas, suscripciones y MITRE en el informe HTML y el dashboard; vertical de gobierno y riesgo (GRC) si David la quiere; evaluación ZTNA y repo de vulnerabilidades por capa OSI · sesión principal
 
+- 2026-11-03 · Vertical GRC propia (VRT-GRC) y quitar nombres de repos privados de los informes públicos · David («si»)
+
 ### Atasco
 - Ola 1: 0
 - Ola 2: 0
@@ -255,3 +268,4 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 - Ola 5: 0
 - Ola 6: 0
 - Ola 7: 0
+- Ola 8: 0
