@@ -1,55 +1,212 @@
 # Verticales de seguridad, clasificadas por medida NIS2 Art. 21.2.
 # Madurez 0-5: 0 inexistente · 1 inicial · 2 repetible · 3 definida · 4 gestionada (medida) · 5 optimizada
-version: v1
+# Campos: id, nombre, nis2 (medidas), controles (IDs de los catálogos), criterios (lo que se puntúa),
+#   recursos ([{titulo, url}] solo páginas públicas de la lista de smc/verticals.py), estado_recursos
+#   (proyectos pendientes de crear: {proyecto, estado: pendiente}, sin URL).
+# VRT-NET es el paraguas de red y se conserva; lo detallan VRT-FW, VRT-SASE, VRT-ZTNA y VRT-OSI (campo `agrupa`).
+# Si alguno de esos cuatro está evaluado, VRT-NET no puntúa en la agregación (evita doble cómputo).
+# Evaluación por cliente: sección `verticales:` de la evaluación (ver assessments/assessment.template.yaml).
+version: v2
 verticals:
   - id: VRT-EDR
     nombre: Endpoint (EDR/XDR)
     nis2: [NIS2-21.2.b, NIS2-21.2.g]
-    criterios: [Cobertura de despliegue, Modo bloqueo activo, Integración SIEM, Respuesta automatizada, Exclusiones revisadas]
+    controles: [TRV-EDR-01, TRV-DET-01, ENS-mp.eq.3]
+    criterios:
+      - Cobertura de despliegue del agente en servidores y puestos (>=95 % para madurez 4)
+      - Modo bloqueo/prevención activo, no solo detección
+      - Telemetría integrada en el SIEM/XDR
+      - Respuesta automatizada (aislamiento de equipo) probada
+      - Exclusiones revisadas y justificadas
+    recursos:
+      - {titulo: "EDR/XDR (visual)", url: "https://pedri77.github.io/edr-visual-app/"}
   - id: VRT-IAM
     nombre: Identidad y acceso (IAM/PAM/MFA)
     nis2: [NIS2-21.2.i, NIS2-21.2.j]
-    criterios: [Cobertura MFA, Cuentas privilegiadas en PAM, Revisión periódica de accesos, Detección de anomalías de identidad (ITDR)]
+    controles: [TRV-ID-01, TRV-ID-02, ENS-op.acc.1, ENS-op.acc.5]
+    criterios:
+      - Cobertura MFA en accesos remotos y cuentas privilegiadas
+      - Cuentas privilegiadas custodiadas en PAM con tiering
+      - Revisión periódica de accesos (al menos semestral)
+      - Detección de anomalías de identidad (ITDR)
   - id: VRT-NET
-    nombre: Red (firewall, NDR, segmentación)
+    nombre: Red (paraguas; detalle en VRT-FW, VRT-SASE, VRT-ZTNA y VRT-OSI)
     nis2: [NIS2-21.2.a, NIS2-21.2.e]
-    criterios: [Ver network/controls.yaml]
+    controles: [NET-INV-01, NET-SEG-01, NET-MON-02, ENS-mp.com.4]
+    agrupa: [VRT-FW, VRT-SASE, VRT-ZTNA, VRT-OSI]
+    criterios:
+      - Diagrama de red vigente con zonas y flujos
+      - Segmentación por zonas aplicada y verificada
+      - Visibilidad de tráfico (NDR/NetFlow) en puntos clave
+      - Inventario de equipos de red con firmware y fin de soporte
+    estado_recursos:
+      - {proyecto: "Mapa 3D de dispositivos (desde la skill teardown)", estado: pendiente}
+  - id: VRT-FW
+    nombre: Firewall
+    nis2: [NIS2-21.2.a, NIS2-21.2.e]
+    controles: [NET-PER-01, NET-HARD-01, NET-MON-01, ENS-mp.com.1]
+    criterios:
+      - Política deny-by-default con revisión de reglas al menos semestral
+      - Reglas sin uso, duplicadas o "any-any" eliminadas
+      - Firmware al día y bastionado según guía CCN-STIC o CIS
+      - Logs de firewall centralizados en el SIEM
+      - Alta disponibilidad y copia de la configuración probadas
+    recursos:
+      - {titulo: "Firewalls básicos", url: "https://pedri77.github.io/Basic_Firewalls/"}
+  - id: VRT-SASE
+    nombre: SASE / SSE (SWG, CASB, FWaaS)
+    nis2: [NIS2-21.2.e, NIS2-21.2.j]
+    controles: [NET-DNS-01, NET-CRY-01, NET-MON-01]
+    criterios:
+      - Cobertura de usuarios y sedes bajo el servicio (incluido teletrabajo)
+      - Filtrado web/DNS y control de aplicaciones SaaS (CASB) con política definida
+      - Inspección TLS en las categorías adecuadas
+      - Logs en el SIEM y revisión de excepciones
+      - Continuidad ante caída del proveedor (plan alternativo)
+    recursos:
+      - {titulo: "SASE (visual)", url: "https://pedri77.github.io/sase-visual-app/"}
+  - id: VRT-ZTNA
+    nombre: ZTNA (acceso de confianza cero)
+    nis2: [NIS2-21.2.i, NIS2-21.2.j]
+    controles: [NET-ACC-01, NET-ACC-02, TRV-ID-01]
+    criterios:
+      - Acceso por aplicación con identidad y postura del dispositivo, no por red
+      - MFA obligatorio en todo acceso remoto; sin RDP/SSH expuestos
+      - Acceso de terceros temporal, mínimo y registrado
+      - Política de mínimo privilegio revisada con periodicidad
+    estado_recursos:
+      - {proyecto: "Evaluación de productos ZTNA", estado: pendiente}
+  - id: VRT-OSI
+    nombre: Protección on-prem por capas OSI
+    nis2: [NIS2-21.2.a, NIS2-21.2.e]
+    controles: [NET-SEG-01, NET-SEG-03, NET-NAC-01, NET-WIFI-01, NET-PER-03, NET-CRY-01]
+    criterios:
+      - "Capas 1-2: control físico de puertos, 802.1X/NAC, Wi-Fi corporativo WPA3"
+      - "Capa 3: segmentación y ACL entre zonas, filtrado de rutas"
+      - "Capas 4-5: firewall con estado y antiDDoS en servicios publicados"
+      - "Capas 6-7: TLS 1.2+, WAF y protocolos inseguros deshabilitados"
+      - Cada capa con control propio y responsable asignado
+    recursos:
+      - {titulo: "Protección por capas OSI", url: "https://pedri77.github.io/Basicos_Proteccion_Capas_OSI/"}
+      - {titulo: "Modelo OSI", url: "https://pedri77.github.io/modelo_OSI/"}
+    estado_recursos:
+      - {proyecto: "Repositorio de vulnerabilidades por capa OSI", estado: pendiente}
   - id: VRT-MAIL
     nombre: Correo electrónico
     nis2: [NIS2-21.2.g, NIS2-21.2.j]
-    criterios: [Filtrado avanzado, Sandbox, DMARC p=reject, Botón de reporte de phishing integrado con SOC]
+    controles: [TRV-EMAIL-01, ENS-mp.s.1]
+    criterios:
+      - Filtrado avanzado antiphishing y antimalware
+      - Sandbox de adjuntos y enlaces
+      - SPF, DKIM y DMARC en p=reject
+      - Botón de reporte de phishing integrado con el SOC
+    recursos:
+      - {titulo: "Correo (básicos)", url: "https://pedri77.github.io/Basicos_email/"}
   - id: VRT-CLOUD
     nombre: Cloud (IaaS/PaaS/SaaS)
     nis2: [NIS2-21.2.d, NIS2-21.2.e]
-    criterios: [CSPM, Logs de control plane en SIEM, CIEM, Configuración base]
+    controles: [TRV-CLOUD-01, ENS-op.nub.1]
+    criterios:
+      - Postura cloud (CSPM) con alertas por desviación
+      - Logs del plano de control en el SIEM
+      - Gestión de derechos de la nube (CIEM)
+      - Configuración base aplicada con infraestructura como código
   - id: VRT-APP
     nombre: Aplicaciones y web
     nis2: [NIS2-21.2.e]
-    criterios: [WAF, SAST/DAST, Gestión de dependencias, Pentest]
+    controles: [NET-PER-03, TRV-VUL-02, ENS-mp.sw.1, ENS-mp.sw.2]
+    criterios:
+      - WAF en aplicaciones publicadas en modo bloqueo
+      - SAST/DAST integrado en el ciclo de desarrollo
+      - Gestión de dependencias y SBOM
+      - Pentest periódico con seguimiento de hallazgos
+    recursos:
+      - {titulo: "WAF (wafforge)", url: "https://pedri77.github.io/wafforge/"}
   - id: VRT-DATA
     nombre: Datos (DLP, cifrado, clasificación)
     nis2: [NIS2-21.2.h, NIS2-21.2.i]
-    criterios: [Clasificación, DLP, Cifrado en reposo, Gestión de claves]
+    controles: [TRV-DATA-01, ENS-mp.info.1, ENS-mp.info.2]
+    criterios:
+      - Clasificación de la información aplicada
+      - DLP sobre canales de salida (correo, web, USB)
+      - Cifrado en reposo en sistemas con datos sensibles
+      - Gestión de claves con custodia y rotación
   - id: VRT-BCK
     nombre: Copias y recuperación
     nis2: [NIS2-21.2.c]
-    criterios: [Inmutabilidad, Copia offline, Pruebas de restauración, RTO/RPO medidos]
+    controles: [TRV-BCK-01, ENS-mp.info.6, ENS-op.cont.1]
+    criterios:
+      - Copias inmutables
+      - Copia offline o aislada (3-2-1-1-0)
+      - Pruebas de restauración con acta al menos anual
+      - RTO y RPO medidos frente a los objetivos
   - id: VRT-VULN
     nombre: Gestión de vulnerabilidades
     nis2: [NIS2-21.2.e]
-    criterios: [Cobertura de escaneo, SLA de remediación, Priorización por KEV/EPSS, Ver vulnerabilities/]
+    controles: [TRV-VUL-01, ENS-op.exp.4]
+    criterios:
+      - Cobertura de escaneo sobre el inventario
+      - SLA de remediación por criticidad cumplido
+      - Priorización por KEV/EPSS
+      - Excepciones documentadas con fecha de caducidad
+    recursos:
+      - {titulo: "Panel CISA KEV", url: "https://github.com/pedri77/kev_dash_project"}
   - id: VRT-OT
     nombre: OT / IoT
     nis2: [NIS2-21.2.a, NIS2-21.2.e]
-    criterios: [Inventario OT, Monitorización pasiva, Segmentación IT/OT, Acceso remoto controlado]
+    controles: [NET-OT-01, ENS-mp.com.4]
+    criterios:
+      - Inventario OT actualizado
+      - Monitorización pasiva de la red OT
+      - Segmentación IT/OT (Purdue / IEC 62443)
+      - Acceso remoto a OT controlado y registrado
+    recursos:
+      - {titulo: "ICS/OT Security Studio", url: "https://pedri77.github.io/ics-security-studio/"}
   - id: VRT-TPRM
     nombre: Terceros y cadena de suministro
     nis2: [NIS2-21.2.d]
-    criterios: [Ver resources/external/]
+    controles: [NIS2-21.2.d, ENS-op.ext.1, ENS-op.ext.2]
+    criterios:
+      - Inventario de proveedores críticos
+      - Requisitos de seguridad en contrato
+      - Evaluación periódica de proveedores críticos
+      - Plan de salida y continuidad ante fallo de un proveedor
   - id: VRT-AWARE
     nombre: Concienciación
     nis2: [NIS2-21.2.g, NIS2-20.2]
-    criterios: [Plan anual, Simulaciones de phishing, Tasa de clic y de reporte, Formación de dirección]
-
-# Evaluación por cliente (en assessments/<cliente>/verticals.yaml):
-# VRT-EDR: {madurez: 3, criterios_cumplidos: [...], notas: ""}
+    controles: [NIS2-20.2, ENS-mp.per.4]
+    criterios:
+      - Plan anual de formación
+      - Simulaciones de phishing
+      - Tasa de clic y de reporte medidas
+      - Formación de la dirección
+  - id: VRT-HUNT
+    nombre: Threat Hunting
+    nis2: [NIS2-21.2.b, NIS2-21.2.f]
+    controles: [TRV-DET-02, TRV-TI-01, ENS-op.mon.3]
+    criterios:
+      - Hipótesis de caza documentadas y ligadas a técnicas MITRE ATT&CK
+      - Cacerías periódicas (al menos trimestrales) con registro de resultados
+      - Hallazgos convertidos en reglas de detección
+      - Inteligencia de amenazas como entrada de las hipótesis
+    recursos:
+      - {titulo: "Feeds de inteligencia de amenazas", url: "https://github.com/pedri77/threat-intelligence-feeds"}
+  - id: VRT-MDM
+    nombre: Gestión de dispositivos móviles (MDM/UEM)
+    nis2: [NIS2-21.2.e, NIS2-21.2.i]
+    controles: [ENS-mp.eq.3, ENS-op.exp.1, NET-INV-02]
+    criterios:
+      - Inscripción obligatoria de móviles y tabletas corporativos y BYOD con acceso a datos
+      - Política de cifrado, bloqueo de pantalla y versión mínima de SO
+      - Borrado remoto probado
+      - Acceso condicional según cumplimiento del dispositivo
+  - id: VRT-ENDUSER
+    nombre: Puesto de usuario
+    nis2: [NIS2-21.2.g, NIS2-21.2.i]
+    controles: [ENS-mp.eq.1, ENS-mp.eq.2, ENS-mp.eq.3, ENS-mp.sw.2, TRV-EDR-01]
+    criterios:
+      - Imagen base bastionada y cifrado de disco
+      - Parcheo del SO y de las aplicaciones dentro del SLA
+      - Usuarios sin derechos de administrador local
+      - Control de aplicaciones y de medios extraíbles
+      - Puesto desatendido bloqueado y política de mesa limpia
