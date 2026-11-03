@@ -2,6 +2,17 @@
 
 Formato basado en Keep a Changelog. Versionado semántico.
 
+## 0.6.1 (2026-11-03)
+
+Endurecimiento tras la revisión de la ola 9 (T23). No cambia catálogos ni el esquema `smc-mapa/1`.
+
+- Dashboard: el registro de tecnologías se asocia a la evaluación de stem más largo que casa (`acme_sur.registry.yaml` ya no acaba en `acme.html`); si dos registros casan igual con una evaluación, aviso y sin asociar.
+- Visor: valida `resumen.dispositivos` y `resumen.por_semaforo.*` (enteros no negativos; ValueError y rc 2 sin traceback), escapa la cabecera y la CSP pasa de `'unsafe-inline'` a `script-src 'sha256-…'` sobre el script constante del módulo.
+- Visor: el HTML incluye el texto completo de la licencia MIT de three.js; la tabla accesible suma CVE fuera de SLA, reglas (total y sin uso), semáforo de zona, zonas, avisos y totales del resumen.
+- Aviso ENS (Markdown y HTML): las 73 medidas están contrastadas con el Anexo II del BOE; las 28 marcadas dependen de las dimensiones C/I/T/A/D y faltan las guías CCN-STIC. Los refuerzos se muestran tal cual la celda del BOE.
+- `smc report --registry`: `proveedor`, `moneda` y demás textos no str ya no provocan TypeError.
+- La sección MITRE del informe de cliente lleva la etiqueta «Catálogo de casos de uso del SOC (común a todos los clientes)».
+
 ## 0.6.0 (2026-11-03)
 
 - `smc visor <mapa.json> -o visor.html`: visor 3D offline y autocontenido del mapa `smc-mapa/1` (three.js 0.186.1 vendorizado, MIT, ADR-004; patrón de teardown, ADR-003). Sin red, CSP estricta, texto del JSON siempre como texto, tabla accesible, `prefers-reduced-motion`. Captura en `docs/img/visor.png`. JSON inválido: rc 2.
