@@ -9,6 +9,8 @@
 #            Copia del DOUE en el BOE: https://www.boe.es/doue/2026/1744/L00001-00041.pdf
 #            Punto 40 (art. 113 RIA): alto riesgo Anexo III 2027-12-02; Anexo I 2028-08-02; art. 5.1 b bis) y b ter) 2026-12-02.
 #            Punto 39 b) (nuevo art. 111.4 RIA): art. 50.2 para sistemas en el mercado antes de 2026-08-02, a más tardar 2026-12-02.
+#            Punto 39 a) (nuevo art. 111.2 RIA): alto riesgo en el mercado antes de la fecha del capítulo III, obligados solo con
+#            cambios significativos de diseño; los destinados a autoridades públicas, a más tardar 2030-08-02 (cita en T29).
 #            Punto 5: nuevo art. 4 (alfabetización: «apoyar la promoción», sin exigir un nivel concreto).
 #            El art. 50 (salvo su apartado 7) no cambia de fecha: aplica desde la fecha general, 2026-08-02 (art. 113 RIA).
 #
@@ -21,6 +23,7 @@
 #   supuesto   (opcional) solo aplica si el sistema lo declara en `supuestos`
 #   excepto_supuesto (opcional) no aplica si el sistema lo declara
 #   transitorio (opcional) {en_mercado_antes_de, aplica_desde}: fecha distinta para sistemas o modelos ya en el mercado
+#   preexistente (opcional) true = solo aplica a sistemas con `en_mercado_desde` anterior a la fecha de su nivel (art. 111.2)
 #   evidencia  (opcional) campo del inventario que acredita el cumplimiento (supervision_humana, registro, ...)
 #   fuente     RIA | OMNIBUS (la que fija la fecha vigente)
 #   verificar  true = fecha o alcance no cerrados con el texto; `nota` explica por qué
@@ -343,3 +346,15 @@ obligaciones:
     transitorio: {en_mercado_antes_de: 2025-08-02, aplica_desde: 2027-08-02}
     evidencia: pruebas_seguridad
     fuente: RIA
+
+  # --- Sistemas de alto riesgo ya en el mercado (art. 111.2, Ómnibus punto 39 a) ---
+  - id: AIA-070
+    articulo: "art. 111.2"
+    titulo: Alto riesgo ya en el mercado antes del capítulo III
+    descripcion: El RIA solo se aplica a un sistema de alto riesgo introducido en el mercado o puesto en servicio antes de la fecha del capítulo III si, a partir de esa fecha, sufre cambios significativos de diseño. Si está destinado a autoridades públicas, proveedor y responsable del despliegue adoptan las medidas necesarias a más tardar el 2030-08-02.
+    roles: [proveedor, responsable_despliegue]
+    niveles: [alto_riesgo_anexo_iii, alto_riesgo_anexo_i]
+    aplica_desde: {alto_riesgo_anexo_iii: 2027-12-02, alto_riesgo_anexo_i: 2028-08-02}
+    preexistente: true
+    fuente: OMNIBUS
+    nota: "Solo se emite para sistemas con en_mercado_desde anterior a la fecha de su nivel. Campos del inventario: cambios_significativos y autoridad_publica (opcionales). La fecha pasa a 2030-08-02 solo con autoridad_publica y sin cambios_significativos. No se recortan las demás obligaciones del capítulo III: esta entrada avisa del régimen. «Cambio significativo» no está definido en el catálogo: lo decide quien declara."
