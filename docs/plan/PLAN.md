@@ -300,14 +300,14 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 
 ## Ola 13 (v0.7.0)
 
-- [~] **T28** — Integración v0.7 y documentación
+- [x] **T28** — Integración v0.7 y documentación
   - Hace: subcomandos `smc pentest <fichero>`, `smc purple <fichero>`, `smc ai <inventario>`, `smc pmo <proyecto> [--ics eventos.ics] [--registry r.yaml]`; `smc validate` valida también `frameworks/ai-act/` y las plantillas nuevas; informe HTML y dashboard con secciones de pentest/purple, IA y PMO cuando se pasen los ficheros (`smc report ... --pentest --purple --ai --pmo`), con escape y solo `https://`. Decide y documenta si los ejercicios purple detectados cuentan como «probada» en la madurez MITRE (recomendado: sí, con fecha del ejercicio). README (mismo estilo; cifras reales; módulos nuevos), PRD, CHANGELOG 0.7.0, versión 0.7.0.
   - No hace: no cambia catálogos de T24-T27 salvo errores (anotados).
   - Toca: `smc/cli.py`, `smc/catalog.py`, `smc/report_html.py`, `smc/dashboard.py`, `smc/gap.py`, `smc/mitre.py`, `tests/test_cli_v07.py`, `tests/test_t08.py`, `tests/test_cli_v06.py`, `README.md`, `docs/prd/PRD-SMC-001-v1.md`, `CHANGELOG.md`, `pyproject.toml`, `smc/__init__.py`, `docs/plan/informes/T28-dev-proyecto.md`
   - Depende: T24, T25, T26, T27
   - Verifica: cada comando nuevo rc=0 sobre los ejemplos; XSS en un título de tarea PMO y en un hallazgo de pentest sale escapado (contraprueba); todos los comandos del README rc=0.
   - Prod: —
-  - Estado: reservada por coordinador 2026-11-03
+  - Estado: hecha en 1f7f610 · evidencia informes/T28-dev-proyecto.md
 
 ## Libro
 
