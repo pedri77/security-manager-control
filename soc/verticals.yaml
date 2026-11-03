@@ -365,3 +365,84 @@ verticals:
       3: "Marco documentado (política, normativa y procedimientos); riesgos revisados al menos una vez al año; declaración de aplicabilidad aprobada; riesgo residual aceptado por escrito por la dirección; excepciones registradas con responsable y caducidad; dirección formada en los últimos 2 años."
       4: "Indicadores de cumplimiento medidos al menos cada trimestre e informados al comité de seguridad; auditoría interna o externa en los últimos 12 meses (o 24 si es ENS) con plan de acción de las no conformidades; contratos de proveedores críticos revisados con requisitos de seguridad y datos; procedimiento de notificación a autoridades probado."
       5: "Cuadro de mando con indicadores revisado por la dirección al menos cada trimestre con decisiones registradas; auditorías sin no conformidades mayores abiertas; seguimiento normativo continuo con responsable y cambios aplicados en plazo; formación anual de la dirección; excepciones revisadas al vencer."
+  - id: VRT-IDSEC
+    nombre: Seguridad de la identidad (IGA, PAM, ITDR, identidades no humanas)
+    nis2: [NIS2-21.2.i, NIS2-21.2.j]
+    controles: [NIS2-21.2.i, NIS2-21.2.j, TRV-ID-01, TRV-ID-02, ENS-op.acc.1, ENS-op.acc.2, ENS-op.acc.3, ENS-op.acc.4, ENS-op.acc.5, ENS-op.acc.6]
+    criterios:
+      - Gobierno y ciclo de vida de identidades (IGA): altas, cambios y bajas con flujo, dueño y fecha de caducidad
+      - MFA resistente a phishing (FIDO2/passkeys) en administradores y accesos críticos
+      - PAM con custodia de credenciales, sesiones grabadas y acceso justo a tiempo
+      - Inventario y dueño de las identidades no humanas (cuentas de servicio, claves de API, secretos) con rotación
+      - Detección y respuesta a amenazas de identidad (ITDR) con casos probados
+      - Revisión de accesos (recertificación) con actas y revocaciones medidas
+      - Bastionado de Active Directory y Entra ID (tiering, cuentas obsoletas, delegaciones, acceso condicional)
+      - Segregación de funciones documentada
+    niveles:
+      0: "Sin inventario de identidades; cuentas compartidas, huérfanas o sin dueño; altas y bajas manuales sin registro."
+      1: "Inventario parcial de cuentas humanas; bajas dependientes del aviso de RR. HH.; MFA por SMS o apps solo en algunos accesos; sin inventario de cuentas de servicio."
+      2: "Altas, cambios y bajas con procedimiento y registro; MFA en todo acceso remoto y en administradores; inventario de cuentas privilegiadas y de servicio con dueño; revisión de accesos anual manual."
+      3: "IGA con flujo automatizado desde la fuente de RR. HH. y bajas en el plazo definido; MFA resistente a phishing en administradores; PAM con custodia y grabación de sesiones; secretos de cuentas de servicio rotados; revisión de accesos al menos semestral con acta; AD/Entra con línea base aplicada."
+      4: "Recertificación medida (porcentaje revisado y revocado) y segregación de funciones comprobada; identidades no humanas con caducidad y alertas de uso anómalo; tiering de administración aplicado; auditoría de AD/Entra en los últimos 12 meses con correcciones en plazo; ITDR con alertas atendidas."
+      5: "Acceso privilegiado justo a tiempo sin cuentas permanentes; MFA resistente a phishing para toda la plantilla; ITDR con casos probados en ejercicios de ataque; cuentas de servicio sin credenciales estáticas; indicadores de identidad revisados por el comité de seguridad que generan mejoras trazadas."
+  - id: VRT-DSPM
+    nombre: Seguridad del dato (clasificación, DSPM, DLP, cifrado y retención)
+    nis2: [NIS2-21.2.h, NIS2-21.2.i]
+    controles: [NIS2-21.2.h, NIS2-21.2.i, TRV-DATA-01, TRV-RGPD-01, ENS-mp.info.1, ENS-mp.info.2, ENS-mp.info.5, ENS-mp.info.6, ENS-mp.com.2, ENS-mp.si.2, ENS-mp.si.5]
+    criterios:
+      - Política y esquema de clasificación de la información aplicados con dueño del dato
+      - Descubrimiento de datos sensibles (DSPM) en nube, SaaS y almacenes de datos
+      - DLP en endpoint, correo y nube con bloqueos y excepciones revisadas
+      - Identidades y permisos con acceso al dato revisados (exceso de permisos, enlaces públicos)
+      - Cifrado en reposo y en tránsito, con gestión de claves (custodia, rotación, separación de funciones)
+      - Retención y borrado seguro según plazos definidos
+      - Registro de actividades de tratamiento (RGPD) alineado con la clasificación
+    niveles:
+      0: "Sin clasificación ni inventario de datos sensibles; sin cifrado sistemático ni plazos de retención."
+      1: "Esquema de clasificación redactado pero sin aplicar; datos sensibles localizados solo por conocimiento de los equipos; cifrado en algunos portátiles."
+      2: "Clasificación aplicada a los sistemas principales con dueño del dato; cifrado en reposo en sistemas con datos sensibles; plazos de retención definidos; registro de actividades de tratamiento al día."
+      3: "DLP en correo, endpoint y nube con política de bloqueo; claves con custodia y rotación documentada; revisión de permisos sobre repositorios con datos sensibles al menos anual; borrado seguro al vencer la retención."
+      4: "Descubrimiento (DSPM) ejecutado de forma periódica en nube y SaaS con inventario actualizado; incidentes y falsos positivos de DLP medidos cada trimestre; permisos excesivos y enlaces públicos corregidos en plazo; cobertura de cifrado >=95 % en sistemas con datos sensibles."
+      5: "Descubrimiento y clasificación continuos y automáticos con etiquetas que activan controles; DLP ajustado con datos reales; rotación de claves y borrados verificados con evidencia; indicadores revisados por el comité de seguridad con mejoras trazadas."
+  - id: VRT-AI
+    nombre: Inteligencia artificial (inventario, gobierno y seguridad de agentes y LLM)
+    nis2: [NIS2-21.2.a, NIS2-21.2.e]
+    controles: [NIS2-21.2.a, NIS2-21.2.e, TRV-AI-01, TRV-GOB-01, TRV-GOB-02, TRV-RGPD-01, ENS-op.pl.1]
+    criterios:
+      - Inventario de sistemas y modelos de IA, incluida la IA no autorizada (shadow AI) y los agentes
+      - Clasificación de cada sistema según el Reglamento (UE) 2024/1689 (RIA) con rol y nivel de riesgo
+      - Política de uso de IA, responsables y aprobación previa de nuevos sistemas y proveedores
+      - Controles frente a los riesgos del OWASP Top 10 for LLM Applications (p. ej. inyección de prompts, fuga de datos, gestión de salidas)
+      - Amenazas a sistemas de IA consideradas con MITRE ATLAS en el análisis de riesgos
+      - Agentes con permisos y herramientas de mínimo privilegio, con límites y aprobación para acciones sensibles
+      - Registro de actividad y supervisión humana efectiva de las decisiones y acciones de los sistemas de IA
+      - Pruebas adversariales periódicas (red teaming de IA) y seguridad de la cadena de suministro del modelo
+    niveles:
+      0: "Sin inventario de IA: se desconoce qué herramientas, modelos o agentes usa la organización ni qué datos reciben."
+      1: "Inventario parcial y manual de herramientas de IA; sin política de uso; sin clasificación de riesgo; los agentes y sus permisos no están registrados."
+      2: "Inventario de sistemas de IA con propietario y proveedor; política de uso aprobada que prohíbe datos sensibles en servicios no autorizados; riesgos de IA incluidos en el análisis de riesgos."
+      3: "Inventario completo con clasificación según el RIA (rol y nivel de riesgo); aprobación previa de nuevos sistemas; controles básicos frente al OWASP Top 10 for LLM Applications; registro de actividad de los sistemas de IA; supervisión humana definida en los usos de riesgo alto."
+      4: "Agentes con mínimo privilegio, herramientas con lista cerrada y aprobación humana para acciones sensibles; amenazas mapeadas con MITRE ATLAS en el análisis de riesgos; indicadores de uso, incidentes y excepciones revisados cada trimestre; proveedores de modelos evaluados."
+      5: "Inventario completo y verificado de forma continua, clasificación RIA revisada ante cada cambio, controles OWASP LLM y ATLAS probados, agentes con mínimo privilegio y supervisión humana efectiva, y pruebas adversariales periódicas (al menos anuales) con hallazgos corregidos en plazo."
+    estado_recursos:
+      - {proyecto: "Catálogo de obligaciones del RIA e inventario de IA (SMC)", estado: pendiente}
+  - id: VRT-OFF
+    nombre: Seguridad ofensiva (pentesting, purple team y red team)
+    nis2: [NIS2-21.2.e, NIS2-21.2.f]
+    controles: [NIS2-21.2.e, NIS2-21.2.f, TRV-VUL-01, TRV-VUL-02, ENS-op.exp.4]
+    criterios:
+      - Plan anual de pruebas ofensivas aprobado, con alcance basado en riesgo y activos críticos
+      - Pentesting externo e interno con metodología reconocida y hallazgos clasificados por criticidad
+      - Retest de los hallazgos críticos y altos tras la corrección, con cierre verificado
+      - Ejercicios purple team que validan detecciones frente a técnicas MITRE ATT&CK
+      - Red team con objetivos y reglas de enfrentamiento acordados con la dirección
+      - Resultados incorporados al registro de riesgos y al plan de acción
+    niveles:
+      0: "Sin pruebas ofensivas de ningún tipo; solo escaneos puntuales de vulnerabilidades."
+      1: "Pentest puntual a petición o tras un incidente, sin plan ni seguimiento de las correcciones."
+      2: "Plan anual aprobado con pentest externo de los activos expuestos; informe con hallazgos clasificados por criticidad; correcciones asignadas con responsable."
+      3: "Pentest externo e interno anual con alcance basado en riesgo; retest de los hallazgos críticos y altos en el plazo definido; resultados integrados en el registro de riesgos y en el plan de acción."
+      4: "Al menos un ejercicio purple team al año con detecciones nuevas o ajustadas frente a técnicas MITRE ATT&CK y su evidencia; pruebas tras cambios relevantes; plazo medio de cierre de hallazgos medido y dentro del objetivo."
+      5: "Red team periódico con reglas de enfrentamiento acordadas con la dirección; ejercicios purple trimestrales que alimentan la cobertura de detección; cierre verificado del 100 % de críticos y altos; lecciones aprendidas incorporadas a la arquitectura y a los playbooks."
+    estado_recursos:
+      - {proyecto: "Plantillas de plan anual de pentest y ejercicios purple (SMC)", estado: pendiente}

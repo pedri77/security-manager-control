@@ -116,7 +116,7 @@ def test_h4_contraprueba_sin_subverticales_vrt_net_puntua():
 # 5 (e): baremo 0-5 por vertical
 def test_h5_cada_vertical_tiene_6_niveles_concretos():
     vs = verticals.cargar_verticales()
-    assert len(vs) == 20
+    assert len(vs) == 24
     for v in vs:
         assert sorted(v.niveles) == [0, 1, 2, 3, 4, 5], v.id
         assert all(len(d) > 25 for d in v.niveles.values()), v.id
