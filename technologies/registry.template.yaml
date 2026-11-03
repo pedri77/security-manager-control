@@ -2,6 +2,8 @@
 version: v1
 technologies:
   - id: TEC-0001
+    zona: usuarios                    # perimetro | dmz | usuarios | servidores | gestion | invitados | ot_iot | nube (ficticio)
+    capa_osi: 7                      # 1-7 (opcional; si falta se aproxima por vertical)
     nombre: EDR corporativo
     fabricante: "<fabricante>"
     producto: "<producto>"
@@ -38,6 +40,8 @@ technologies:
     suscripcion: {proveedor: "Proveedor A", coste_anual: 18000, moneda: EUR, renovacion: "2027-01-31", propietario: "Responsable de seguridad", unidades_contratadas: 500, unidades_en_uso: 462, autorrenovacion: true}
 
   - id: TEC-0002
+    zona: perimetro
+    capa_osi: 3
     nombre: Firewall perimetral
     fabricante: "<fabricante>"
     producto: "<producto>"
@@ -60,6 +64,8 @@ technologies:
 
   # Los datos de abajo son ficticios (sin datos reales de ningún cliente).
   - id: TEC-0003
+    zona: perimetro
+    capa_osi: 3
     nombre: Firewall de sede secundaria
     fabricante: "<fabricante>"
     producto: "<producto>"
@@ -72,6 +78,8 @@ technologies:
     suscripcion: {proveedor: "Proveedor B", coste_anual: 4200, moneda: EUR, renovacion: "2027-06-30", propietario: "Sistemas", unidades_contratadas: 1, unidades_en_uso: 1, autorrenovacion: false}
 
   - id: TEC-0004
+    zona: usuarios
+    capa_osi: 7
     nombre: Gestión de dispositivos móviles
     fabricante: "<fabricante>"
     producto: "<producto>"
@@ -84,6 +92,8 @@ technologies:
     suscripcion: {proveedor: "Proveedor C", coste_anual: 6000, moneda: EUR, renovacion: "2027-03-31", propietario: "Equipo de puesto de usuario", unidades_contratadas: 300, unidades_en_uso: 320, autorrenovacion: true}
 
   - id: TEC-0005
+    zona: nube
+    capa_osi: 7
     nombre: Acceso seguro a la nube (SASE)
     fabricante: "<fabricante>"
     producto: "<producto>"
