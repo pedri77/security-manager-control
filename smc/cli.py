@@ -37,6 +37,7 @@ def main(argv: list[str] | None = None) -> int:
     rp.add_argument("assessment", type=Path)
     rp.add_argument("-o", "--output", type=Path, required=True, help="Fichero HTML de salida")
     rp.add_argument("--hoy", type=_fecha, help="Fecha de referencia AAAA-MM-DD (por defecto, hoy)")
+    rp.add_argument("--registry", type=Path, help="Registro de tecnologías YAML: añade tecnologías, reglas y suscripciones")
 
     db = sub.add_parser("dashboard", help="Dashboard estático multicliente desde un directorio de evaluaciones")
     db.add_argument("directorio", type=Path)
@@ -194,8 +195,14 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.cmd == "report":
-        from .report_html import run_html
-        args.output.write_text(run_html(args.assessment, args.hoy), encoding="utf-8")
+        from .report_html import cargar_registry, run_html
+        try:
+            reg = cargar_registry(args.registry) if args.registry else None
+            html = run_html(args.assessment, args.hoy, reg)
+        except ValueError as exc:
+            print(f"ERROR: --registry {args.registry}: {exc}", file=sys.stderr)
+            return 2
+        args.output.write_text(html, encoding="utf-8")
         print(f"Informe escrito en {args.output}")
         return 0
 
