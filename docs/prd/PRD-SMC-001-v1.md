@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Borrador. Roadmap v0.1 a v0.4 implementado (v0.4.1); v0.5 pendiente |
+| Estado | Borrador. Roadmap v0.1 a v0.6 implementado (v0.6.0) |
 | Versión | v1 |
 | Fecha | 2026-11-02 |
 | Autor | David Moya García |
@@ -65,6 +65,11 @@ Un centro de control que, a partir del perfil del cliente, determine los marcos 
 - RF-24 Listado de feeds RSS de seguridad (17, 13 verificados) con export OPML (`smc rss`) y registro del ecosistema público de recursos, con proyectos pendientes sin URL.
 - RF-25 Mapa de dispositivos por zona y capa OSI con semáforo (rojo, ámbar, gris, verde) y JSON `smc-mapa/1` sin datos sensibles, base de un visor 3D (`smc mapa`, ADR-003).
 - RF-26 `smc validate` comprueba los catálogos de la v0.5 y sus referencias cruzadas; informe HTML y dashboard muestran la madurez por vertical.
+- RF-27 `smc report --registry` añade al informe HTML las secciones de tecnologías evaluadas, estado de las reglas (any-any siempre destacado), suscripciones y madurez MITRE ATT&CK; el Markdown de `smc gap` incluye siempre la madurez MITRE.
+- RF-28 `smc dashboard` detecta por su forma los registros de tecnologías del directorio, los asocia a la evaluación por nombre (`<evaluación>.registry.yaml`), añade columnas de reglas y suscripciones y genera siempre la página común `mitre.html`.
+- RF-29 `smc visor <mapa.json> -o visor.html` genera un visor 3D autocontenido y offline del mapa `smc-mapa/1`: una plataforma por zona con botón, piezas por semáforo (gris nunca verde), panel con los números del JSON, vistas, visita que cede al primer gesto, `prefers-reduced-motion` y tabla accesible. JSON inválido: rc 2 y sin fichero (ADR-003, ADR-004).
+- RF-30 El HTML del visor no carga nada de la red (CSP `default-src 'none'`) y todo texto del JSON se inserta como texto, nunca como HTML.
+- RF-31 Las 73 medidas ENS se contrastan con el Anexo II del RD 311/2022 (BOE-A-2022-7191): 45 confirmadas y 28 en `verificar` por depender de las dimensiones C/I/T/A/D.
 
 ## 6. Requisitos no funcionales
 
@@ -77,17 +82,18 @@ Un centro de control que, a partir del perfil del cliente, determine los marcos 
 | Versión | Entregable | Estado |
 |---|---|---|
 | v0.1 | Catálogos YAML, plantillas, CLI `smc gap` | Hecha |
-| v0.2 | Aplicabilidad ENS por categoría, priorización por riesgo, mapeos completos | Hecha (con 39 medidas ENS por verificar, ver sección 8) |
+| v0.2 | Aplicabilidad ENS por categoría, priorización por riesgo, mapeos completos | Hecha (28 medidas ENS por verificar tras el contraste con el BOE, ver sección 8) |
 | v0.3 | Informe HTML y plan de acción (`smc report`, `smc plan`). PDF: se obtiene imprimiendo el HTML desde el navegador | Hecha |
 | v0.4 | Dashboard estático multicliente (`smc dashboard`), ver ADR-002 | Hecha |
 | v0.5 | Verticales ampliadas, evaluación de tecnologías y suscripciones, protocolos, madurez MITRE con Navigator, RSS, ecosistema y mapa de red (RF-19 a RF-26) | Hecha |
-| v0.6 | Visor 3D del mapa, contraste del Anexo II del ENS con el BOE, conectores de evidencias (EDR, SIEM, escáneres, EASM, firewall), ingesta NVD/KEV/EPSS, cumplimiento por dominio | Pendiente |
+| v0.6 | Visor 3D del mapa, informe y dashboard con registro de tecnologías y MITRE, contraste del Anexo II del ENS con el BOE (RF-27 a RF-31) | Hecha |
+| v0.7 | Contraste de las 28 medidas ENS por dimensión con CCN-STIC, visor en GPU integrada y móvil, conectores de evidencias (EDR, SIEM, escáneres, EASM, firewall), ingesta NVD/KEV/EPSS, cumplimiento por dominio | Pendiente |
 
 Nota: el dashboard de v0.4 se resolvió como sitio estático generado en local, no como aplicación web con servidor (ADR-002).
 
 ## 8. Riesgos y supuestos
 
 - La ley española de transposición de NIS2 sigue en tramitación (nov. 2026): revisar catálogo al publicarse en el BOE.
-- La aplicabilidad exacta por categoría ENS debe validarse contra el Anexo II y guías CCN-STIC. Estado a v0.4.1: 39 de 73 medidas con `verificar: true` (recuento con PyYAML) y posible discrepancia de ID entre `op.exp.10` y `op.exp.11`.
+- La aplicabilidad exacta por categoría ENS debe validarse contra el Anexo II y guías CCN-STIC. Estado a v0.6.0: contrastadas con el BOE (BOE-A-2022-7191, Anexo II) 45 de 73; 28 de 73 medidas siguen con `verificar: true` porque dependen de las dimensiones C/I/T/A/D (recuento con PyYAML). Pendiente cruzarlas con las guías CCN-STIC.
 - Las criticidades NIS2 son un juicio inicial sin fuente normativa.
 - «Sin evaluar» pesa 0.75 en la prioridad y puntúa como no cumplido: las evaluaciones incompletas salen en rojo en el dashboard.

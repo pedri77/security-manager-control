@@ -188,7 +188,7 @@ def test_h11_p1_con_accion_bloqueada_sale_sin_accion(ass):
 
 
 # versión
-def test_version_052():
-    assert __version__ == "0.5.2"
-    assert 'version = "0.5.2"' in (ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    assert "## 0.5.2" in (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+def test_version_060():
+    assert __version__ == "0.6.0"
+    assert 'version = "0.6.0"' in (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    assert "## 0.6.0" in (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")

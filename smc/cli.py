@@ -73,6 +73,9 @@ def main(argv: list[str] | None = None) -> int:
     mp.add_argument("-o", "--output", type=Path, help="Fichero JSON de salida (por defecto, stdout)")
     mp.add_argument("--hoy", type=_fecha, help="Fecha de referencia AAAA-MM-DD (por defecto, hoy)")
     mp.add_argument("--days", type=int, default=180, help="Días sin revisar las reglas (180)")
+    vi = sub.add_parser("visor", help="Visor 3D offline (HTML autocontenido) desde un mapa smc-mapa/1")
+    vi.add_argument("mapa", type=Path, help="JSON generado por `smc mapa`")
+    vi.add_argument("-o", "--output", type=Path, required=True, help="Fichero HTML de salida")
     exp = sub.add_parser("expiring", help="Caducidades del registro de tecnologías")
     exp.add_argument("registry", type=Path)
     exp.add_argument("--days", type=int, default=90)
@@ -142,6 +145,20 @@ def main(argv: list[str] | None = None) -> int:
             args.output.write_text(texto, encoding="utf-8")
         else:
             print(texto, end="")
+        return 0
+    if args.cmd == "visor":
+        import json
+        from .visor import generar_visor
+        try:
+            datos = json.loads(args.mapa.read_text(encoding="utf-8"))
+            if not isinstance(datos, dict):
+                raise ValueError("el JSON no es un objeto smc-mapa/1")
+            pagina = generar_visor(datos)
+        except (OSError, ValueError) as exc:  # JSONDecodeError y UnicodeDecodeError son ValueError
+            print(f"ERROR: {args.mapa}: {exc}", file=sys.stderr)
+            return 2
+        args.output.write_text(pagina, encoding="utf-8")
+        print(f"Visor escrito en {args.output} ({len(pagina.encode('utf-8')) // 1024} KiB)")
         return 0
     if args.cmd == "protocols":
         from . import protocols
