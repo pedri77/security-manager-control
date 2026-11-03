@@ -369,13 +369,14 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 
 ## Ola 16 (v0.8.0)
 
-- [ ] **T35** — Integración v0.8 y documentación
+- [x] **T35** — Integración v0.8 y documentación
   - Hace: subcomandos `smc compare <anterior.yaml> <actual.yaml> [--hoy] [-o]`, `smc soa <evaluación.yaml> --formato csv|xlsx|html -o <fichero>` y `smc evidencias <evaluación.yaml> [--base <dir>] [--hoy]`; `smc report ... --anterior <evaluación.yaml>` añade una sección «Evolución» (escapada); el dashboard muestra la evidencia caducada por cliente. README (mismo estilo, cifras reales, badge del workflow de CI, sección de comparación, salida para auditor y evidencias), PRD (RF nuevos), CHANGELOG 0.8.0, versión 0.8.0.
   - No hace: no cambia la lógica de T31-T34 salvo errores (anotados).
   - Toca: `smc/cli.py`, `smc/report_html.py`, `smc/dashboard.py`, `smc/catalog.py`, `tests/test_cli_v08.py`, `README.md`, `docs/prd/PRD-SMC-001-v1.md`, `CHANGELOG.md`, `pyproject.toml`, `smc/__init__.py`, `docs/plan/informes/T35-dev-proyecto.md`
   - Depende: T30, T31, T32, T33, T34
   - Verifica: cada comando nuevo rc=0 sobre los ejemplos; `smc soa` en los tres formatos; todos los comandos del README rc=0; `test_version` verde con 0.8.0.
   - Prod: —
+  - Estado: hecha en cb3ead8 · evidencia informes/T35-dev-proyecto.md
 
 ## Libro
 
