@@ -26,7 +26,7 @@ def test_catalogo_ids_conservados_y_nuevos():
     ids = [v.id for v in V.cargar_verticales()]
     assert len(ids) == len(set(ids))
     assert set(ANTIGUOS) <= set(ids) and set(NUEVOS) <= set(ids)
-    assert len(ids) == 19
+    assert len(ids) == 20
 
 
 def test_catalogo_valido():
@@ -76,7 +76,7 @@ def test_net_agrupa_los_cuatro_subverticales():
 def test_sin_seccion_todo_sin_evaluar():
     r = V.evaluar({"cliente": {}})
     assert r.madurez_media is None and r.warnings == []
-    assert len(r.sin_evaluar) == 19 and not r.no_evaluables
+    assert len(r.sin_evaluar) == 20 and not r.no_evaluables
 
 
 def test_agregacion_nis2_caso_conocido():
@@ -153,13 +153,13 @@ def test_ejemplos_tienen_seccion_valida(fichero):
 def test_ejemplo_energia_valores():
     ass = yaml.safe_load((ROOT / "assessments/examples/ejemplo-energia.yaml").read_text(encoding="utf-8"))
     r = V.evaluar(ass)
-    # VRT-NET=5 queda fuera por haber FW/ZTNA evaluados: 21.2.a = (OT 2 + FW 4)/2
-    assert r.por_nis2["NIS2-21.2.a"].madurez == 3.0
+    # VRT-NET=5 queda fuera por haber FW/ZTNA evaluados: 21.2.a = (OT 2 + FW 4 + GRC 4)/3 (GRC desde T18)
+    assert r.por_nis2["NIS2-21.2.a"].madurez == 3.33
     assert r.por_nis2["NIS2-21.2.j"].madurez == 1
     ass2 = copy.deepcopy(ass)
     ass2["verticales"].pop("VRT-FW")
     ass2["verticales"].pop("VRT-ZTNA")
-    assert V.evaluar(ass2).por_nis2["NIS2-21.2.a"].madurez == 3.5   # ahora NET (5) y OT (2) puntúan
+    assert V.evaluar(ass2).por_nis2["NIS2-21.2.a"].madurez == 3.67   # ahora NET (5), OT (2) y GRC (4) puntúan
 
 
 def test_plantilla_y_ejemplos_pasan_analyse():
