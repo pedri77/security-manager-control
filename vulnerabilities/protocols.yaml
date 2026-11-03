@@ -1,0 +1,1016 @@
+# Vulnerabilidades por protocolo (T11, v0.5).
+# Orientativo y sin CVEs concretos: `consulta` solo trae URLs de búsqueda en fuentes oficiales.
+# Los CWE y las técnicas ATT&CK (T1xxx enterprise, T0xxx ICS) son representativos y se contrastan con MITRE antes de citarlos.
+# Las URLs de búsqueda no se han podido comprobar sin red: verificar a mano (INCIBE-CERT y CCN-CERT apuntan a su listado, sin filtro).
+version: v1
+aprendizaje:
+  osi:
+    titulo: Modelo OSI
+    url: https://pedri77.github.io/modelo_OSI/
+  capas:
+    titulo: Protección por capas OSI
+    url: https://pedri77.github.io/Basicos_Proteccion_Capas_OSI/
+  ics:
+    titulo: ICS/OT Security Studio
+    url: https://pedri77.github.io/ics-security-studio/
+  waf:
+    titulo: WAF Forge
+    url: https://pedri77.github.io/wafforge/
+  correo:
+    titulo: Correo (SPF, DKIM, DMARC)
+    url: https://pedri77.github.io/Basicos_email/
+protocolos:
+- id: SMB
+  nombre: SMB / CIFS
+  capa_osi: 7
+  puertos:
+  - 445/tcp
+  riesgos:
+  - Relé y captura de credenciales NTLM
+  - Movimiento lateral con recursos compartidos administrativos
+  - Versiones antiguas (SMBv1) sin firma ni cifrado
+  - Exposición a Internet
+  cwe:
+  - CWE-287
+  - CWE-319
+  mitigaciones:
+  - Deshabilitar SMBv1
+  - Exigir firma SMB y cifrado SMB 3.x
+  - No exponer 445 a Internet
+  - Segmentar este-oeste
+  controles:
+  - NET-CRY-01
+  - NET-SEG-03
+  - NET-PER-01
+  - ENS-mp.com.4
+  attack:
+  - T1021.002
+  - T1187
+  - T1210
+  consulta:
+    nvd: https://nvd.nist.gov/vuln/search?keyword=SMB&resultType=records
+    euvd: https://euvd.enisa.europa.eu/search?text=SMB
+    cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=SMB
+    cvedetails: https://www.cvedetails.com/google-search-results.php?q=SMB
+    incibe_cert: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+    ccn_cert: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  aprendizaje:
+  - osi
+  - capas
+- id: RDP
+  nombre: RDP (Escritorio remoto)
+  capa_osi: 7
+  puertos:
+  - 3389/tcp
+  - 3389/udp
+  riesgos:
+  - Fuerza bruta y password spraying
+  - Explotación de servicio expuesto
+  - Acceso inicial para ransomware
+  cwe:
+  - CWE-307
+  - CWE-287
+  mitigaciones:
+  - No exponer RDP a Internet
+  - Acceso vía VPN/ZTNA con MFA
+  - NLA obligatorio
+  - Bloqueo de cuentas y registro de accesos
+  controles:
+  - NET-ACC-01
+  - NET-PER-02
+  - ENS-op.acc.6
+  - TRV-DET-01
+  attack:
+  - T1021.001
+  - T1110
+  - T1133
+  consulta:
+    nvd: https://nvd.nist.gov/vuln/search?keyword=RDP&resultType=records
+    euvd: https://euvd.enisa.europa.eu/search?text=RDP
+    cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=RDP
+    cvedetails: https://www.cvedetails.com/google-search-results.php?q=RDP
+    incibe_cert: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+    ccn_cert: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  aprendizaje:
+  - osi
+  - capas
+- id: SSH
+  nombre: SSH
+  capa_osi: 7
+  puertos:
+  - 22/tcp
+  riesgos:
+  - Fuerza bruta
+  - Claves sin protección o reutilizadas
+  - Algoritmos obsoletos
+  - Reenvío de puertos para túneles
+  cwe:
+  - CWE-307
+  - CWE-798
+  - CWE-327
+  mitigaciones:
+  - Solo autenticación por clave
+  - Deshabilitar root y contraseñas
+  - Restringir origen y reenvío
+  - Algoritmos modernos
+  controles:
+  - NET-ACC-01
+  - NET-HARD-01
+  - ENS-op.acc.6
+  - ENS-op.exp.10
+  attack:
+  - T1021.004
+  - T1110
+  - T1572
+  consulta:
+    nvd: https://nvd.nist.gov/vuln/search?keyword=SSH&resultType=records
+    euvd: https://euvd.enisa.europa.eu/search?text=SSH
+    cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=SSH
+    cvedetails: https://www.cvedetails.com/google-search-results.php?q=SSH
+    incibe_cert: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+    ccn_cert: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  aprendizaje:
+  - osi
+  - capas
+- id: TELNET
+  nombre: Telnet
+  capa_osi: 7
+  puertos:
+  - 23/tcp
+  riesgos:
+  - Credenciales y sesión en claro
+  - Credenciales por defecto en dispositivos
+  - Botnets IoT
+  cwe:
+  - CWE-319
+  - CWE-798
+  mitigaciones:
+  - Deshabilitar Telnet y usar SSH
+  - Cambiar credenciales por defecto
+  - Filtrar 23 en el perímetro
+  controles:
+  - NET-CRY-01
+  - NET-HARD-01
+  - NET-PER-01
+  attack:
+  - T1040
+  - T1078
+  - T1110
+  consulta:
+    nvd: https://nvd.nist.gov/vuln/search?keyword=Telnet&resultType=records
+    euvd: https://euvd.enisa.europa.eu/search?text=Telnet
+    cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=Telnet
+    cvedetails: https://www.cvedetails.com/google-search-results.php?q=Telnet
+    incibe_cert: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+    ccn_cert: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  aprendizaje:
+  - osi
+  - capas
+- id: FTP
+  nombre: FTP / FTPS
+  capa_osi: 7
+  puertos:
+  - 21/tcp
+  - 20/tcp
+  riesgos:
+  - Credenciales y datos en claro
+  - Acceso anónimo
+  - Subida de ficheros maliciosos
+  cwe:
+  - CWE-319
+  - CWE-306
+  mitigaciones:
+  - Sustituir por SFTP o FTPS
+  - Deshabilitar acceso anónimo
+  - Aislar el servidor en DMZ
+  controles:
+  - NET-CRY-01
+  - NET-SEG-01
+  - ENS-mp.com.2
+  attack:
+  - T1040
+  - T1048
+  - T1078
+  consulta:
+    nvd: https://nvd.nist.gov/vuln/search?keyword=FTP&resultType=records
+    euvd: https://euvd.enisa.europa.eu/search?text=FTP
+    cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=FTP
+    cvedetails: https://www.cvedetails.com/google-search-results.php?q=FTP
+    incibe_cert: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+    ccn_cert: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  aprendizaje:
+  - osi
+  - capas
+- id: SNMP
+  nombre: SNMP
+  capa_osi: 7
+  puertos:
+  - 161/udp
+  - 162/udp
+  riesgos:
+  - Community strings por defecto (public/private)
+  - SNMPv1/v2c sin cifrado
+  - Fuga de configuración
+  - Amplificación de tráfico
+  cwe:
+  - CWE-798
+  - CWE-319
+  mitigaciones:
+  - Usar SNMPv3 con autenticación y cifrado
+  - Restringir por ACL a la red de gestión
+  - Eliminar communities por defecto
+  controles:
+  - NET-CRY-01
+  - NET-SEG-02
+  - NET-HARD-01
+  attack:
+  - T1602.001
+  - T1046
+  consulta:
+    nvd: https://nvd.nist.gov/vuln/search?keyword=SNMP&resultType=records
+    euvd: https://euvd.enisa.europa.eu/search?text=SNMP
+    cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=SNMP
+    cvedetails: https://www.cvedetails.com/google-search-results.php?q=SNMP
+    incibe_cert: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+    ccn_cert: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  aprendizaje:
+  - osi
+  - capas
+- id: DNS
+  nombre: DNS
+  capa_osi: 7
+  puertos:
+  - 53/udp
+  - 53/tcp
+  riesgos:
+  - Envenenamiento de caché
+  - Tunelización y exfiltración por DNS
+  - Amplificación DDoS en resolutores abiertos
+  - Registros huérfanos y takeover
+  cwe:
+  - CWE-345
+  - CWE-400
+  mitigaciones:
+  - Resolutores no abiertos
+  - DNSSEC y control de dominios propios
+  - Filtrado y registro de consultas DNS
+  - Limitar tasa de respuestas
+  controles:
+  - NET-DNS-01
+  - NET-DNS-02
+  - NET-MON-01
+  attack:
+  - T1071.004
+  - T1048
+  consulta:
+    nvd: https://nvd.nist.gov/vuln/search?keyword=DNS&resultType=records
+    euvd: https://euvd.enisa.europa.eu/search?text=DNS
+    cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=DNS
+    cvedetails: https://www.cvedetails.com/google-search-results.php?q=DNS
+    incibe_cert: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+    ccn_cert: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  aprendizaje:
+  - osi
+  - capas
+- id: NTP
+  nombre: NTP
+  capa_osi: 7
+  puertos:
+  - 123/udp
+  riesgos:
+  - Amplificación DDoS por consultas de monitorización
+  - Manipulación de la hora que rompe logs, certificados y Kerberos
+  cwe:
+  - CWE-400
+  - CWE-345
+  mitigaciones:
+  - Deshabilitar monlist y consultas remotas
+  - Fuentes de tiempo fiables y autenticadas
+  - Restringir por ACL
+  controles:
+  - NET-HARD-01
+  - ENS-op.exp.8
+  - NET-PER-03
+  attack:
+  - T1498
+  consulta:
+    nvd: https://nvd.nist.gov/vuln/search?keyword=NTP&resultType=records
+    euvd: https://euvd.enisa.europa.eu/search?text=NTP
+    cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=NTP
+    cvedetails: https://www.cvedetails.com/google-search-results.php?q=NTP
+    incibe_cert: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+    ccn_cert: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  aprendizaje:
+  - osi
+  - capas
+- id: LDAP
+  nombre: LDAP / LDAPS
+  capa_osi: 7
+  puertos:
+  - 389/tcp
+  - 636/tcp
+  - 3268/tcp
+  riesgos:
+  - Bind anónimo o simple en claro
+  - Enumeración del directorio
+  - Inyección LDAP en aplicaciones
+  cwe:
+  - CWE-319
+  - CWE-90
+  - CWE-306
+  mitigaciones:
+  - LDAPS o StartTLS
+  - Firma LDAP y channel binding
+  - Deshabilitar bind anónimo
+  - Validar entradas en aplicaciones
+  controles:
+  - NET-CRY-01
+  - TRV-ID-01
+  - ENS-op.acc.6
+  attack:
+  - T1087
+  - T1018
+  consulta:
+    nvd: https://nvd.nist.gov/vuln/search?keyword=LDAP&resultType=records
+    euvd: https://euvd.enisa.europa.eu/search?text=LDAP
+    cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=LDAP
+    cvedetails: https://www.cvedetails.com/google-search-results.php?q=LDAP
+    incibe_cert: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+    ccn_cert: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  aprendizaje:
+  - osi
+  - capas
+- id: KERBEROS
+  nombre: Kerberos
+  capa_osi: 7
+  puertos:
+  - 88/tcp
+  - 88/udp
+  riesgos:
+  - Kerberoasting y AS-REP roasting
+  - Tickets falsificados
+  - Delegación mal configurada
+  - Desfase de reloj
+  cwe:
+  - CWE-522
+  - CWE-327
+  mitigaciones:
+  - Contraseñas largas en cuentas de servicio o gMSA
+  - AES en lugar de RC4
+  - Revisar delegaciones
+  - Monitorizar solicitudes de tickets
+  controles:
+  - TRV-ID-02
+  - ENS-op.acc.6
+  - TRV-DET-01
+  attack:
+  - T1558
+  - T1558.003
+  - T1550
+  consulta:
+    nvd: https://nvd.nist.gov/vuln/search?keyword=Kerberos&resultType=records
+    euvd: https://euvd.enisa.europa.eu/search?text=Kerberos
+    cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=Kerberos
+    cvedetails: https://www.cvedetails.com/google-search-results.php?q=Kerberos
+    incibe_cert: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+    ccn_cert: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  aprendizaje:
+  - osi
+  - capas
+- id: NTLM
+  nombre: NTLM
+  capa_osi: 7
+  puertos:
+  - 445/tcp
+  - 135/tcp
+  riesgos:
+  - Relé NTLM
+  - Pass-the-hash
+  - Resolución de nombres LLMNR/NBT-NS envenenable
+  cwe:
+  - CWE-294
+  - CWE-522
+  mitigaciones:
+  - Limitar o deshabilitar NTLM
+  - Firma SMB y LDAP
+  - Deshabilitar LLMNR y NBT-NS
+  - Protected Users para cuentas privilegiadas
+  controles:
+  - TRV-ID-02
+  - NET-CRY-01
+  - ENS-op.acc.6
+  attack:
+  - T1550.002
+  - T1557.001
+  - T1187
+  consulta:
+    nvd: https://nvd.nist.gov/vuln/search?keyword=NTLM&resultType=records
+    euvd: https://euvd.enisa.europa.eu/search?text=NTLM
+    cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=NTLM
+    cvedetails: https://www.cvedetails.com/google-search-results.php?q=NTLM
+    incibe_cert: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+    ccn_cert: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  aprendizaje:
+  - osi
+  - capas
+- id: TLS
+  nombre: TLS / SSL
+  capa_osi: 6
+  puertos:
+  - 443/tcp
+  - 465/tcp
+  - 993/tcp
+  - 995/tcp
+  - 636/tcp
+  riesgos:
+  - Versiones y suites obsoletas (SSL 3.0, TLS 1.0/1.1)
+  - Certificados caducados o mal validados
+  - Intercepción por configuración débil
+  cwe:
+  - CWE-327
+  - CWE-326
+  - CWE-295
+  mitigaciones:
+  - Solo TLS 1.2 y 1.3
+  - Suites modernas con confidencialidad directa
+  - Gestión del ciclo de vida de certificados
+  - HSTS en web
+  controles:
+  - NET-CRY-01
+  - ENS-mp.com.2
+  - ENS-mp.com.3
+  attack:
+  - T1557
+  - T1040
+  consulta:
+    nvd: https://nvd.nist.gov/vuln/search?keyword=TLS&resultType=records
+    euvd: https://euvd.enisa.europa.eu/search?text=TLS
+    cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=TLS
+    cvedetails: https://www.cvedetails.com/google-search-results.php?q=TLS
+    incibe_cert: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+    ccn_cert: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  aprendizaje:
+  - osi
+  - capas
+- id: HTTP
+  nombre: HTTP / HTTPS
+  capa_osi: 7
+  puertos:
+  - 80/tcp
+  - 443/tcp
+  - 8080/tcp
+  riesgos:
+  - Inyección y XSS en aplicaciones
+  - Contrabando de peticiones
+  - SSRF
+  - Tráfico en claro
+  - Exposición de paneles de administración
+  cwe:
+  - CWE-79
+  - CWE-89
+  - CWE-444
+  - CWE-918
+  mitigaciones:
+  - WAF delante de servicios publicados
+  - Redirigir todo a HTTPS
+  - Cabeceras de seguridad
+  - Parcheo de servidores web y frameworks
+  controles:
+  - NET-PER-03
+  - ENS-mp.s.2
+  - ENS-mp.sw.1
+  - TRV-VUL-01
+  attack:
+  - T1190
+  - T1071.001
+  consulta:
+    nvd: https://nvd.nist.gov/vuln/search?keyword=HTTP&resultType=records
+    euvd: https://euvd.enisa.europa.eu/search?text=HTTP
+    cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=HTTP
+    cvedetails: https://www.cvedetails.com/google-search-results.php?q=HTTP
+    incibe_cert: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+    ccn_cert: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  aprendizaje:
+  - osi
+  - capas
+  - waf
+- id: SMTP
+  nombre: SMTP
+  capa_osi: 7
+  puertos:
+  - 25/tcp
+  - 587/tcp
+  - 465/tcp
+  riesgos:
+  - Suplantación de remitente
+  - Relé abierto
+  - Phishing y malware por correo
+  - Intercepción sin TLS
+  cwe:
+  - CWE-319
+  - CWE-284
+  mitigaciones:
+  - SPF, DKIM y DMARC
+  - Cerrar relés abiertos
+  - STARTTLS u oportunista con MTA-STS
+  - Filtrado avanzado de adjuntos y enlaces
+  controles:
+  - TRV-EMAIL-01
+  - ENS-mp.s.1
+  - NET-CRY-01
+  attack:
+  - T1071.003
+  - T1566
+  consulta:
+    nvd: https://nvd.nist.gov/vuln/search?keyword=SMTP&resultType=records
+    euvd: https://euvd.enisa.europa.eu/search?text=SMTP
+    cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=SMTP
+    cvedetails: https://www.cvedetails.com/google-search-results.php?q=SMTP
+    incibe_cert: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+    ccn_cert: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  aprendizaje:
+  - osi
+  - capas
+  - correo
+- id: IMAP_POP3
+  nombre: IMAP / POP3
+  capa_osi: 7
+  puertos:
+  - 143/tcp
+  - 993/tcp
+  - 110/tcp
+  - 995/tcp
+  riesgos:
+  - Credenciales en claro sin TLS
+  - Fuerza bruta contra buzones
+  - Autenticación heredada sin MFA
+  cwe:
+  - CWE-319
+  - CWE-307
+  mitigaciones:
+  - Solo IMAPS/POP3S
+  - Deshabilitar autenticación heredada
+  - MFA y bloqueo de cuentas
+  controles:
+  - TRV-EMAIL-01
+  - ENS-mp.s.1
+  - ENS-op.acc.6
+  attack:
+  - T1110
+  - T1114
+  consulta:
+    nvd: https://nvd.nist.gov/vuln/search?keyword=IMAP&resultType=records
+    euvd: https://euvd.enisa.europa.eu/search?text=IMAP
+    cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=IMAP
+    cvedetails: https://www.cvedetails.com/google-search-results.php?q=IMAP
+    incibe_cert: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+    ccn_cert: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  aprendizaje:
+  - osi
+  - capas
+  - correo
+- id: SIP
+  nombre: SIP / VoIP
+  capa_osi: 7
+  puertos:
+  - 5060/udp
+  - 5060/tcp
+  - 5061/tcp
+  riesgos:
+  - Fraude de llamadas
+  - Enumeración de extensiones
+  - Fuerza bruta de registro
+  - DoS por inundación
+  - Interceptación de medios sin SRTP
+  cwe:
+  - CWE-307
+  - CWE-319
+  - CWE-400
+  mitigaciones:
+  - TLS para señalización y SRTP para medios
+  - SBC en el borde
+  - Limitar tasa y restringir orígenes
+  - Contraseñas robustas en extensiones
+  controles:
+  - NET-CRY-01
+  - NET-PER-01
+  - NET-PER-03
+  attack:
+  - T1110
+  - T1498
+  consulta:
+    nvd: https://nvd.nist.gov/vuln/search?keyword=SIP&resultType=records
+    euvd: https://euvd.enisa.europa.eu/search?text=SIP
+    cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=SIP
+    cvedetails: https://www.cvedetails.com/google-search-results.php?q=SIP
+    incibe_cert: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+    ccn_cert: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  aprendizaje:
+  - osi
+  - capas
+- id: MQTT
+  nombre: MQTT
+  capa_osi: 7
+  puertos:
+  - 1883/tcp
+  - 8883/tcp
+  riesgos:
+  - Brokers expuestos sin autenticación
+  - Tráfico en claro
+  - Suscripción a temas con comodín
+  - Suplantación de dispositivos
+  cwe:
+  - CWE-306
+  - CWE-319
+  - CWE-284
+  mitigaciones:
+  - TLS (8883) y autenticación obligatoria
+  - ACL por tema
+  - No exponer el broker a Internet
+  - Segmentar IoT
+  controles:
+  - NET-SEG-01
+  - NET-OT-01
+  - NET-CRY-01
+  - NET-PER-02
+  attack:
+  - T1040
+  - T1190
+  consulta:
+    nvd: https://nvd.nist.gov/vuln/search?keyword=MQTT&resultType=records
+    euvd: https://euvd.enisa.europa.eu/search?text=MQTT
+    cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=MQTT
+    cvedetails: https://www.cvedetails.com/google-search-results.php?q=MQTT
+    incibe_cert: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+    ccn_cert: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  aprendizaje:
+  - osi
+  - capas
+- id: MODBUS
+  nombre: Modbus/TCP
+  capa_osi: 7
+  puertos:
+  - 502/tcp
+  riesgos:
+  - Sin autenticación ni cifrado
+  - Escritura de registros y bobinas por cualquier cliente
+  - Reconocimiento de PLC expuestos
+  cwe:
+  - CWE-306
+  - CWE-319
+  - CWE-345
+  mitigaciones:
+  - No exponer a Internet
+  - Separación IT/OT con cortafuegos industrial
+  - Listas blancas de orígenes y códigos de función
+  - Monitorización pasiva OT
+  controles:
+  - NET-OT-01
+  - NET-SEG-01
+  - NET-MON-02
+  attack:
+  - T0855
+  - T0856
+  - T0842
+  consulta:
+    nvd: https://nvd.nist.gov/vuln/search?keyword=Modbus&resultType=records
+    euvd: https://euvd.enisa.europa.eu/search?text=Modbus
+    cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=Modbus
+    cvedetails: https://www.cvedetails.com/google-search-results.php?q=Modbus
+    incibe_cert: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+    ccn_cert: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  aprendizaje:
+  - osi
+  - capas
+  - ics
+- id: S7COMM
+  nombre: S7comm (Siemens S7)
+  capa_osi: 7
+  puertos:
+  - 102/tcp
+  riesgos:
+  - Control del PLC sin autenticación fuerte
+  - Descarga y subida de lógica
+  - Parada de CPU
+  cwe:
+  - CWE-306
+  - CWE-319
+  mitigaciones:
+  - Segmentar la red de control
+  - Activar la protección de acceso del PLC
+  - Monitorización pasiva OT
+  - Inventario de PLC y firmware
+  controles:
+  - NET-OT-01
+  - NET-INV-02
+  - NET-MON-02
+  attack:
+  - T0855
+  - T0846
+  consulta:
+    nvd: https://nvd.nist.gov/vuln/search?keyword=S7comm&resultType=records
+    euvd: https://euvd.enisa.europa.eu/search?text=S7comm
+    cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=S7comm
+    cvedetails: https://www.cvedetails.com/google-search-results.php?q=S7comm
+    incibe_cert: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+    ccn_cert: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  aprendizaje:
+  - osi
+  - capas
+  - ics
+- id: DNP3
+  nombre: DNP3
+  capa_osi: 7
+  puertos:
+  - 20000/tcp
+  - 20000/udp
+  riesgos:
+  - Sin autenticación en implementaciones clásicas
+  - Comandos no autorizados
+  - Repetición de mensajes
+  cwe:
+  - CWE-306
+  - CWE-294
+  mitigaciones:
+  - DNP3 Secure Authentication cuando el equipo lo soporte
+  - Pasarelas o VPN entre subestaciones
+  - Cortafuegos con inspección de protocolo
+  controles:
+  - NET-OT-01
+  - NET-SEG-01
+  - NET-MON-02
+  attack:
+  - T0855
+  - T0856
+  consulta:
+    nvd: https://nvd.nist.gov/vuln/search?keyword=DNP3&resultType=records
+    euvd: https://euvd.enisa.europa.eu/search?text=DNP3
+    cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=DNP3
+    cvedetails: https://www.cvedetails.com/google-search-results.php?q=DNP3
+    incibe_cert: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+    ccn_cert: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  aprendizaje:
+  - osi
+  - capas
+  - ics
+- id: BACNET
+  nombre: BACnet/IP
+  capa_osi: 7
+  puertos:
+  - 47808/udp
+  riesgos:
+  - Difusión que revela dispositivos
+  - Sin autenticación en versiones clásicas
+  - Edificios inteligentes expuestos a Internet
+  cwe:
+  - CWE-306
+  - CWE-319
+  mitigaciones:
+  - Aislar la red de gestión de edificios
+  - BACnet/SC cuando sea posible
+  - No publicar a Internet
+  controles:
+  - NET-OT-01
+  - NET-SEG-01
+  - NET-PER-02
+  attack:
+  - T0842
+  - T0846
+  consulta:
+    nvd: https://nvd.nist.gov/vuln/search?keyword=BACnet&resultType=records
+    euvd: https://euvd.enisa.europa.eu/search?text=BACnet
+    cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=BACnet
+    cvedetails: https://www.cvedetails.com/google-search-results.php?q=BACnet
+    incibe_cert: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+    ccn_cert: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  aprendizaje:
+  - osi
+  - capas
+  - ics
+- id: OPCUA
+  nombre: OPC UA
+  capa_osi: 7
+  puertos:
+  - 4840/tcp
+  riesgos:
+  - Modo de seguridad None o política débil
+  - Gestión de certificados deficiente
+  - Autenticación anónima activada
+  cwe:
+  - CWE-295
+  - CWE-306
+  mitigaciones:
+  - Modo Sign&Encrypt con política moderna
+  - Gestión de certificados de confianza
+  - Deshabilitar acceso anónimo
+  controles:
+  - NET-OT-01
+  - NET-CRY-01
+  - ENS-op.exp.10
+  attack:
+  - T0855
+  consulta:
+    nvd: https://nvd.nist.gov/vuln/search?keyword=OPC%20UA&resultType=records
+    euvd: https://euvd.enisa.europa.eu/search?text=OPC%20UA
+    cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=OPC%20UA
+    cvedetails: https://www.cvedetails.com/google-search-results.php?q=OPC%20UA
+    incibe_cert: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+    ccn_cert: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  aprendizaje:
+  - osi
+  - capas
+  - ics
+- id: ARP
+  nombre: ARP
+  capa_osi: 2
+  puertos: []
+  riesgos:
+  - Suplantación (ARP spoofing) y hombre en el medio
+  - Denegación de servicio local
+  cwe:
+  - CWE-345
+  mitigaciones:
+  - Dynamic ARP Inspection y DHCP snooping
+  - Port security
+  - Segmentar en VLAN
+  controles:
+  - NET-SEG-01
+  - NET-NAC-01
+  - NET-MON-02
+  attack:
+  - T1557.002
+  - T1040
+  consulta:
+    nvd: https://nvd.nist.gov/vuln/search?keyword=ARP&resultType=records
+    euvd: https://euvd.enisa.europa.eu/search?text=ARP
+    cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=ARP
+    cvedetails: https://www.cvedetails.com/google-search-results.php?q=ARP
+    incibe_cert: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+    ccn_cert: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  aprendizaje:
+  - osi
+  - capas
+- id: EAP_8021X
+  nombre: 802.1X / EAP (Wi-Fi y cable)
+  capa_osi: 2
+  puertos: []
+  riesgos:
+  - Métodos EAP débiles
+  - Puntos de acceso falsos
+  - Validación deficiente del certificado del servidor RADIUS
+  cwe:
+  - CWE-295
+  - CWE-522
+  mitigaciones:
+  - EAP-TLS con certificados
+  - Validar el servidor en los clientes
+  - WPA3-Enterprise cuando sea posible
+  controles:
+  - NET-NAC-01
+  - NET-WIFI-01
+  - ENS-mp.com.2
+  attack:
+  - T1557
+  - T1040
+  consulta:
+    nvd: https://nvd.nist.gov/vuln/search?keyword=EAP&resultType=records
+    euvd: https://euvd.enisa.europa.eu/search?text=EAP
+    cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=EAP
+    cvedetails: https://www.cvedetails.com/google-search-results.php?q=EAP
+    incibe_cert: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+    ccn_cert: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  aprendizaje:
+  - osi
+  - capas
+- id: ICMP
+  nombre: ICMP
+  capa_osi: 3
+  puertos: []
+  riesgos:
+  - Reconocimiento de red
+  - Túneles encubiertos
+  - Inundación
+  cwe:
+  - CWE-400
+  mitigaciones:
+  - Filtrar tipos innecesarios
+  - Limitar tasa
+  - Detectar cargas anómalas
+  controles:
+  - NET-PER-01
+  - NET-MON-02
+  attack:
+  - T1046
+  - T1095
+  - T1498
+  consulta:
+    nvd: https://nvd.nist.gov/vuln/search?keyword=ICMP&resultType=records
+    euvd: https://euvd.enisa.europa.eu/search?text=ICMP
+    cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=ICMP
+    cvedetails: https://www.cvedetails.com/google-search-results.php?q=ICMP
+    incibe_cert: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+    ccn_cert: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  aprendizaje:
+  - osi
+  - capas
+- id: IPSEC_IKE
+  nombre: IPsec / IKE
+  capa_osi: 3
+  puertos:
+  - 500/udp
+  - 4500/udp
+  riesgos:
+  - PSK débiles
+  - Grupos y algoritmos obsoletos
+  - Exposición de concentradores VPN sin parchear
+  cwe:
+  - CWE-326
+  - CWE-327
+  - CWE-521
+  mitigaciones:
+  - IKEv2 con certificados
+  - Algoritmos modernos
+  - Parcheo prioritario de VPN perimetrales
+  - MFA en acceso remoto
+  controles:
+  - NET-ACC-01
+  - NET-CRY-01
+  - TRV-VUL-01
+  attack:
+  - T1133
+  - T1190
+  consulta:
+    nvd: https://nvd.nist.gov/vuln/search?keyword=IKE&resultType=records
+    euvd: https://euvd.enisa.europa.eu/search?text=IKE
+    cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=IKE
+    cvedetails: https://www.cvedetails.com/google-search-results.php?q=IKE
+    incibe_cert: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+    ccn_cert: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  aprendizaje:
+  - osi
+  - capas
+- id: BGP
+  nombre: BGP
+  capa_osi: 7
+  puertos:
+  - 179/tcp
+  riesgos:
+  - Secuestro de prefijos
+  - Fugas de rutas
+  - Sesiones sin autenticación
+  cwe:
+  - CWE-345
+  - CWE-306
+  mitigaciones:
+  - RPKI y filtrado de prefijos
+  - Autenticación de sesiones
+  - Límite de prefijos
+  controles:
+  - NET-RES-01
+  - NET-HARD-01
+  - NET-MON-01
+  attack:
+  - T1557
+  consulta:
+    nvd: https://nvd.nist.gov/vuln/search?keyword=BGP&resultType=records
+    euvd: https://euvd.enisa.europa.eu/search?text=BGP
+    cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=BGP
+    cvedetails: https://www.cvedetails.com/google-search-results.php?q=BGP
+    incibe_cert: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+    ccn_cert: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  aprendizaje:
+  - osi
+  - capas
+- id: DHCP
+  nombre: DHCP
+  capa_osi: 7
+  puertos:
+  - 67/udp
+  - 68/udp
+  riesgos:
+  - Servidor DHCP falso
+  - Agotamiento del ámbito
+  - Redirección de tráfico
+  cwe:
+  - CWE-345
+  - CWE-400
+  mitigaciones:
+  - DHCP snooping
+  - Port security
+  - Monitorizar servidores DHCP no autorizados
+  controles:
+  - NET-NAC-01
+  - NET-SEG-01
+  - NET-MON-02
+  attack:
+  - T1557.003
+  consulta:
+    nvd: https://nvd.nist.gov/vuln/search?keyword=DHCP&resultType=records
+    euvd: https://euvd.enisa.europa.eu/search?text=DHCP
+    cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=DHCP
+    cvedetails: https://www.cvedetails.com/google-search-results.php?q=DHCP
+    incibe_cert: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+    ccn_cert: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  aprendizaje:
+  - osi
+  - capas
