@@ -211,36 +211,39 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 
 ## Ola 9 (v0.6)
 
-- [ ] **T19** — Tecnologías, reglas, suscripciones y MITRE en el informe HTML y el dashboard
+- [~] **T19** — Tecnologías, reglas, suscripciones y MITRE en el informe HTML y el dashboard
   - Hace: `smc report` acepta opcionalmente `--registry <registry.yaml>` y `--hoy`; con registry añade al HTML (y al Markdown) secciones de tecnologías evaluadas, estado de reglas (revisadas, sin revisar, no evaluables con motivo, lista `any_any` destacada) y suscripciones (vencen en 90 días, uso bajo umbral, coste anual total). Siempre añade la sección de madurez MITRE (por táctica y casos sin playbook) desde `smc.mitre`. El dashboard estático (`smc dashboard`) añade, si en el directorio hay registros (`kind`/forma de registry), columnas de reglas no evaluables, any-any y suscripciones que vencen, y una página de madurez MITRE común. Reutiliza `smc.tech` y `smc.mitre`: no reimplementa cálculos. Escape HTML en todo, solo enlaces `https://`.
   - No hace: no cambia catálogos ni el cálculo de prioridad; no toca `smc/mapa.py`.
   - Toca: `smc/report_html.py`, `smc/dashboard.py`, `smc/gap.py` (solo render Markdown si hace falta), `smc/cli.py` (solo flags de `report`/`dashboard`), `tests/test_report_v06.py`, `docs/plan/informes/T19-dev-proyecto.md`
   - Depende: T18
   - Verifica: `smc report` sobre los ejemplos con y sin `--registry` rc=0; el HTML contiene las 4 secciones; contraprueba: un `motivo` con `<script>` en reglas no evaluables sale escapado; un `coste_anual` no numérico no rompe.
   - Prod: —
+  - Estado: reservada por coordinador 2026-11-03
 
-- [ ] **T20** — Visor 3D offline del mapa de dispositivos
-  - Hace: `smc visor <mapa.json> -o visor.html` (y `smc mapa ... --visor visor.html`) genera una sola página HTML autocontenida que lee SOLO el JSON `smc-mapa/1` embebido (sin fetch, sin CDN, sin red). Patrón de teardown (ADR-003): la red es la máquina; cada zona es un subsistema (plataforma/anillo) con un botón que la abre y enfoca la cámara; dispositivos como piezas coloreadas por semáforo (verde, ámbar, rojo, gris; gris nunca se pinta verde); `sin_zona` en un área aparte; panel lateral que lee los números del JSON (dispositivos, reglas no evaluables con motivo, vulns fuera de SLA, KEV); vistas de cámara; visita automática que cede el control al primer gesto; respeta `prefers-reduced-motion`; alternativa en texto (tabla accesible con la misma información, ADR-003). Librería: three.js (MIT) incrustada en el HTML desde una copia vendorizada `smc/assets/three.module.min.js` minificada o el `three.module.js` de 0.186 con su `LICENSE` en `smc/assets/THREE-LICENSE`; origen y versión anotados. No copia código de la skill teardown (solo el patrón). ADR-004 con la decisión de vendorizar three.js. Escape de todos los textos del JSON al insertarlos en el DOM (textContent, nunca innerHTML con datos); el JSON se inserta en `<script type="application/json">` con `<` escapado como `<`.
-  - No hace: no cambia el esquema `smc-mapa/1` ni `smc/mapa.py` salvo la opción `--visor`; no graba vídeo.
-  - Toca: `smc/visor.py`, `smc/assets/`, `smc/cli.py` (solo `visor` y `--visor`), `pyproject.toml` (package-data de assets), `tests/test_visor.py`, `docs/mapa-3d.md`, `docs/adr/ADR-004-three-js-vendorizado.md`, `docs/plan/informes/T20-dev-proyecto.md`
+- [~] **T20** — Visor 3D offline del mapa de dispositivos
+  - Hace: `python -m smc.visor <mapa.json> -o visor.html` (función `generar_visor(mapa: dict) -> str`; el subcomando `smc visor` lo cablea T22) genera una sola página HTML autocontenida que lee SOLO el JSON `smc-mapa/1` embebido (sin fetch, sin CDN, sin red). Patrón de teardown (ADR-003): la red es la máquina; cada zona es un subsistema (plataforma/anillo) con un botón que la abre y enfoca la cámara; dispositivos como piezas coloreadas por semáforo (verde, ámbar, rojo, gris; gris nunca se pinta verde); `sin_zona` en un área aparte; panel lateral que lee los números del JSON (dispositivos, reglas no evaluables con motivo, vulns fuera de SLA, KEV); vistas de cámara; visita automática que cede el control al primer gesto; respeta `prefers-reduced-motion`; alternativa en texto (tabla accesible con la misma información, ADR-003). Librería: three.js (MIT) incrustada en el HTML desde una copia vendorizada `smc/assets/three.module.min.js` minificada o el `three.module.js` de 0.186 con su `LICENSE` en `smc/assets/THREE-LICENSE`; origen y versión anotados. No copia código de la skill teardown (solo el patrón). ADR-004 con la decisión de vendorizar three.js. Escape de todos los textos del JSON al insertarlos en el DOM (textContent, nunca innerHTML con datos); el JSON se inserta en `<script type="application/json">` con `<` escapado como `<`.
+  - No hace: no cambia el esquema `smc-mapa/1` ni `smc/mapa.py`; no toca `smc/cli.py`; no graba vídeo.
+  - Toca: `smc/visor.py`, `smc/assets/`, `pyproject.toml` (package-data de assets), `tests/test_visor.py`, `docs/mapa-3d.md`, `docs/adr/ADR-004-three-js-vendorizado.md`, `docs/plan/informes/T20-dev-proyecto.md`
   - Depende: T18
   - Verifica: el HTML del ejemplo no contiene `http://` ni `https://` cargados como script/fetch (test); abre en Chrome headless sin errores de consola y dibuja (captura en el informe, Playwright channel chrome); contraprueba: un nombre de dispositivo `</script><img onerror>` no rompe ni ejecuta.
   - Prod: —
+  - Estado: reservada por coordinador 2026-11-03
 
-- [ ] **T21** — Contrastar las medidas ENS con el Anexo II del RD 311/2022 (BOE)
+- [~] **T21** — Contrastar las medidas ENS con el Anexo II del RD 311/2022 (BOE)
   - Hace: contrasta las 73 medidas de `frameworks/ens/controls.yaml` con el texto consolidado del BOE (BOE-A-2022-7191, Anexo II): id, grupo, título, categoría mínima (BASICA/MEDIA/ALTA o aplica por dimensión) y refuerzos por categoría. Corrige lo que no coincida y quita `verificar: true` solo de lo contrastado; deja en `verificar` (con nota) lo que dependa de dimensiones o de guías CCN-STIC no consultadas. Fuente citada con URL del BOE en la cabecera. Actualiza los mapeos que dependan de ids corregidos y los tests de cifras.
   - No hace: no cambia la fórmula de prioridad ni otros marcos.
-  - Toca: `frameworks/ens/controls.yaml`, `mappings/`, `tests/`, `docs/plan/informes/T21-dev-proyecto.md`
+  - Toca: `frameworks/ens/controls.yaml`, `mappings/`, `tests/test_ens.py`, `tests/test_ens_boe.py`, `tests/test_smc.py`, `tests/test_gap_v02.py`, `tests/test_t08.py`, `tests/test_t17.py`, `tests/test_t18.py`, `docs/plan/informes/T21-dev-proyecto.md`
   - Depende: T18
   - Verifica: tabla en el informe medida a medida (coincide / corregido / sigue verificar y por qué) con la URL y fecha de consulta; `smc validate` OK; contraprueba: un id ENS inexistente en un mapeo pone un test en rojo.
   - Prod: —
+  - Estado: reservada por coordinador 2026-11-03
 
 ## Ola 10 (v0.6.0)
 
 - [ ] **T22** — Documentación y versión 0.6.0
-  - Hace: README (mismo estilo: badges, imágenes; cifras reales; comandos `report --registry`, `visor`; hoja de ruta v0.6 hecha y lo que queda), PRD (RF nuevos), `docs/mapa-3d.md` enlazado, CHANGELOG 0.6.0, versión 0.6.0; nota de que el ENS ya está contrastado con el BOE (o cuántas medidas siguen en verificar).
+  - Hace: cablea `smc visor <mapa.json> -o visor.html` en el CLI (llama a `smc.visor.generar_visor`) con test; README (mismo estilo: badges, imágenes; cifras reales; comandos `report --registry`, `visor`; hoja de ruta v0.6 hecha y lo que queda), PRD (RF nuevos), `docs/mapa-3d.md` enlazado, CHANGELOG 0.6.0, versión 0.6.0; nota de que el ENS ya está contrastado con el BOE (o cuántas medidas siguen en verificar).
   - No hace: no regenera imágenes salvo una captura nueva del visor en `docs/img/visor.png` si el informe de T20 la deja.
-  - Toca: `README.md`, `docs/prd/PRD-SMC-001-v1.md`, `CHANGELOG.md`, `pyproject.toml`, `smc/__init__.py`, `docs/img/`, `docs/plan/informes/T22-dev-proyecto.md`
+  - Toca: `smc/cli.py`, `tests/test_cli_v06.py`, `README.md`, `docs/prd/PRD-SMC-001-v1.md`, `CHANGELOG.md`, `pyproject.toml`, `smc/__init__.py`, `docs/img/`, `docs/plan/informes/T22-dev-proyecto.md`
   - Depende: T19, T20, T21
   - Verifica: todos los comandos del README rc=0 sobre los ejemplos; badges con cifras reales.
   - Prod: —
