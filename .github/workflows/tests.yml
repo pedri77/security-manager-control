@@ -1,0 +1,39 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Tests
+        run: uv run --extra dev pytest -q
+      - name: Validar catálogos
+        run: uv run smc validate
+      - name: Comandos de ejemplo del README (salida en directorio temporal)
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/smc"
+          mkdir -p "$out"
+          uv run smc gap assessments/examples/ejemplo-ayuntamiento.yaml > "$out/gap.md"
+          uv run smc report assessments/examples/ejemplo-ayuntamiento.yaml -o "$out/informe.html"
+          uv run smc dashboard assessments/examples -o "$out/panel"
+          uv run smc mapa technologies/registry.template.yaml -o "$out/mapa.json"
+          uv run smc visor "$out/mapa.json" -o "$out/visor.html"
