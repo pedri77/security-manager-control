@@ -139,8 +139,7 @@ verticals:
     recursos:
       - {titulo: "Protección por capas OSI", url: "https://pedri77.github.io/Basicos_Proteccion_Capas_OSI/"}
       - {titulo: "Modelo OSI", url: "https://pedri77.github.io/modelo_OSI/"}
-    estado_recursos:
-      - {proyecto: "Repositorio de vulnerabilidades por capa OSI", estado: pendiente}
+      - {titulo: "Vulnerabilidades y protecciones por capa OSI", url: "https://pedri77.github.io/vulnerabilidades-capas-osi/"}
   - id: VRT-MAIL
     nombre: Correo electrónico
     nis2: [NIS2-21.2.g, NIS2-21.2.j]

@@ -5,6 +5,7 @@ proyectos:
   - {id: ECO-SASE, nombre: "SASE visual", tipo: pages, url: "https://pedri77.github.io/sase-visual-app/", estado: publicado}
   - {id: ECO-FW, nombre: "Firewalls básicos", tipo: pages, url: "https://pedri77.github.io/Basic_Firewalls/", estado: publicado}
   - {id: ECO-OSI-PROT, nombre: "Protección por capas OSI", tipo: pages, url: "https://pedri77.github.io/Basicos_Proteccion_Capas_OSI/", estado: publicado}
+  - {id: ECO-OSI-VULN, nombre: "Vulnerabilidades y protecciones por capa OSI", tipo: pages, url: "https://pedri77.github.io/vulnerabilidades-capas-osi/", estado: publicado}
   - {id: ECO-OSI, nombre: "Modelo OSI", tipo: pages, url: "https://pedri77.github.io/modelo_OSI/", estado: publicado}
   - {id: ECO-ICS, nombre: "ICS/OT security studio", tipo: pages, url: "https://pedri77.github.io/ics-security-studio/", estado: publicado}
   - {id: ECO-WAF, nombre: "WAF forge", tipo: pages, url: "https://pedri77.github.io/wafforge/", estado: publicado}
@@ -12,7 +13,6 @@ proyectos:
   - {id: ECO-KEV, nombre: "KEV dashboard", tipo: repo, url: "https://github.com/pedri77/kev_dash_project", estado: publicado}
   - {id: ECO-TIF, nombre: "Threat intelligence feeds", tipo: repo, url: "https://github.com/pedri77/threat-intelligence-feeds", estado: publicado}
   - {id: ECO-ZTNA, nombre: "Evaluación de productos ZTNA", tipo: pendiente, url: null, estado: pendiente}
-  - {id: ECO-VULN-OSI, nombre: "Repositorio de vulnerabilidades por capa OSI", tipo: pendiente, url: null, estado: pendiente}
   - id: ECO-MAPA3D
     nombre: "Mapa 3D de dispositivos"
     tipo: pendiente

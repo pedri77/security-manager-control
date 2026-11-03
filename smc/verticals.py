@@ -25,6 +25,7 @@ URLS_PUBLICAS = frozenset({
     "https://pedri77.github.io/Basic_Firewalls/",
     "https://pedri77.github.io/Basicos_Proteccion_Capas_OSI/",
     "https://pedri77.github.io/modelo_OSI/",
+    "https://pedri77.github.io/vulnerabilidades-capas-osi/",
     "https://pedri77.github.io/ics-security-studio/",
     "https://pedri77.github.io/wafforge/",
     "https://pedri77.github.io/Basicos_email/",

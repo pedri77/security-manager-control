@@ -28,7 +28,7 @@ TIPOS_ECO = ("pages", "repo", "pendiente")
 REPOS_PUBLICOS = (
     "security-manager-control", "smc-cinematica", "edr-visual-app", "sase-visual-app", "Basic_Firewalls",
     "Basicos_Proteccion_Capas_OSI", "modelo_OSI", "ics-security-studio", "wafforge", "Basicos_email",
-    "kev_dash_project", "threat-intelligence-feeds",
+    "kev_dash_project", "threat-intelligence-feeds", "vulnerabilidades-capas-osi",
 )
 _RE_PEDRI = re.compile(r"https://(?:www\.)?(?:github\.com/pedri77|pedri77\.github\.io)/([^/\s\"'#?)]+)", re.I)
 
