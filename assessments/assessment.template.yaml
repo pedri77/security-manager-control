@@ -15,7 +15,13 @@ cliente:
 evaluaciones:
   NIS2-21.2.a:
     estado: parcial
-    evidencias: []
+    evidencias: []               # texto, o mapa con fecha y caducidad (ver el ejemplo comentado debajo)
+    # evidencias:
+    #   - "Texto libre"
+    #   - ref: "evidencias/politica-v4.pdf"   # ruta relativa a la carpeta de evidencias (sin '..' ni absoluta)
+    #     fecha: "YYYY-MM-DD"
+    #     caduca: "YYYY-MM-DD"                # o vigencia_dias: 365 (caduca = fecha + días)
+    #     sha256: ""                          # opcional, 64 hex; se comprueba contra el fichero
     notas: ""
 
 # Plan de acción (RF-08). Responsable = ROL, no nombre de persona.
