@@ -1,0 +1,42 @@
+# Plantilla de proyecto PMO. Copia a un almacenamiento FUERA del repo (ADR-005): contiene
+# presupuesto, horas y tarifas del cliente. Importes en euros. Fechas AAAA-MM-DD.
+proyecto:
+  id: PRY-001
+  nombre: "Nombre del proyecto"
+  cliente: "Cliente ejemplo"
+  inicio: "2026-01-01"
+  fin: "2026-12-31"
+  presupuesto_total: 0          # si falta, se usa la suma de las partidas
+  presupuesto:                  # partidas: horas, licencias, servicios, formacion
+    horas: 0
+    licencias: 0
+    servicios: 0
+    formacion: 0
+
+tarifas:                        # euros por hora y rol
+  Consultor: 0
+
+tareas:
+  - id: T-01
+    titulo: "Título de la tarea"
+    controles: []               # IDs de controles o brechas SMC (NIS2-21.2.d, ENS-op.acc.6...)
+    accion: ""                  # id de una acción del plan_accion de la evaluación (opcional)
+    responsable: Consultor      # rol (debe tener tarifa)
+    horas_estimadas: 0
+    # presupuesto: 0            # opcional; por defecto horas_estimadas x tarifa del responsable
+    avance: 0                   # 0-100
+    inicio: "2026-01-01"
+    fin: "2026-03-31"
+    depende: []
+
+imputaciones:                   # horas reales; el coste sale de la tarifa del rol
+  - {fecha: "2026-01-15", rol: Consultor, tarea: T-01, horas: 0}
+
+costes:                         # costes no laborales
+  - {proveedor: "Proveedor ejemplo", concepto: "Concepto", importe: 0, fecha: "2026-01-20", partida: licencias, tarea: T-01}
+
+eventos:                        # tipo: comite | auditoria | renovacion | entrega | hito
+  - {id: EV-01, titulo: "Comité de seguimiento", tipo: comite, fecha: "2026-02-01", descripcion: "", lugar: ""}
+
+riesgos:
+  - {id: R-01, descripcion: "", probabilidad: media, impacto: media, mitigacion: "", responsable: Consultor, estado: abierto}
