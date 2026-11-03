@@ -15,11 +15,13 @@ API para integradores (T28):
     validar_inventario(inventario) -> list[str]                         # errores de esquema (nivel o rol inexistente)
     clasificar(sistema) -> Clasificacion                                # AIActError si nivel o rol no existen
     obligaciones(inventario, hoy=None, estricto=True, catalogo=None) -> ResultadoIA
+    es_capitulo_iii(articulo) -> bool                                   # T34: arts. 6-49 (campo `articulo`)
     riesgos_agente(inventario) -> list[HallazgoAgente]
     render_markdown(resultado, hallazgos=None) -> str
 """
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
@@ -56,6 +58,16 @@ class AIActError(ValueError):
 
 
 FECHA_AUTORIDADES_PUBLICAS = date(2030, 8, 2)   # art. 111.2 RIA, último inciso
+CAPITULO_III = (6, 49)                          # arts. 6 a 49 del RIA
+
+
+def es_capitulo_iii(articulo: str) -> bool:
+    """True si TODOS los artículos citados en `articulo` están entre el 6 y el 49 (capítulo III del RIA).
+
+    Se leen los números de artículo y se ignoran los de apartado: «art. 26.1» -> 26; «arts. 43, 47 y 48» -> 43, 47, 48;
+    «art. 5.1 b bis)» -> 5. Una cita mixta (parte dentro, parte fuera) NO cuenta como capítulo III: no se recorta."""
+    nums = [int(n) for n in re.findall(r"(?<![\d.])(\d+)(?!\d)", str(articulo))]
+    return bool(nums) and all(CAPITULO_III[0] <= n <= CAPITULO_III[1] for n in nums)
 
 
 @dataclass
@@ -103,12 +115,24 @@ class ObligacionAplicable:
 
 
 @dataclass
+class ObligacionTransitoria:
+    """Obligación del capítulo III que NO se emite como pendiente por el art. 111.2 (T34)."""
+    id: str
+    articulo: str
+    titulo: str
+    roles: list[str]
+    aplica_desde: date | None     # 2030-08-02 con autoridad_publica; None = solo con cambios significativos
+    condicion: str
+
+
+@dataclass
 class ObligacionesSistema:
     id: str
     nombre: str
     nivel: str
     roles: list[str]
     obligaciones: list[ObligacionAplicable] = field(default_factory=list)
+    regimen_transitorio: list[ObligacionTransitoria] = field(default_factory=list)   # T34, art. 111.2
 
     @property
     def pendientes(self) -> list[ObligacionAplicable]:
@@ -344,6 +368,23 @@ def obligaciones(inventario, hoy: date | None = None, estricto: bool = True,
                 warnings.append(f"{o.id}: sin fecha para el nivel {cl.nivel} (se omite)")
                 continue
             nota = o.nota
+            # T34, art. 111.2 RIA: alto riesgo en el mercado antes de la fecha del capítulo III y sin cambios
+            # significativos de diseño: las obligaciones del capítulo III (arts. 6-49) no se emiten como pendientes.
+            if (cl.nivel.startswith("alto_riesgo") and not o.preexistente and es_capitulo_iii(o.articulo)
+                    and en_mercado is not None and en_mercado < fecha
+                    and not _evidencia(s.get("cambios_significativos"))):
+                if not _evidencia(s.get("autoridad_publica")):
+                    sistema.regimen_transitorio.append(ObligacionTransitoria(
+                        o.id, o.articulo, o.titulo, roles, None,
+                        "solo con cambios significativos de diseño (art. 111.2)"))
+                    continue
+                if hoy < FECHA_AUTORIDADES_PUBLICAS:
+                    sistema.regimen_transitorio.append(ObligacionTransitoria(
+                        o.id, o.articulo, o.titulo, roles, FECHA_AUTORIDADES_PUBLICAS,
+                        "autoridad pública sin cambios significativos: a más tardar el 2030-08-02 (art. 111.2)"))
+                    continue
+                fecha = FECHA_AUTORIDADES_PUBLICAS
+                nota += " Autoridad pública en régimen del art. 111.2: aplica desde 2030-08-02."
             if o.preexistente:
                 # Art. 111.2 RIA (Ómnibus, punto 39 a): solo para alto riesgo ya en el mercado antes de la fecha del capítulo III.
                 if en_mercado is None or en_mercado >= fecha:
@@ -377,6 +418,7 @@ def obligaciones(inventario, hoy: date | None = None, estricto: bool = True,
                 evidencia=o.evidencia, verificar=o.verificar, nota=nota,
             ))
         sistema.obligaciones.sort(key=lambda x: (x.aplica_desde, x.id))
+        sistema.regimen_transitorio.sort(key=lambda x: x.id)
         res.append(sistema)
     return ResultadoIA(hoy=hoy, organizacion=str(inv.get("organizacion") or ""), sistemas=res,
                        no_clasificados=no_clasificados, warnings=warnings, errores=errores)
@@ -511,6 +553,11 @@ def render_markdown(resultado: ResultadoIA, hallazgos: list[HallazgoAgente] | No
                        f"{_fmt_estado(o)} | {cumpl} | {nota.strip() or '—'} |")
         if not s.obligaciones:
             out.append("| — | — | — | — | — | Sin obligaciones específicas |")
+        if s.regimen_transitorio:
+            out += ["", "Régimen transitorio (art. 111.2 RIA): obligaciones del capítulo III que no se emiten como pendientes.", "",
+                    "| Obligación | Artículo | Rol | Pasaría a aplicar | Condición |", "|---|---|---|---|---|"]
+            out += [f"| {t.id} {md_texto(t.titulo)} | {md_texto(t.articulo)} | {', '.join(t.roles)} | "
+                    f"{t.aplica_desde or 'solo con cambios significativos'} | {md_texto(t.condicion)} |" for t in s.regimen_transitorio]
     if r.no_clasificados:
         out += ["", "## Sistemas no clasificados", "", "| Sistema | Error |", "|---|---|"]
         out += [f"| {md_texto(n.get('id'))} {md_texto(n.get('nombre'))} | {md_texto(n.get('error'))} |" for n in r.no_clasificados]
