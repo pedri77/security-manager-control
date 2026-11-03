@@ -7,10 +7,11 @@
 **Todo el perímetro, en una sola pantalla.**
 
 Qué exige la normativa a cada cliente, qué tiene ya implantado, con qué evidencias y qué falta, priorizado.<br>
-NIS2 · ENS · ISO 27001 · SOC · verticales · tecnologías · vulnerabilidades por protocolo · mapa de red · pentest y purple team · IA (RIA) · PMO. En local, sin servidor y sin que los datos salgan de tu equipo.
+NIS2 · ENS · ISO 27001 · SOC · verticales · tecnologías · vulnerabilidades por protocolo · mapa de red · pentest y purple team · IA (RIA) · PMO · evolución entre evaluaciones · salida para auditor. En local, sin servidor y sin que los datos salgan de tu equipo.
 
-[![versión](https://img.shields.io/badge/versión-0.7.1-3cf58a?style=for-the-badge&labelColor=07090c)](CHANGELOG.md)
-[![tests](https://img.shields.io/badge/tests-509%20en%20verde-3cf58a?style=for-the-badge&labelColor=07090c)](tests/)
+[![versión](https://img.shields.io/badge/versión-0.8.0-3cf58a?style=for-the-badge&labelColor=07090c)](CHANGELOG.md)
+[![CI](https://github.com/pedri77/security-manager-control/actions/workflows/tests.yml/badge.svg)](https://github.com/pedri77/security-manager-control/actions/workflows/tests.yml)
+[![tests](https://img.shields.io/badge/tests-595%20en%20verde-3cf58a?style=for-the-badge&labelColor=07090c)](tests/)
 [![python](https://img.shields.io/badge/python-3.10+-3cf58a?style=for-the-badge&logo=python&logoColor=3cf58a&labelColor=07090c)](pyproject.toml)
 [![dependencias](https://img.shields.io/badge/dependencias-solo%20PyYAML-3cf58a?style=for-the-badge&labelColor=07090c)](pyproject.toml)
 
@@ -26,7 +27,7 @@ NIS2 · ENS · ISO 27001 · SOC · verticales · tecnologías · vulnerabilidade
 [![MITRE](https://img.shields.io/badge/MITRE%20ATT%26CK-cobertura%20por%20táctica-ff4d4d?style=flat-square&labelColor=07090c)](soc/use-cases/catalog.yaml)
 [![soberanía](https://img.shields.io/badge/soberanía-ejecución%20local%20UE-5ad1ff?style=flat-square&labelColor=07090c)](docs/adr/ADR-001-catalogos-como-datos-y-datos-de-cliente-fuera-del-repo.md)
 
-[**Ver la web**](https://pedri77.github.io/smc-cinematica/) · [Empezar en 1 minuto](#empezar-en-1-minuto) · [Comandos](#comandos) · [Pentest y purple team](#pentest-y-purple-team) · [IA](#ia-ria-y-agentes) · [PMO](#pmo) · [Ecosistema](#ecosistema) · [PRD](docs/prd/PRD-SMC-001-v1.md) · [Changelog](CHANGELOG.md)
+[**Ver la web**](https://pedri77.github.io/smc-cinematica/) · [Empezar en 1 minuto](#empezar-en-1-minuto) · [Comandos](#comandos) · [Pentest y purple team](#pentest-y-purple-team) · [IA](#ia-ria-y-agentes) · [PMO](#pmo) · [Evolución y auditor](#evolución-salida-para-auditor-y-evidencias)· [Ecosistema](#ecosistema) · [PRD](docs/prd/PRD-SMC-001-v1.md) · [Changelog](CHANGELOG.md)
 
 </div>
 
@@ -51,6 +52,7 @@ flowchart LR
     C --> D["🚨 Brechas priorizadas<br/><sub>P1 · P2 · P3</sub>"]
     D --> E["🗓️ Plan de acción<br/><sub>responsable · fecha · vencidas</sub>"]
     E --> F["📊 Informe HTML<br/>y dashboard multicliente"]
+    F --> G["📈 Evolución y auditor<br/><sub>compare · soa · evidencias</sub>"]
 
     style A fill:#0d1117,stroke:#5ad1ff,color:#e6edf3
     style B fill:#0d1117,stroke:#5ad1ff,color:#e6edf3
@@ -58,6 +60,7 @@ flowchart LR
     style D fill:#0d1117,stroke:#ff4d4d,color:#e6edf3
     style E fill:#0d1117,stroke:#ffb020,color:#e6edf3
     style F fill:#0d1117,stroke:#3cf58a,color:#e6edf3
+    style G fill:#0d1117,stroke:#ffb020,color:#e6edf3
 ```
 
 <p align="center">
@@ -70,6 +73,7 @@ flowchart LR
 4. **Brechas.** `smc gap` calcula el cumplimiento por marco y ordena lo que falta por prioridad.
 5. **Plan.** `plan_accion:` en la evaluación y `smc plan` para ver acciones vencidas y brechas P1 sin acción.
 6. **Entrega.** `smc report` para dirección (HTML imprimible a PDF) y `smc dashboard` para todos tus clientes.
+7. **Seguimiento.** `smc compare` mide la evolución entre dos evaluaciones, `smc soa` entrega al auditor la declaración de aplicabilidad y `smc evidencias` vigila fechas, caducidades y huellas.
 
 ## Tres marcos, una sola rejilla
 
@@ -146,6 +150,11 @@ smc gap assessments/examples/ejemplo-ayuntamiento.yaml           # brechas en Ma
 smc report assessments/examples/ejemplo-ayuntamiento.yaml -o /tmp/informe.html
 smc dashboard assessments/examples -o /tmp/panel                 # abre /tmp/panel/index.html
 
+smc compare assessments/examples/historico/ejemplo-energia-2026-q1.yaml assessments/examples/ejemplo-energia.yaml   # evolución entre evaluaciones
+smc soa assessments/examples/ejemplo-energia.yaml --formato xlsx -o /tmp/aplicabilidad.xlsx   # salida para el auditor
+smc evidencias assessments/examples/ejemplo-energia.yaml         # fechas, caducidades y huellas
+smc report assessments/examples/ejemplo-energia.yaml -o /tmp/evolucion.html --anterior assessments/examples/historico/ejemplo-energia-2026-q1.yaml
+
 smc mapa technologies/registry.template.yaml -o /tmp/mapa.json   # mapa de dispositivos
 smc visor /tmp/mapa.json -o /tmp/visor.html                      # visor 3D, ábrelo en el navegador
 
@@ -165,8 +174,11 @@ smc list                                                  # controles por marco
 smc gap <evaluación.yaml> [-o informe.md] [--hoy AAAA-MM-DD]
 smc plan <evaluación.yaml> [--hoy AAAA-MM-DD]             # vencidas y brechas sin acción
 smc report <evaluación.yaml> -o informe.html [--registry registry.yaml] [--pentest p.yaml] [--purple p.yaml] \
-        [--ai inventario.yaml] [--pmo proyecto.yaml] [--hoy AAAA-MM-DD]   # secciones opcionales
+        [--ai inventario.yaml] [--pmo proyecto.yaml] [--anterior evaluación-anterior.yaml] [--hoy AAAA-MM-DD]   # secciones opcionales
 smc dashboard <dir_evaluaciones> -o <dir_salida> [--hoy AAAA-MM-DD]   # acompañantes <evaluación>.pentest|purple|ai|pmo.yaml
+smc compare <anterior.yaml> <actual.yaml> [-o evolución.md] [--hoy AAAA-MM-DD]   # deltas por marco, controles, P1 y madurez
+smc soa <evaluación.yaml> --formato csv|xlsx|html -o <fichero> [--hoy AAAA-MM-DD]   # declaración de aplicabilidad y evidencias
+smc evidencias <evaluación.yaml> [--base <dir>] [--hoy AAAA-MM-DD]   # estado de cada evidencia; con --base, verifica sha256
 smc soc soc/incidents.template.csv                        # MTTD/MTTA/MTTC/MTTR y % SLA
 smc mitre [--navigator [-o capa.json]] [--purple p.yaml] [--hoy AAAA-MM-DD]   # cobertura y madurez ATT&CK; capa Navigator
 smc pentest <pentest.yaml> [--hoy AAAA-MM-DD]             # hallazgos abiertos, fuera de SLA, retest pendiente
@@ -230,6 +242,30 @@ Las fechas son las vigentes tras el **Ómnibus Digital sobre IA, Reglamento (UE)
 > **Esto no es asesoramiento jurídico.** SMC orienta; el texto que obliga es el publicado en el DOUE. El informe lo repite al principio.
 
 Además, `smc ai` revisa cada agente con herramientas (seis comprobaciones AGT-01 a AGT-06: límite de llamadas, permisos, supervisión humana, registro, prompt injection y exfiltración) con su correspondencia en OWASP Top 10 for LLM Applications 2025 y MITRE ATLAS. Un dato ausente cuenta como «no consta», nunca como cumplido. El catálogo está en [`frameworks/ai-act/obligaciones.yaml`](frameworks/ai-act/obligaciones.yaml) y la plantilla en [`ai/inventario.template.yaml`](ai/inventario.template.yaml).
+
+## Evolución, salida para auditor y evidencias
+
+```mermaid
+flowchart LR
+    Q["📄 Evaluación anterior"] --> C["📈 smc compare<br/><sub>deltas por marco · cerrados · nuevas brechas<br/>P1 · madurez · acciones cerradas</sub>"]
+    A["📄 Evaluación actual"] --> C
+    A --> S["🧾 smc soa<br/><sub>aplicabilidad por control<br/>CSV · XLSX · HTML</sub>"]
+    A --> E["🔏 smc evidencias<br/><sub>vigente · caduca pronto · caducada<br/>huella sha256</sub>"]
+    C --> R["📊 smc report --anterior<br/><sub>sección Evolución</sub>"]
+
+    style Q fill:#0d1117,stroke:#5ad1ff,color:#e6edf3
+    style A fill:#0d1117,stroke:#5ad1ff,color:#e6edf3
+    style C fill:#0d1117,stroke:#3cf58a,color:#e6edf3
+    style S fill:#0d1117,stroke:#ffb020,color:#e6edf3
+    style E fill:#0d1117,stroke:#ffb020,color:#e6edf3
+    style R fill:#0d1117,stroke:#3cf58a,color:#e6edf3
+```
+
+- **Comparación.** `smc compare <anterior> <actual>` reutiliza el análisis de brechas sobre las dos evaluaciones y da el cumplimiento por marco antes, después y delta; los controles cerrados, que mejoran, que empeoran y las nuevas brechas; las brechas P1 y la madurez de verticales en cada fecha; y las acciones del plan cerradas. Avisa si los clientes no coinciden, si la evaluación «actual» es anterior a la otra o si la categoría ENS cambia (el delta ENS no es comparable). Con el par ficticio del repositorio: NIS2 pasa de 50,0 % a 53,3 % y red de 15,0 % a 20,0 %. `smc report ... --anterior <evaluación>` añade al informe HTML la sección «Evolución».
+- **Salida para el auditor.** `smc soa <evaluación> --formato csv|xlsx|html -o <fichero>` genera la declaración de aplicabilidad: una fila por control de cada marco con si aplica, la justificación si no aplica, estado, evidencias, prioridad, refuerzos ENS y mapeo a otros marcos. El CSV es UTF-8 con BOM (Excel) y solo lleva la aplicabilidad; el XLSX trae dos hojas, «Aplicabilidad» y «Evidencias»; el HTML se imprime a PDF desde el navegador. Las celdas que empiezan por `=`, `+`, `-` o `@` se prefijan con `'` para que Excel no las ejecute como fórmula. Es un documento de trabajo: la declaración formal la firma el responsable de seguridad.
+- **Evidencias con fecha y huella.** Una evidencia puede ser texto o `{ref, fecha, caduca | vigencia_dias, sha256}`. `smc evidencias` la clasifica en vigente, caduca pronto (30 días o menos), caducada o sin fecha; con `--base <directorio>` calcula el sha256 de los ficheros referenciados (solo rutas relativas dentro de la base, nunca `..`, rutas absolutas ni enlaces que salgan) y avisa si no coincide. Una evidencia caducada se avisa y se lista en el informe de brechas y en el dashboard, pero **no cambia la puntuación**.
+
+Los ficheros de evidencia no se suben al repositorio: solo se referencian.
 
 ## PMO
 
@@ -300,8 +336,8 @@ security-manager-control/
 ├── offensive/           plantillas de pentest y purple team + ejemplos
 ├── ai/                  plantilla de inventario de IA
 ├── pmo/                 plantilla de proyecto + ejemplo
-├── smc/                 CLI (gap, plan, report, dashboard, soc, mitre, pentest, purple, ai, pmo, mapa, visor…) · assets/ three.js vendorizado
-├── tests/               509 tests
+├── smc/                 CLI (gap, plan, report, dashboard, compare, soa, evidencias, soc, mitre, pentest, purple, ai, pmo, mapa, visor…) · assets/ three.js vendorizado
+├── tests/               595 tests
 └── docs/                PRD · ADR · plan del enjambre · imágenes
 ```
 
@@ -316,7 +352,8 @@ security-manager-control/
 | v0.5 | 20 verticales (Threat Hunting, MDM, puesto, firewall, SASE, ZTNA, capas OSI), evaluación de tecnologías, reglas y suscripciones, 28 protocolos con fuentes oficiales, madurez MITRE con 8 playbooks y capa Navigator, 17 feeds RSS, ecosistema y mapa de red (`smc mapa`) | ✅ |
 | v0.6 | Visor 3D offline del mapa (`smc visor`), informe y dashboard con tecnologías, reglas, suscripciones y madurez MITRE (`--registry`), Anexo II del ENS contrastado con el BOE (45 de 73 medidas) | ✅ |
 | v0.7 | Pentesting y purple team (`smc pentest`, `smc purple`, madurez MITRE con `--purple`), RIA con las fechas del Ómnibus Digital y seguridad de agentes (`smc ai`), PMO con valor ganado y calendario (`smc pmo`), 22 verticales, informe y dashboard con las secciones nuevas | ✅ |
-| v0.8 | Contrastar las 28 medidas ENS que dependen de las dimensiones C/I/T/A/D con las guías CCN-STIC; probar el visor en GPU integrada y móvil; conectores de evidencias, ingesta NVD/KEV/EPSS, cumplimiento por dominio | 📋 |
+| v0.8 | Comparación entre evaluaciones (`smc compare`, sección «Evolución» con `--anterior`), salida para auditor (`smc soa` en CSV, XLSX y HTML), evidencias con fecha, caducidad y huella (`smc evidencias`), evidencia caducada en el dashboard, CI en GitHub Actions y régimen transitorio del art. 111.2 del RIA | ✅ |
+| v0.9 | Contrastar las 28 medidas ENS que dependen de las dimensiones C/I/T/A/D con las guías CCN-STIC; probar el visor en GPU integrada y móvil; conectores de evidencias, ingesta NVD/KEV/EPSS, cumplimiento por dominio | 📋 |
 
 ## Limitaciones conocidas
 
