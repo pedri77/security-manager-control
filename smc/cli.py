@@ -64,6 +64,14 @@ def main(argv: list[str] | None = None) -> int:
     rs = sub.add_parser("rss", help="Catálogo de fuentes RSS y ecosistema; --opml exporta OPML")
     rs.add_argument("--opml", action="store_true")
     rs.add_argument("-o", "--output", type=Path, help="Fichero de salida del OPML")
+    mp = sub.add_parser("mapa", help="Exporta el mapa de dispositivos (JSON smc-mapa/1) para el visor 3D")
+    mp.add_argument("registry", type=Path)
+    mp.add_argument("--inventario", type=Path, help="Inventario de recursos internos (YAML)")
+    mp.add_argument("--tracker", type=Path, help="Seguimiento de vulnerabilidades (CSV)")
+    mp.add_argument("--evaluacion", type=Path, help="Evaluación (YAML) para la madurez por vertical")
+    mp.add_argument("-o", "--output", type=Path, help="Fichero JSON de salida (por defecto, stdout)")
+    mp.add_argument("--hoy", type=_fecha, help="Fecha de referencia AAAA-MM-DD (por defecto, hoy)")
+    mp.add_argument("--days", type=int, default=180, help="Días sin revisar las reglas (180)")
     exp = sub.add_parser("expiring", help="Caducidades del registro de tecnologías")
     exp.add_argument("registry", type=Path)
     exp.add_argument("--days", type=int, default=90)
@@ -114,6 +122,25 @@ def main(argv: list[str] | None = None) -> int:
             print(tech.render_reglas(tech.reglas(args.registry, args.hoy, args.days), args.hoy, args.days))
         else:
             print(tech.render_suscripciones(tech.suscripciones(args.registry, args.hoy, args.days), args.hoy, args.days))
+        return 0
+    if args.cmd == "mapa":
+        import json
+        from . import mapa
+        for nombre in ("registry", "inventario", "tracker", "evaluacion"):
+            ruta = getattr(args, nombre)
+            if ruta is not None and not ruta.is_file():
+                print(f"ERROR: no existe {ruta}", file=sys.stderr)
+                return 2
+        try:
+            m = mapa.construir_mapa(args.registry, args.inventario, args.tracker, args.evaluacion, args.hoy, args.days)
+        except Exception as exc:  # YAML/CSV mal formados
+            print(f"ERROR: {type(exc).__name__}: {exc}", file=sys.stderr)
+            return 2
+        texto = json.dumps(m, ensure_ascii=False, indent=2) + "\n"
+        if args.output:
+            args.output.write_text(texto, encoding="utf-8")
+        else:
+            print(texto, end="")
         return 0
     if args.cmd == "protocols":
         from . import protocols
