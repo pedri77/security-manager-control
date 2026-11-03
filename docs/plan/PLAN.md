@@ -280,14 +280,14 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en a13ab5b · evidencia informes/T25-dev-proyecto.md
 
-- [~] **T26** — RIA (Reglamento (UE) 2024/1689) y seguridad de agentes de IA
+- [x] **T26** — RIA (Reglamento (UE) 2024/1689) y seguridad de agentes de IA
   - Hace: `frameworks/ai-act/obligaciones.yaml`: obligaciones por rol (proveedor, responsable del despliegue, importador, distribuidor) y por nivel de riesgo (prohibido art. 5, alto riesgo Anexo I y Anexo III, transparencia art. 50, modelos de uso general art. 53-55, riesgo mínimo), con artículo, descripción breve y fecha de aplicación vigente tras el Ómnibus Digital (Reglamento (UE) 2026/1744: alto riesgo Anexo III 2027-12-02, Anexo I 2028-08-02; contrastar art. 50 y demás fechas en el texto del DOUE o EUR-Lex; lo no contrastado lleva `verificar: true` con nota). `ai/inventario.template.yaml`: sistemas de IA del cliente (nombre, finalidad, rol, nivel de riesgo, datos personales, proveedor del modelo, agentes con herramientas y permisos, supervisión humana, registro). `smc/ai_act.py`: `clasificar` (valida nivel y rol), `obligaciones(inventario, hoy)` (obligaciones aplicables por sistema con estado por fecha: vigente / aplicable desde), `riesgos_agente` (comprobaciones de seguridad de agentes basadas en OWASP Top 10 for LLM Applications 2025 y MITRE ATLAS: herramientas sin límite, permisos excesivos, sin supervisión humana, sin registro, prompt injection sin mitigación) y `render_markdown`. Fuentes con URL https en la cabecera.
   - No hace: no toca `soc/verticals.yaml` (es de T25) ni `smc/cli.py`; no es asesoramiento jurídico (aviso en el render).
   - Toca: `frameworks/ai-act/`, `ai/`, `smc/ai_act.py`, `tests/test_ai_act.py`, `docs/plan/informes/T26-dev-proyecto.md`
   - Depende: T23
   - Verifica: tests con `hoy` inyectado antes y después de 2027-12-02; contraprueba: un sistema de alto riesgo sin supervisión humana genera la obligación pendiente; un nivel de riesgo inexistente da error.
   - Prod: —
-  - Estado: reservada por coordinador 2026-11-03
+  - Estado: hecha en 351cd26 · evidencia informes/T26-dev-proyecto.md
 
 - [x] **T27** — PMO: vida del proyecto, horas, costes y presupuesto
   - Hace: `smc/pmo.py` y `pmo/` con plantilla `proyecto.template.yaml` y un ejemplo ficticio: proyecto (cliente ficticio, fechas, presupuesto total y por partida: horas, licencias, servicios, formación), tareas (id, título, controles o brechas SMC relacionados, acción del `plan_accion` opcional, responsable por rol, horas estimadas, horas imputadas, % avance, fechas, dependencias), tarifas por rol, imputaciones de horas (fecha, rol, tarea, horas), costes no laborales (proveedor, concepto, importe, fecha, partida), eventos e hitos (comités, auditorías, renovaciones, entregas) y riesgos del proyecto. Cálculos con `hoy` inyectado: coste real por partida, desviación sobre presupuesto, valor ganado simple (PV, EV, AC, CPI, SPI), tareas retrasadas, tareas sin control asociado, próximos eventos (30 días), horas por rol y mes. Opcional: sumar `coste_anual` de suscripciones de un registry vía `smc.tech` (sin recalcular). `render_markdown` y export de eventos a iCalendar (`.ics`, texto escapado según RFC 5545). `docs/pmo.md` y ADR-005 (presupuesto, horas y tarifas son datos de cliente: fuera del repositorio, ADR-001).
@@ -300,13 +300,14 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 
 ## Ola 13 (v0.7.0)
 
-- [ ] **T28** — Integración v0.7 y documentación
+- [~] **T28** — Integración v0.7 y documentación
   - Hace: subcomandos `smc pentest <fichero>`, `smc purple <fichero>`, `smc ai <inventario>`, `smc pmo <proyecto> [--ics eventos.ics] [--registry r.yaml]`; `smc validate` valida también `frameworks/ai-act/` y las plantillas nuevas; informe HTML y dashboard con secciones de pentest/purple, IA y PMO cuando se pasen los ficheros (`smc report ... --pentest --purple --ai --pmo`), con escape y solo `https://`. Decide y documenta si los ejercicios purple detectados cuentan como «probada» en la madurez MITRE (recomendado: sí, con fecha del ejercicio). README (mismo estilo; cifras reales; módulos nuevos), PRD, CHANGELOG 0.7.0, versión 0.7.0.
   - No hace: no cambia catálogos de T24-T27 salvo errores (anotados).
   - Toca: `smc/cli.py`, `smc/catalog.py`, `smc/report_html.py`, `smc/dashboard.py`, `smc/gap.py`, `smc/mitre.py`, `tests/test_cli_v07.py`, `tests/test_t08.py`, `tests/test_cli_v06.py`, `README.md`, `docs/prd/PRD-SMC-001-v1.md`, `CHANGELOG.md`, `pyproject.toml`, `smc/__init__.py`, `docs/plan/informes/T28-dev-proyecto.md`
   - Depende: T24, T25, T26, T27
   - Verifica: cada comando nuevo rc=0 sobre los ejemplos; XSS en un título de tarea PMO y en un hallazgo de pentest sale escapado (contraprueba); todos los comandos del README rc=0.
   - Prod: —
+  - Estado: reservada por coordinador 2026-11-03
 
 ## Libro
 
