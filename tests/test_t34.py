@@ -10,7 +10,8 @@ HOY = date(2026, 11, 3)
 
 def _inv(**kw):
     base = {"id": "IA-T", "nombre": "Prueba", "rol": ["proveedor", "responsable_despliegue"],
-            "nivel_riesgo": "alto_riesgo_anexo_iii", "en_mercado_desde": "2026-01-01"}
+            "nivel_riesgo": "alto_riesgo_anexo_iii", "en_mercado_desde": "2026-01-01",
+            "cambios_significativos": False}
     base.update(kw)
     return {"organizacion": "Ficticia", "sistemas": [base]}
 
@@ -59,9 +60,14 @@ def test_anexo_iii_en_mercado_sin_cambios_no_emite_capitulo_iii_y_lo_pasa_a_regi
     assert not any(p.id in _cap3() for p in s.pendientes)
 
 
-def test_sin_campo_cambios_significativos_se_asume_que_no_hay():
-    s = _sis()
-    assert s.regimen_transitorio and not (_ids(s.obligaciones) & _cap3())
+def test_sin_campo_cambios_significativos_no_recorta_y_avisa():
+    # T36: dato ausente = «no consta»; antes recortaba en silencio
+    inv = _inv()
+    del inv["sistemas"][0]["cambios_significativos"]
+    r = ai_act.obligaciones(inv, HOY)
+    s = r.sistemas[0]
+    assert s.regimen_transitorio == [] and _cap3() & {"AIA-010", "AIA-015"} <= _ids(s.obligaciones)
+    assert any("no consta si hay cambios" in w for w in r.warnings)
 
 
 def test_contraprueba_con_cambios_significativos_vuelven_todas():
@@ -156,3 +162,48 @@ def test_html_contraprueba_sin_retest_fallido_no_hay_tabla():
 def test_html_retest_fallido_en_el_informe_completo_con_extras():
     extras = report_html.calcular_extras(HOY, pentest=_pt())
     assert "Retest fallido" in report_html.render_pentest(extras["pentest"])
+
+
+# --------------------------------------------------------------- T36 hallazgo 1: banderas del art. 111.2
+
+def _inv_sin(campo=None, **kw):
+    inv = _inv(**kw)
+    if campo:
+        inv["sistemas"][0].pop(campo, None)
+    return inv
+
+
+@pytest.mark.parametrize("valor", ["sí", "true", "no", 1, 0, {"existe": True}, [True]])
+def test_t36_h1_cambios_significativos_que_no_es_bool_es_error_y_no_recorta(valor):
+    inv = _inv(cambios_significativos=valor)
+    assert any("cambios_significativos debe ser true o false" in e for e in ai_act.validar_inventario(inv))
+    r = ai_act.obligaciones(inv, HOY)
+    assert r.sistemas[0].regimen_transitorio == [] and any("cambios_significativos" in w for w in r.warnings)
+
+
+def test_t36_h1_autoridad_publica_que_no_es_bool_es_error():
+    errs = ai_act.validar_inventario(_inv(autoridad_publica="sí"))
+    assert any("autoridad_publica debe ser true o false" in e for e in errs)
+
+
+@pytest.mark.parametrize("valor", ["mañana", 20260301, True, [1]])
+def test_t36_h1_en_mercado_desde_invalido_es_error(valor):
+    assert any("en_mercado_desde" in e for e in ai_act.validar_inventario(_inv(en_mercado_desde=valor)))
+
+
+def test_t36_h1_en_mercado_desde_con_hora_no_rompe():
+    from datetime import datetime
+    s = _sis(en_mercado_desde=datetime(2026, 1, 1, 10, 0))
+    assert s.regimen_transitorio
+    assert ai_act.validar_inventario(_inv(en_mercado_desde=datetime(2026, 1, 1, 10, 0))) == []
+
+
+def test_t36_h1_contraprueba_bool_validos_y_ausente_sin_errores():
+    for v in (True, False):
+        assert ai_act.validar_inventario(_inv(cambios_significativos=v, autoridad_publica=v)) == []
+    assert ai_act.validar_inventario(_inv_sin("cambios_significativos")) == []
+
+
+def test_t36_h1_plantilla_nota_sin_jerga_del_plan():
+    t = (ai_act.OBLIGACIONES_FILE).read_text(encoding="utf-8")
+    assert "Desde T34" not in t and "criterio del plan" not in t

@@ -2,9 +2,21 @@
 
 Formato basado en Keep a Changelog. Versionado semántico.
 
+## 0.8.1 (2026-11-03)
+
+Endurecimiento de v0.8 tras la revisión de las olas 15-16. Sin funciones nuevas.
+
+- RIA, art. 111.2: `cambios_significativos` y `autoridad_publica` solo admiten `true` o `false` (otro tipo es un error de validación) y `en_mercado_desde` debe ser una fecha. Un dato ausente cuenta como «no consta»: las obligaciones del capítulo III se emiten como pendientes con un aviso, y solo `cambios_significativos: false` declarado las pasa al régimen transitorio. La nota pública de AIA-070 queda sin jerga interna.
+- `smc soa`: una sola lógica de caducidad (la de `smc.evidencias`); las fechas con hora, las cadenas sin guiones y `vigencia_dias` negativo o fuera de rango dan aviso en lugar de error. El CLI devuelve rc=2 sin traceback ante datos no válidos. El XLSX descarta todos los caracteres no válidos en XML 1.0 (también `U+FFFE`, `U+FFFF` y surrogates sueltos). El CSV neutraliza además las celdas cuyo primer carácter no blanco es `= + - @` (o su variante de ancho completo) y las que empiezan por salto de línea.
+- `smc compare`: clasifica solo controles aplicables en las dos evaluaciones, nuevo grupo «Dejan de evaluarse» (antes se contaban como «sin cambio» o «empeoran») y aviso de los IDs que no existen en el catálogo.
+- `smc report --anterior` con un fichero que no es un mapa YAML da rc=2.
+- La evidencia caducada sale en la sección de cada marco del informe HTML.
+- CI: ejecuta también `compare`, `soa` (csv, xlsx, html), `evidencias` y `report --anterior`, y añade Python 3.10 a la matriz.
+- CHANGELOG: la introducción de 0.8.0 citaba las olas equivocadas; corregida.
+
 ## 0.8.0 (2026-11-03)
 
-Ola 14-16: seguimiento entre evaluaciones, salida para auditor, evidencias y CI. No cambia los IDs de los catálogos.
+Olas 15-16: seguimiento entre evaluaciones, salida para auditor, evidencias y CI. No cambia los IDs de los catálogos.
 
 - `smc compare <anterior> <actual> [--hoy] [-o]`: evolución por marco, controles cerrados, que mejoran, que empeoran y nuevas brechas, P1, madurez de verticales y acciones cerradas (`smc.compare`). Segundo ejemplo ficticio en `assessments/examples/historico/`.
 - `smc report --anterior <evaluación>`: sección «Evolución» en el informe HTML.

@@ -44,7 +44,7 @@ def test_workflow_triggers_y_matriz():
     assert on["push"]["branches"] == ["main"]
     assert on["pull_request"]["branches"] == ["main"]
     job = wf["jobs"]["tests"]
-    assert job["strategy"]["matrix"]["python-version"] == ["3.11", "3.12"]
+    assert job["strategy"]["matrix"]["python-version"] == ["3.10", "3.11", "3.12"]
 
 
 def test_workflow_acciones_fijadas_por_sha():
@@ -60,3 +60,12 @@ def test_workflow_ejecuta_tests_y_validate():
     runs = "\n".join(s.get("run", "") for s in wf["jobs"]["tests"]["steps"])
     assert "uv run --extra dev pytest -q" in runs
     assert "smc validate" in runs
+
+
+def test_t36_workflow_ejecuta_los_comandos_de_v08():
+    runs = "\n".join(s.get("run", "") for s in _workflow()["jobs"]["tests"]["steps"])
+    for frag in ("smc compare ", "smc soa ", "--formato csv", "--formato xlsx", "--formato html", "smc evidencias ",
+                 "--anterior "):
+        assert frag in runs, frag
+    assert "3.10" in _workflow()["jobs"]["tests"]["strategy"]["matrix"]["python-version"]   # requires-python >=3.10
+    assert 'requires-python = ">=3.10"' in (RAIZ / "pyproject.toml").read_text(encoding="utf-8")

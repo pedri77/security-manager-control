@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12"]
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
@@ -37,3 +37,9 @@ jobs:
           uv run smc dashboard assessments/examples -o "$out/panel"
           uv run smc mapa technologies/registry.template.yaml -o "$out/mapa.json"
           uv run smc visor "$out/mapa.json" -o "$out/visor.html"
+          uv run smc compare assessments/examples/historico/ejemplo-energia-2026-q1.yaml assessments/examples/ejemplo-energia.yaml -o "$out/comparacion.md"
+          uv run smc soa assessments/examples/ejemplo-energia.yaml --formato csv -o "$out/soa.csv"
+          uv run smc soa assessments/examples/ejemplo-energia.yaml --formato xlsx -o "$out/soa.xlsx"
+          uv run smc soa assessments/examples/ejemplo-energia.yaml --formato html -o "$out/soa.html"
+          uv run smc evidencias assessments/examples/ejemplo-energia.yaml > "$out/evidencias.md"
+          uv run smc report assessments/examples/ejemplo-energia.yaml --anterior assessments/examples/historico/ejemplo-energia-2026-q1.yaml -o "$out/informe-evolucion.html"

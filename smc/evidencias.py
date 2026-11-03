@@ -18,10 +18,14 @@ _SHA = re.compile(r"[0-9a-fA-F]{64}")
 BLOQUE = 65536
 
 
+_ISO = re.compile(r"\d{4}-\d{2}-\d{2}")
+
+
 def _fecha(v):
+    """date, datetime (se reduce a su fecha) o cadena AAAA-MM-DD estricta (igual en todas las versiones de Python)."""
     if isinstance(v, date):  # datetime es subclase de date
         return v if type(v) is date else v.date()
-    if isinstance(v, str):
+    if isinstance(v, str) and _ISO.fullmatch(v.strip()):
         try:
             return date.fromisoformat(v.strip())
         except ValueError:
