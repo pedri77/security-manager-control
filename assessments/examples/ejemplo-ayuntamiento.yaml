@@ -34,3 +34,11 @@ plan_accion:
   - {id: ACC-02, controles: [NIS2-21.2.b], accion: "Redactar playbooks de respuesta a incidentes", responsable: "RSI", fecha_objetivo: "2026-10-31", estado: pendiente}
   - {id: ACC-03, controles: [NIS2-21.2.j, ENS-op.acc.6], accion: "Extender MFA a todos los accesos remotos", responsable: "Responsable de sistemas", fecha_objetivo: "2026-10-15", estado: hecha}
   - {id: ACC-04, controles: [NET-SEG-01], accion: "Segmentar la red en VLAN por función", responsable: "Responsable de redes", fecha_objetivo: "2027-03-31", estado: bloqueada}
+
+# Madurez por vertical (0-5; no_evaluable exige motivo y no puntúa). Productos ficticios.
+verticales:
+  VRT-EDR: {madurez: 3, producto: "EDR ejemplo", notas: "Cobertura 80 % de puestos, sin servidores"}
+  VRT-FW: {madurez: 2, producto: "Firewall ejemplo", notas: "Reglas sin revisar desde 2024"}
+  VRT-MAIL: {madurez: 4, producto: "Pasarela de correo ejemplo"}
+  VRT-BCK: {madurez: 2, notas: "Sin pruebas de restauración"}
+  VRT-MDM: {madurez: no_evaluable, motivo: "Sin inventario de móviles corporativos todavía"}
