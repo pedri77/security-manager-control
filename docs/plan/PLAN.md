@@ -77,22 +77,23 @@ Revisión de ola: 3
   - Prod: —
   - Estado: hecha en e6a5b05 · evidencia informes/T05-dev-proyecto.md
 
-- [~] **T06** — Dashboard estático multicliente (v0.4)
+- [x] **T06** — Dashboard estático multicliente (v0.4)
   - Hace: `smc/dashboard.py` + CLI `smc dashboard <dir_evaluaciones> -o <dir_salida>`: recorre `*.yaml` de evaluaciones, genera `index.html` (tabla de clientes con cumplimiento por marco, nº de brechas P1, acciones vencidas, fecha de evaluación, semáforo) y una página por cliente reutilizando `report_html`. Todo estático, local, sin servidor. Añade un segundo ejemplo ficticio privado (empresa de energía, entidad esencial, no sector público) en `assessments/examples/` para que el dashboard muestre dos clientes.
   - No hace: no sirve por red ni añade autenticación; no publica nada.
   - Toca: `smc/dashboard.py`, `smc/cli.py`, `assessments/examples/ejemplo-energia.yaml`, `tests/test_dashboard.py`, `docs/plan/informes/T06-dev-proyecto.md`
   - Depende: T05
   - Verifica: test que genera el dashboard de `assessments/examples/` en un tmp y comprueba 2 filas, enlaces relativos válidos a las páginas de cliente y escape de nombres. Contraprueba: un YAML inválido en el directorio se informa como aviso y no rompe el resto.
   - Prod: —
-  - Estado: reservada por coordinador 2026-11-03
+  - Estado: hecha en 2c13473 · evidencia informes/T06-dev-proyecto.md
 
-- [ ] **T07** — Documentación y versión 0.4.0
+- [~] **T07** — Documentación y versión 0.4.0
   - Hace: actualiza `README.md` (estado v0.4, comandos nuevos, flujo), `docs/prd/PRD-SMC-001-v1.md` (roadmap: marca v0.2-v0.4 como hechas), crea `docs/adr/ADR-002-informes-html-y-dashboard-estatico.md` (por qué HTML autocontenido y dashboard estático local: soberanía, sin servidor, ADR-001), sube versión a 0.4.0 en `pyproject.toml` y `smc/__init__.py`, añade `CHANGELOG.md`.
   - No hace: no toca código de `smc/` salvo `__init__.py`.
   - Toca: `README.md`, `docs/prd/PRD-SMC-001-v1.md`, `docs/adr/ADR-002-informes-html-y-dashboard-estatico.md`, `pyproject.toml`, `smc/__init__.py`, `CHANGELOG.md`, `docs/plan/informes/T07-dev-proyecto.md`
   - Depende: T06
   - Verifica: `smc --version` da 0.4.0; todos los comandos del README se ejecutan sin error sobre los ejemplos. Contraprueba: un comando mal escrito en el README falla al ejecutarlo.
   - Prod: —
+  - Estado: reservada por coordinador 2026-11-03
 
 ## Libro
 
