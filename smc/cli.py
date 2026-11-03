@@ -33,6 +33,11 @@ def main(argv: list[str] | None = None) -> int:
     pl.add_argument("assessment", type=Path)
     pl.add_argument("--hoy", type=_fecha, help="Fecha de referencia AAAA-MM-DD (por defecto, hoy)")
 
+    rp = sub.add_parser("report", help="Informe HTML autocontenido de una evaluación")
+    rp.add_argument("assessment", type=Path)
+    rp.add_argument("-o", "--output", type=Path, required=True, help="Fichero HTML de salida")
+    rp.add_argument("--hoy", type=_fecha, help="Fecha de referencia AAAA-MM-DD (por defecto, hoy)")
+
     soc = sub.add_parser("soc", help="Métricas del SOC (MTTD/MTTA/MTTC/MTTR, SLA) desde CSV de incidentes")
     soc.add_argument("incidents", type=Path)
     sub.add_parser("mitre", help="Cobertura MITRE ATT&CK de los casos de uso")
@@ -84,6 +89,12 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "plan":
         print(run_plan(args.assessment, args.hoy))
+        return 0
+
+    if args.cmd == "report":
+        from .report_html import run_html
+        args.output.write_text(run_html(args.assessment, args.hoy), encoding="utf-8")
+        print(f"Informe escrito en {args.output}")
         return 0
 
     if args.cmd == "gap":
