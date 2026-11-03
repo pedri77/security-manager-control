@@ -363,10 +363,10 @@ def test_ztna_privado_sin_url_y_sin_nombrar_el_repo():
 # ------------------------------------------------------------------ versión y documentación
 
 def test_version_070():
-    assert __version__ == "0.7.0"
-    assert 'version = "0.7.0"' in (ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    assert "## 0.7.0" in (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
-    assert "versión-0.7.0" in (ROOT / "README.md").read_text(encoding="utf-8")
+    assert __version__ == "0.7.1"
+    assert 'version = "0.7.1"' in (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    assert "## 0.7.1" in (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+    assert "versión-0.7.1" in (ROOT / "README.md").read_text(encoding="utf-8")
 
 
 def _readme():
@@ -378,7 +378,7 @@ def test_cifras_del_readme_son_las_reales():
     from smc.verticals import cargar_verticales
     readme = _readme()
     assert len(cargar_verticales()) == 22 and "verticales-22-" in readme
-    assert len(cargar_obligaciones()) == 30 and "RIA-30%20obligaciones" in readme
+    assert len(cargar_obligaciones()) == 31 and "RIA-31%20obligaciones" in readme
     n_tests = len(re.findall(r"^\s*def test_", "".join(p.read_text(encoding="utf-8") for p in (ROOT / "tests").glob("test_*.py")), re.M))
     badge = int(re.search(r"tests-(\d+)%20en%20verde", readme).group(1))
     assert badge >= n_tests

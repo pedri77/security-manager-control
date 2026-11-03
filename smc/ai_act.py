@@ -55,6 +55,9 @@ class AIActError(ValueError):
     """Esquema inválido: nivel de riesgo o rol inexistente."""
 
 
+FECHA_AUTORIDADES_PUBLICAS = date(2030, 8, 2)   # art. 111.2 RIA, último inciso
+
+
 @dataclass
 class Obligacion:
     id: str
@@ -71,6 +74,7 @@ class Obligacion:
     evidencia: str = ""
     verificar: bool = False
     nota: str = ""
+    preexistente: bool = False      # T29 (art. 111.2): solo para sistemas en el mercado antes de la fecha de su nivel
 
     def fecha(self, nivel: str) -> date | None:
         if isinstance(self.aplica_desde, dict):
@@ -162,7 +166,7 @@ def cargar_obligaciones(path: Path | None = None) -> list[Obligacion]:
             roles=list(raw.get("roles") or []), niveles=list(raw.get("niveles") or []), aplica_desde=ad,
             fuente=raw.get("fuente", ""), supuesto=raw.get("supuesto") or "", excepto_supuesto=raw.get("excepto_supuesto") or "",
             transitorio=tr, evidencia=raw.get("evidencia") or "", verificar=bool(raw.get("verificar", False)),
-            nota=raw.get("nota") or "",
+            nota=raw.get("nota") or "", preexistente=bool(raw.get("preexistente", False)),
         ))
     return out
 
@@ -340,6 +344,22 @@ def obligaciones(inventario, hoy: date | None = None, estricto: bool = True,
                 warnings.append(f"{o.id}: sin fecha para el nivel {cl.nivel} (se omite)")
                 continue
             nota = o.nota
+            if o.preexistente:
+                # Art. 111.2 RIA (Ómnibus, punto 39 a): solo para alto riesgo ya en el mercado antes de la fecha del capítulo III.
+                if en_mercado is None or en_mercado >= fecha:
+                    continue
+                cambios = _evidencia(s.get("cambios_significativos"))
+                publica = _evidencia(s.get("autoridad_publica"))
+                if "cambios_significativos" not in s:
+                    warnings.append(f"{sid}: en el mercado desde {en_mercado}, antes de {fecha}; sin cambios_significativos "
+                                    f"se asume que no los hay (art. 111.2)")
+                if cambios:
+                    nota += " Declara cambios significativos de diseño: el capítulo III le aplica desde la fecha de su nivel."
+                elif publica:
+                    fecha = FECHA_AUTORIDADES_PUBLICAS
+                    nota += " Sin cambios significativos y destinado a autoridades públicas: medidas a más tardar el 2030-08-02."
+                else:
+                    nota += " Sin cambios significativos de diseño no está obligado por el capítulo III; si los hay desde esa fecha, sí."
             if o.transitorio:
                 corte, f_tr = o.transitorio["en_mercado_antes_de"], o.transitorio["aplica_desde"]
                 if en_mercado is None:
