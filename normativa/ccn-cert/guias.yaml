@@ -1,0 +1,68 @@
+# Guías CCN-STIC e Informes de Buenas Prácticas (BP) del CCN-CERT
+# Portal: https://www.ccn-cert.cni.es  ·  ENS: https://ens.ccn.cni.es
+# verificado: true  -> número y título contrastados en fuentes públicas (nov. 2026)
+# verificado: false -> conocido pero pendiente de contrastar con el portal antes de citarlo a cliente
+# Comprobar siempre la versión vigente: muchas guías anteriores al RD 311/2022 están escritas contra el RD 3/2010.
+version: v1
+fecha_revision: "2026-11-02"
+
+guias:
+  # --- Serie 100: productos ---
+  - {id: CCN-STIC-105, serie: "100", titulo: Catálogo de Productos y Servicios de Seguridad TIC (CPSTIC), verificado: true, controles: [ENS-op.pl.5, NIS2-21.2.d]}
+  - {id: CCN-STIC-140, serie: "100", titulo: Taxonomía de productos de seguridad TIC, verificado: true, controles: [ENS-op.pl.5]}
+
+  # --- Serie 800: Esquema Nacional de Seguridad ---
+  - {id: CCN-STIC-801, serie: "800", titulo: Responsabilidades y funciones en el ENS, verificado: false, controles: [ENS-org.1, TRV-GOB-01]}
+  - {id: CCN-STIC-802, serie: "800", titulo: Guía de auditoría del ENS, verificado: true, controles: [NIS2-21.2.f]}
+  - {id: CCN-STIC-803, serie: "800", titulo: Valoración de los sistemas, verificado: true, controles: [ENS-op.pl.1]}
+  - {id: CCN-STIC-804, serie: "800", titulo: Guía de implantación de las medidas del ENS, verificado: true, controles: ["*ENS"]}
+  - {id: CCN-STIC-805, serie: "800", titulo: Política de seguridad de la información, verificado: false, controles: [ENS-org.1, NIS2-21.2.a]}
+  - {id: CCN-STIC-806, serie: "800", titulo: Plan de adecuación al ENS, verificado: false, controles: [TRV-GOB-03]}
+  - {id: CCN-STIC-807, serie: "800", titulo: Criptología de empleo en el ENS, verificado: false, controles: [NIS2-21.2.h, ENS-mp.si.2, ENS-op.exp.10]}
+  - {id: CCN-STIC-808, serie: "800", titulo: Verificación del cumplimiento de las medidas del ENS, verificado: true, controles: ["*ENS", NIS2-21.2.f]}
+  - {id: CCN-STIC-809, serie: "800", titulo: Declaración y certificación de conformidad con el ENS, verificado: false, controles: []}
+  - {id: CCN-STIC-812, serie: "800", titulo: Seguridad en entornos y aplicaciones web, verificado: false, controles: [ENS-mp.s.2, NIS2-21.2.e]}
+  - {id: CCN-STIC-815, serie: "800", titulo: Métricas e indicadores del ENS, verificado: true, controles: [ENS-op.mon.2, NIS2-21.2.f, SOC-KPI-05]}
+  - {id: CCN-STIC-817, serie: "800", titulo: Gestión de ciberincidentes (taxonomía y niveles de impacto), verificado: true, controles: [ENS-op.exp.7, ENS-op.exp.9, NIS2-21.2.b, NIS2-23.alerta]}
+  - {id: CCN-STIC-818, serie: "800", titulo: Herramientas de seguridad en el ENS, verificado: false, controles: []}
+  - {id: CCN-STIC-819, serie: "800", titulo: Medidas compensatorias, verificado: false, controles: []}
+  - {id: CCN-STIC-820, serie: "800", titulo: Protección frente a denegación de servicio, verificado: false, controles: [ENS-mp.s.4, NET-PER-03]}
+  - {id: CCN-STIC-821, serie: "800", titulo: Normas de seguridad (ejemplos), verificado: false, controles: [ENS-org.2]}
+  - {id: CCN-STIC-822, serie: "800", titulo: Procedimientos de seguridad (ejemplos), verificado: false, controles: [ENS-org.3]}
+  - {id: CCN-STIC-823, serie: "800", titulo: Utilización de servicios en la nube, verificado: true, controles: [ENS-op.nub.1, TRV-CLOUD-01, NIS2-21.2.d]}
+  - {id: CCN-STIC-824, serie: "800", titulo: Informe del Estado de Seguridad (INES), verificado: true, controles: [ENS-op.mon.2]}
+  - {id: CCN-STIC-825, serie: "800", titulo: ENS e ISO/IEC 27001, verificado: true, controles: []}
+  - {id: CCN-STIC-827, serie: "800", titulo: Gestión y uso de dispositivos móviles, verificado: false, controles: [ENS-mp.eq.3]}
+  - {id: CCN-STIC-830, serie: "800", titulo: Ámbito de aplicación del ENS, verificado: false, controles: []}
+  - {id: CCN-STIC-844, serie: "800", titulo: Manual de usuario de INES, verificado: true, controles: [ENS-op.mon.2]}
+  - {id: CCN-STIC-883, serie: "800", titulo: "Implantación del ENS en Entidades Locales (PCE 883A <5.000 hab., 883B <20.000, 883C 20.000–75.000, 883D Diputaciones)", verificado: true, perfil: entidades_locales, controles: ["*ENS"]}
+  - {id: CCN-STIC-890, serie: "800", titulo: "Adecuación al ENS conforme al PCE de Requisitos Fundamentales de Seguridad (38 medidas; act. 29/07/2025 alineada con NIS2; anexos 890A EELL y 890C)", verificado: true, perfil: categoria_basica, controles: ["*ENS", "*NIS2"]}
+  - {id: CCN-STIC-892, serie: "800", titulo: "PCE para entidades sujetas al Reglamento (UE) 2024/2690 y al ENS — versión anterior retirada; nueva versión en preparación", verificado: true, estado: en_revision, controles: ["*NIS2", "*ENS"]}
+
+  # --- Series de configuración segura (bastionado por producto) ---
+  - {id: CCN-STIC-SERIE-500-600, serie: "500/600", titulo: "Guías de configuración segura de sistemas operativos y aplicaciones (Windows, Linux, etc.)", verificado: true, controles: [ENS-op.exp.2, NET-HARD-01, NIS2-21.2.g]}
+  - {id: CCN-STIC-SERIE-1400, serie: "1400", titulo: Procedimientos de empleo seguro de productos cualificados CPSTIC (p. ej. equipos de red), verificado: true, controles: [ENS-op.pl.5, NET-HARD-01]}
+
+buenas_practicas:
+  - {id: CCN-CERT-BP-01, titulo: Principios y recomendaciones básicas en ciberseguridad, verificado: true, controles: [NIS2-21.2.g]}
+  - {id: CCN-CERT-BP-02, titulo: Correo electrónico, verificado: true, controles: [ENS-mp.s.1, TRV-EMAIL-01]}
+  - {id: CCN-CERT-BP-03, titulo: Dispositivos móviles, verificado: true, controles: [ENS-mp.eq.3]}
+  - {id: CCN-CERT-BP-04, titulo: Ransomware, verificado: true, controles: [TRV-BCK-01, NIS2-21.2.c]}
+  - {id: CCN-CERT-BP-05, titulo: Internet de las Cosas, verificado: true, controles: [ENS-mp.eq.4, NET-OT-01]}
+  - {id: CCN-CERT-BP-06, titulo: Seguridad y riesgos de los navegadores web, verificado: true, controles: [ENS-mp.s.3]}
+  - {id: CCN-CERT-BP-07, titulo: Recomendaciones de implementación de HTTPS, verificado: true, controles: [NET-CRY-01, ENS-mp.com.2]}
+  - {id: CCN-CERT-BP-08, titulo: Buenas prácticas en redes sociales, verificado: true, controles: [ENS-mp.per.3]}
+  - {id: CCN-CERT-BP-10, titulo: Recomendaciones de seguridad para CDN, verificado: true, controles: [NET-PER-03]}
+  - {id: CCN-CERT-BP-11, titulo: Recomendaciones para redes WiFi corporativas, verificado: true, controles: [NET-WIFI-01]}
+  - {id: CCN-CERT-BP-16, titulo: Recomendaciones de seguridad de Adobe Acrobat Reader DC, verificado: true, controles: [ENS-op.exp.2]}
+  - {id: CCN-CERT-BP-18, titulo: Teletrabajo y refuerzo de la vigilancia, verificado: true, controles: [NET-ACC-01]}
+  - {id: CCN-CERT-BP-20, titulo: Gestión de cibercrisis, verificado: true, controles: [NIS2-21.2.c]}
+  - {id: CCN-CERT-BP-21, titulo: Gestión de incidentes de ransomware, verificado: true, controles: [NIS2-21.2.b, ENS-op.exp.7]}
+  - {id: CCN-CERT-BP-25, titulo: Recomendaciones de seguridad para bases de datos DB2 sobre z/OS, verificado: true, controles: [ENS-op.exp.2]}
+  - {id: CCN-CERT-BP-27, titulo: Recomendaciones de seguridad en Kubernetes, verificado: true, controles: [TRV-CLOUD-01, ENS-op.exp.2]}
+  - {id: CCN-CERT-BP-28, titulo: Recomendaciones sobre desarrollo seguro, verificado: true, controles: [ENS-mp.sw.1, NIS2-21.2.e]}
+
+instrucciones_tecnicas:
+  - {id: ITS-NOTIFICACION, titulo: "ITS de Notificación de Incidentes de Seguridad (BOE-A-2018-5370) — usa la CCN-STIC 817 para clasificar el impacto; notificación obligatoria de Alto, Muy Alto y Crítico", verificado: true, nota: "Dictada bajo el RD 3/2010: confirmar vigencia tras el RD 311/2022", controles: [ENS-op.exp.7, NIS2-23.alerta]}
+  - {id: ITS-INES, titulo: "ITS de Informe del Estado de la Seguridad (BOE-A-2016-10108)", verificado: true, nota: "Dictada bajo el RD 3/2010: confirmar vigencia tras el RD 311/2022", controles: [ENS-op.mon.2]}
+  - {id: GUIA-NACIONAL-NOTIFICACION, titulo: "Guía Nacional de Notificación y Gestión de Ciberincidentes (Consejo Nacional de Ciberseguridad, 21/02/2020)", verificado: true, controles: [NIS2-21.2.b, NIS2-23.alerta, NIS2-23.notificacion]}

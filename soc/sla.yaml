@@ -1,0 +1,18 @@
+# SLAs del SOC — objetivos en minutos. Ajustar al contrato con el cliente / proveedor MSSP.
+version: v1
+severidades:
+  critica: {ack: 15,  contencion: 60,   resolucion: 240,   notificacion_nis2: true}
+  alta:    {ack: 30,  contencion: 240,  resolucion: 1440,  notificacion_nis2: evaluar}
+  media:   {ack: 120, contencion: 1440, resolucion: 4320,  notificacion_nis2: false}
+  baja:    {ack: 480, contencion: null, resolucion: 10080, notificacion_nis2: false}
+
+# Plazos regulatorios desde la detección de un incidente significativo (NIS2 Art. 23)
+regulatorio:
+  alerta_temprana_h: 24
+  notificacion_h: 72
+  informe_final_dias: 30
+
+tiers:
+  N1: {funcion: Triaje y clasificación, escalado_max_min: 30}
+  N2: {funcion: Investigación y contención, escalado_max_min: 120}
+  N3: {funcion: Respuesta avanzada, forense, threat hunting}

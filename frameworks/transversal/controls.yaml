@@ -1,0 +1,25 @@
+# Temas transversales — de interés para cualquier organización, con o sin obligación NIS2/ENS.
+framework: TRANSVERSAL
+version: "v1"
+controls:
+  - {id: TRV-GOB-01, dominio: Gobierno, titulo: "Roles definidos (CISO/RSI, DPO, responsable del sistema)", referencia: "ISO 27001 5.3"}
+  - {id: TRV-GOB-02, dominio: Gobierno, titulo: "Comité de seguridad con reporte periódico a dirección", referencia: "ISO 27001 9.3"}
+  - {id: TRV-GOB-03, dominio: Gobierno, titulo: "Presupuesto y plan director de seguridad", referencia: "—"}
+  - {id: TRV-RGPD-01, dominio: Privacidad, titulo: "Registro de actividades de tratamiento (RAT)", referencia: "RGPD art. 30"}
+  - {id: TRV-RGPD-02, dominio: Privacidad, titulo: "EIPD para tratamientos de alto riesgo", referencia: "RGPD art. 35"}
+  - {id: TRV-RGPD-03, dominio: Privacidad, titulo: "Notificación de brechas a la AEPD en 72 h", referencia: "RGPD art. 33"}
+  - {id: TRV-ID-01, dominio: Identidad, titulo: "Gestión centralizada de identidades y ciclo de vida (joiner/mover/leaver)", referencia: "CIS 5-6"}
+  - {id: TRV-ID-02, dominio: Identidad, titulo: "Gestión de cuentas privilegiadas (PAM) y tiering", referencia: "CIS 5-6"}
+  - {id: TRV-VUL-01, dominio: Vulnerabilidades, titulo: "Escaneo continuo y SLA de remediación por criticidad", referencia: "CIS 7"}
+  - {id: TRV-VUL-02, dominio: Vulnerabilidades, titulo: "Pentest / red team periódico", referencia: "CIS 18"}
+  - {id: TRV-DET-01, dominio: Detección, titulo: "SIEM/XDR con cobertura de fuentes críticas", referencia: "CIS 8, 13"}
+  - {id: TRV-DET-02, dominio: Detección, titulo: "Casos de uso mapeados a MITRE ATT&CK con cobertura medida", referencia: "—"}
+  - {id: TRV-EDR-01, dominio: Endpoint, titulo: "EDR desplegado en servidores y puestos", referencia: "CIS 10"}
+  - {id: TRV-CLOUD-01, dominio: Cloud, titulo: "Postura cloud (CSPM) y gestión de configuraciones", referencia: "CIS 4"}
+  - {id: TRV-EMAIL-01, dominio: Correo, titulo: "SPF, DKIM, DMARC (p=reject) y filtrado avanzado", referencia: "CIS 9"}
+  - {id: TRV-DATA-01, dominio: Datos, titulo: "Clasificación y DLP sobre información sensible", referencia: "CIS 3"}
+  - {id: TRV-BCK-01, dominio: Copias, titulo: "Copias inmutables/offline (3-2-1-1-0) y pruebas de restauración", referencia: "CIS 11"}
+  - {id: TRV-TI-01, dominio: Inteligencia, titulo: "Threat intelligence y vigilancia de exposición digital (dark web, typosquatting, filtraciones)", referencia: "—"}
+  - {id: TRV-SEG-01, dominio: Seguros, titulo: "Ciberseguro alineado con el riesgo residual", referencia: "—"}
+  - {id: TRV-DORA-01, dominio: Sectorial, titulo: "Si es entidad financiera, evaluar DORA (TIC, pruebas TLPT, registro de proveedores TIC)", referencia: "Reglamento (UE) 2022/2554"}
+  - {id: TRV-AI-01, dominio: IA, titulo: "Inventario y política de uso de IA (shadow AI, fuga de datos a LLMs)", referencia: "Reglamento (UE) 2024/1689"}

@@ -1,0 +1,30 @@
+# Ejemplo ficticio — Ayuntamiento mediano, ENS categoría MEDIA
+cliente:
+  nombre: "Ayuntamiento de Ejemplo"
+  sector: Administración pública
+  tamano: mediana
+  tipo_entidad_nis2: importante
+  sector_publico: true
+  categoria_ens: MEDIA
+  fecha: "2026-11-02"
+  evaluador: "SMC demo"
+
+evaluaciones:
+  NIS2-20.1: {estado: parcial, evidencias: [], notas: "Política aprobada en 2021, sin revisión"}
+  NIS2-21.2.a: {estado: implementado, evidencias: ["Análisis de riesgos PILAR 2026"]}
+  NIS2-21.2.b: {estado: parcial, evidencias: ["Procedimiento PR-INC-01"], notas: "Sin playbooks"}
+  NIS2-21.2.c: {estado: no_implementado, notas: "Sin pruebas de restauración"}
+  NIS2-21.2.d: {estado: no_implementado}
+  NIS2-21.2.j: {estado: parcial, notas: "MFA solo en correo"}
+  NIS2-23.alerta: {estado: implementado, evidencias: []}
+  ENS-org.1: {estado: implementado, evidencias: ["Política de seguridad v2"]}
+  ENS-op.pl.1: {estado: implementado, evidencias: ["Análisis de riesgos PILAR 2026"]}
+  ENS-op.acc.6: {estado: parcial}
+  ENS-op.exp.1: {estado: parcial, notas: "Inventario en hoja de cálculo sin actualizar"}
+  ENS-op.mon.1: {estado: no_implementado}
+  ENS-mp.info.6: {estado: implementado, evidencias: ["Política de backup"]}
+  ENS-mp.if.6: {estado: no_aplica, notas: "CPD externalizado"}
+  TRV-EMAIL-01: {estado: parcial, notas: "DMARC en p=none"}
+  NET-SEG-01: {estado: no_implementado, notas: "Red plana"}
+  NET-PER-02: {estado: parcial}
+  NET-ACC-01: {estado: implementado, evidencias: ["VPN con MFA"]}

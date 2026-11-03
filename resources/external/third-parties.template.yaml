@@ -1,0 +1,35 @@
+# Inventario de RECURSOS EXTERNOS — proveedores, cloud y cadena de suministro (NIS2 21.2.d / ENS op.ext)
+organizacion: "<nombre>"
+fecha_revision: "YYYY-MM-DD"
+
+proveedores:
+  - id: TP-0001
+    nombre: ""
+    servicio: ""                 # p. ej. SOC gestionado, hosting, ERP SaaS, mantenimiento red
+    tipo: "cloud | saas | mssp | msp | software | hardware | consultoria | telco"
+    criticidad: "baja | media | alta"
+    acceso_a_sistemas: "ninguno | remoto | privilegiado | fisico"
+    datos_tratados: "ninguno | internos | personales | personales_sensibles | clasificados"
+    ubicacion_datos: "ES | UE | fuera_UE"
+    certificaciones: []          # ENS (categoría), ISO 27001, SOC 2, CSA STAR...
+    contrato:
+      clausulas_seguridad: false
+      clausula_notificacion_incidentes: false
+      derecho_auditoria: false
+      sla_definido: false
+      encargo_tratamiento_rgpd: false
+    ultima_evaluacion: ""
+    riesgo_residual: "bajo | medio | alto"
+    plan_salida: false
+
+dependencias_criticas:
+  # Servicios cuya caída detiene la operación (concentración de riesgo)
+  - servicio: ""
+    proveedor_id: TP-0001
+    alternativa: ""
+
+exposicion_externa:
+  dominios: []
+  rangos_ip_publicos: []
+  cuentas_redes_sociales: []
+  marcas_vigiladas: []

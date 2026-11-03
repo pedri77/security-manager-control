@@ -1,0 +1,19 @@
+# Evaluación de cliente — copiar a assessments/<cliente>/assessment.yaml
+cliente:
+  nombre: "<cliente>"
+  sector: ""                     # Anexo I/II NIS2: energía, transporte, banca, sanidad, agua, infra digital, AAPP...
+  tamano: "micro | pequena | mediana | grande"
+  tipo_entidad_nis2: "esencial | importante | no_obligada"
+  sector_publico: false          # true => se evalúa ENS
+  proveedor_sector_publico: false  # true => también ENS
+  categoria_ens: "BASICA | MEDIA | ALTA"
+  fecha: "YYYY-MM-DD"
+  evaluador: ""
+
+# Estado por control: implementado | parcial | no_implementado | no_aplica
+# Controles no listados se consideran "sin evaluar".
+evaluaciones:
+  NIS2-21.2.a:
+    estado: parcial
+    evidencias: []
+    notas: ""

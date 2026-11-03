@@ -1,0 +1,47 @@
+# Inventario de RECURSOS INTERNOS de la organización — copiar a assessments/<cliente>/internal.yaml
+organizacion: "<nombre>"
+fecha_revision: "YYYY-MM-DD"
+
+personas:
+  - rol: CISO / Responsable de Seguridad (RSI)
+    nombre: ""
+    dedicacion: "completa | parcial | externalizada"
+  - rol: Delegado de Protección de Datos (DPO)
+    nombre: ""
+  - rol: Responsable del Sistema (ENS)
+    nombre: ""
+  - rol: Equipo de seguridad / SOC interno
+    fte: 0
+
+activos:
+  # tipo: servidor | puesto | movil | red | aplicacion | datos | cloud | ot | iot
+  - id: AST-0001
+    nombre: ""
+    tipo: servidor
+    propietario: ""
+    criticidad: "baja | media | alta"
+    categoria_ens: "BASICA | MEDIA | ALTA | n/a"
+    ubicacion: "on-prem | cloud:<proveedor> | hibrido"
+    soporte_fabricante_hasta: "YYYY-MM-DD"
+
+procesos:
+  - nombre: Gestión de incidentes
+    documentado: false
+    ultima_revision: ""
+  - nombre: Gestión de parches
+    documentado: false
+  - nombre: Altas, bajas y cambios de usuarios
+    documentado: false
+
+herramientas_seguridad:
+  # categoria: edr | siem | firewall | ndr | pam | iam | backup | vuln_scanner | dlp | email_sec | casb | waf
+  - categoria: edr
+    producto: ""
+    cobertura_pct: 0
+    gestionado_por: "interno | externo"
+
+capacidades:
+  respuesta_24x7: false
+  threat_hunting: false
+  desarrollo_seguro: false
+  pruebas_restauracion: false

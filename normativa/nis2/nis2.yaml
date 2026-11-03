@@ -1,0 +1,83 @@
+# NIS2 — Marco normativo europeo completo
+# Se incluye íntegro como referencia con independencia de la transposición española.
+# Resúmenes propios; el texto legal vinculante es el publicado en el DOUE (ver `fuentes`).
+version: v1
+fecha_revision: "2026-11-02"
+
+fuentes:
+  - id: NIS2-DIR
+    titulo: Directiva (UE) 2022/2555 (NIS2)
+    tipo: directiva
+    eficacia: Obliga a los Estados miembros; llega a las entidades a través de la ley nacional de transposición
+    plazo_transposicion: "2024-10-17"
+    url: https://eur-lex.europa.eu/eli/dir/2022/2555/oj
+  - id: NIS2-RE-2690
+    titulo: Reglamento de Ejecución (UE) 2024/2690 — requisitos técnicos y metodológicos
+    tipo: reglamento_ejecucion
+    eficacia: Directamente aplicable en todos los Estados miembros (también España) desde el 2024-11-07
+    ambito: Proveedores DNS, registros TLD, cloud, centros de datos, CDN, MSP, MSSP, marketplaces, buscadores, redes sociales, prestadores de servicios de confianza
+    url: https://eur-lex.europa.eu/eli/reg_impl/2024/2690/oj
+  - id: ENISA-TIG
+    titulo: ENISA — Technical Implementation Guidance sobre el Reglamento 2024/2690 (v1.0, junio 2025) + tabla de correspondencias
+    tipo: guia_no_vinculante
+    url: https://www.enisa.europa.eu/publications/nis2-technical-implementation-guidance
+  - id: ES-ANTEPROYECTO
+    titulo: Anteproyecto de Ley de Coordinación y Gobernanza de la Ciberseguridad (España)
+    tipo: transposicion_nacional
+    estado: "En tramitación (aprobado en Consejo de Ministros el 2025-01-14; sin publicar en BOE a nov. 2026)"
+    novedades: [Crea el Centro Nacional de Ciberseguridad, Figura del responsable de seguridad de la información]
+    url: https://www.interior.gob.es/
+
+# Artículos clave de la Directiva
+articulos:
+  - {art: "2",  tema: Ámbito de aplicación, resumen: "Medianas y grandes empresas de los sectores de los Anexos I y II; algunas entidades con independencia del tamaño (DNS, TLD, telecos, trust services, AAPP central)."}
+  - {art: "3",  tema: Entidades esenciales e importantes, resumen: "Esenciales: grandes empresas del Anexo I y casos especiales. Importantes: el resto dentro del ámbito. Cambia el régimen de supervisión y sanciones."}
+  - {art: "7",  tema: Estrategia nacional de ciberseguridad, resumen: "Cada Estado adopta una estrategia nacional."}
+  - {art: "10", tema: CSIRT, resumen: "Designación de CSIRT nacionales (en España CCN-CERT, INCIBE-CERT, ESPDEF-CERT)."}
+  - {art: "20", tema: Gobernanza, resumen: "La dirección aprueba y supervisa las medidas, responde de su incumplimiento y debe formarse.", controles: [NIS2-20.1, NIS2-20.2]}
+  - {art: "21", tema: Medidas de gestión de riesgos, resumen: "Enfoque todos los riesgos; diez medidas mínimas (letras a–j).", controles: [NIS2-21.2.a, NIS2-21.2.b, NIS2-21.2.c, NIS2-21.2.d, NIS2-21.2.e, NIS2-21.2.f, NIS2-21.2.g, NIS2-21.2.h, NIS2-21.2.i, NIS2-21.2.j]}
+  - {art: "23", tema: Obligaciones de notificación, resumen: "Incidente significativo: alerta temprana 24 h, notificación 72 h, informe intermedio a petición, informe final en un mes.", controles: [NIS2-23.alerta, NIS2-23.notificacion, NIS2-23.final]}
+  - {art: "24", tema: Esquemas de certificación, resumen: "Los Estados pueden exigir productos/servicios/procesos TIC certificados."}
+  - {art: "27", tema: Registro de entidades, resumen: "Registro de proveedores digitales ante la autoridad del Estado de establecimiento principal."}
+  - {art: "29", tema: Intercambio de información, resumen: "Acuerdos voluntarios de intercambio de información sobre amenazas."}
+  - {art: "32", tema: Supervisión de entidades esenciales, resumen: "Supervisión ex ante: inspecciones, auditorías periódicas y ad hoc, escaneos de seguridad."}
+  - {art: "33", tema: Supervisión de entidades importantes, resumen: "Supervisión ex post, ante indicios de incumplimiento."}
+  - {art: "34", tema: Multas administrativas, resumen: "Esenciales: hasta 10 M€ o 2 % de la facturación mundial. Importantes: hasta 7 M€ o 1,4 %. Se aplica la cifra mayor."}
+
+sectores:
+  anexo_I_alta_criticidad:
+    - Energía (electricidad, calefacción y refrigeración urbanas, petróleo, gas, hidrógeno)
+    - Transporte (aéreo, ferroviario, marítimo, por carretera)
+    - Banca
+    - Infraestructuras de los mercados financieros
+    - Sanidad
+    - Agua potable
+    - Aguas residuales
+    - Infraestructura digital
+    - Gestión de servicios TIC (entre empresas)
+    - Administración pública
+    - Espacio
+  anexo_II_otros_sectores_criticos:
+    - Servicios postales y de mensajería
+    - Gestión de residuos
+    - Fabricación, producción y distribución de sustancias y mezclas químicas
+    - Producción, transformación y distribución de alimentos
+    - Fabricación (productos sanitarios, informáticos, electrónicos, ópticos, eléctricos, maquinaria, vehículos y otro material de transporte)
+    - Proveedores digitales (mercados en línea, motores de búsqueda, redes sociales)
+    - Investigación
+
+# Estructura del Anexo del Reglamento de Ejecución 2024/2690 ↔ medidas Art. 21.2
+reglamento_2690_anexo:
+  - {seccion: "1",  tema: Política de seguridad de las redes y sistemas de información, controles: [NIS2-21.2.a]}
+  - {seccion: "2",  tema: Política de gestión de riesgos, controles: [NIS2-21.2.a]}
+  - {seccion: "3",  tema: Gestión de incidentes, controles: [NIS2-21.2.b]}
+  - {seccion: "4",  tema: Continuidad de las actividades y gestión de crisis, controles: [NIS2-21.2.c]}
+  - {seccion: "5",  tema: Seguridad de la cadena de suministro, controles: [NIS2-21.2.d]}
+  - {seccion: "6",  tema: "Seguridad en la adquisición, desarrollo y mantenimiento", controles: [NIS2-21.2.e]}
+  - {seccion: "7",  tema: Evaluación de la eficacia de las medidas, controles: [NIS2-21.2.f]}
+  - {seccion: "8",  tema: Ciberhigiene básica y formación, controles: [NIS2-21.2.g]}
+  - {seccion: "9",  tema: Criptografía, controles: [NIS2-21.2.h]}
+  - {seccion: "10", tema: Seguridad de los recursos humanos, controles: [NIS2-21.2.i]}
+  - {seccion: "11", tema: Control de acceso, controles: [NIS2-21.2.i, NIS2-21.2.j]}
+  - {seccion: "12", tema: Gestión de activos, controles: [NIS2-21.2.i]}
+  - {seccion: "13", tema: Seguridad física y del entorno, controles: [NIS2-21.2.c]}

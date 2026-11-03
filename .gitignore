@@ -1,0 +1,18 @@
+# Datos reales de clientes: NUNCA en este repo (ADR-001)
+assessments/*
+!assessments/assessment.template.yaml
+!assessments/examples/
+reports/
+*.report.md
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+build/
+dist/
+
+# Enjambre
+.PLAN.md.lock

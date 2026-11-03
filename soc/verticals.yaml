@@ -1,0 +1,55 @@
+# Verticales de seguridad, clasificadas por medida NIS2 Art. 21.2.
+# Madurez 0-5: 0 inexistente · 1 inicial · 2 repetible · 3 definida · 4 gestionada (medida) · 5 optimizada
+version: v1
+verticals:
+  - id: VRT-EDR
+    nombre: Endpoint (EDR/XDR)
+    nis2: [NIS2-21.2.b, NIS2-21.2.g]
+    criterios: [Cobertura de despliegue, Modo bloqueo activo, Integración SIEM, Respuesta automatizada, Exclusiones revisadas]
+  - id: VRT-IAM
+    nombre: Identidad y acceso (IAM/PAM/MFA)
+    nis2: [NIS2-21.2.i, NIS2-21.2.j]
+    criterios: [Cobertura MFA, Cuentas privilegiadas en PAM, Revisión periódica de accesos, Detección de anomalías de identidad (ITDR)]
+  - id: VRT-NET
+    nombre: Red (firewall, NDR, segmentación)
+    nis2: [NIS2-21.2.a, NIS2-21.2.e]
+    criterios: [Ver network/controls.yaml]
+  - id: VRT-MAIL
+    nombre: Correo electrónico
+    nis2: [NIS2-21.2.g, NIS2-21.2.j]
+    criterios: [Filtrado avanzado, Sandbox, DMARC p=reject, Botón de reporte de phishing integrado con SOC]
+  - id: VRT-CLOUD
+    nombre: Cloud (IaaS/PaaS/SaaS)
+    nis2: [NIS2-21.2.d, NIS2-21.2.e]
+    criterios: [CSPM, Logs de control plane en SIEM, CIEM, Configuración base]
+  - id: VRT-APP
+    nombre: Aplicaciones y web
+    nis2: [NIS2-21.2.e]
+    criterios: [WAF, SAST/DAST, Gestión de dependencias, Pentest]
+  - id: VRT-DATA
+    nombre: Datos (DLP, cifrado, clasificación)
+    nis2: [NIS2-21.2.h, NIS2-21.2.i]
+    criterios: [Clasificación, DLP, Cifrado en reposo, Gestión de claves]
+  - id: VRT-BCK
+    nombre: Copias y recuperación
+    nis2: [NIS2-21.2.c]
+    criterios: [Inmutabilidad, Copia offline, Pruebas de restauración, RTO/RPO medidos]
+  - id: VRT-VULN
+    nombre: Gestión de vulnerabilidades
+    nis2: [NIS2-21.2.e]
+    criterios: [Cobertura de escaneo, SLA de remediación, Priorización por KEV/EPSS, Ver vulnerabilities/]
+  - id: VRT-OT
+    nombre: OT / IoT
+    nis2: [NIS2-21.2.a, NIS2-21.2.e]
+    criterios: [Inventario OT, Monitorización pasiva, Segmentación IT/OT, Acceso remoto controlado]
+  - id: VRT-TPRM
+    nombre: Terceros y cadena de suministro
+    nis2: [NIS2-21.2.d]
+    criterios: [Ver resources/external/]
+  - id: VRT-AWARE
+    nombre: Concienciación
+    nis2: [NIS2-21.2.g, NIS2-20.2]
+    criterios: [Plan anual, Simulaciones de phishing, Tasa de clic y de reporte, Formación de dirección]
+
+# Evaluación por cliente (en assessments/<cliente>/verticals.yaml):
+# VRT-EDR: {madurez: 3, criterios_cumplidos: [...], notas: ""}

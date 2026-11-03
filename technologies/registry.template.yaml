@@ -1,0 +1,53 @@
+# Registro de tecnologías — copiar a assessments/<cliente>/technologies.yaml
+version: v1
+technologies:
+  - id: TEC-0001
+    nombre: EDR corporativo
+    fabricante: "<fabricante>"
+    producto: "<producto>"
+    version: "x.y.z"
+    vertical: VRT-EDR
+    cpe: ""                        # cpe:2.3:a:<vendor>:<product>:<version> — enlaza con seguimiento de CVEs
+    propietario: "Equipo de seguridad"
+    gestionado_por: "interno | MSSP:<nombre>"
+    licencia:
+      modelo: "suscripción | perpetua | open-source | por uso"
+      contratadas: 500
+      desplegadas: 462
+      coste_anual_eur: 0
+      vence: "2027-01-31"
+    soporte_fabricante:
+      fin_soporte: "2028-06-30"    # EoS
+      fin_vida: ""                 # EoL
+    certificados: []               # [{cn: "", vence: "YYYY-MM-DD"}]
+    configuracion:
+      baseline: "CIS / CCN-STIC-xxx / propia"
+      repositorio: ""              # dónde está versionada la config
+      ultima_revision: "2026-06-01"
+      desviaciones: []
+    despliegue:
+      entornos: [produccion]
+      metodo: "manual | IaC | GPO | MDM | agente"
+      cobertura_pct: 92
+      pendientes: "Servidores Linux legacy"
+    integraciones: [SIEM]
+    casos_uso: [UC-003, UC-004, UC-006]
+    playbook: vulnerabilities/playbooks/tecnologia/PB-TEC-template.md
+
+  - id: TEC-0002
+    nombre: Firewall perimetral
+    fabricante: "<fabricante>"
+    producto: "<producto>"
+    version: "x.y"
+    vertical: VRT-NET
+    cpe: ""
+    propietario: "Sistemas"
+    gestionado_por: interno
+    licencia: {modelo: suscripción, contratadas: 2, desplegadas: 2, coste_anual_eur: 0, vence: "2026-12-15"}
+    soporte_fabricante: {fin_soporte: "2027-03-31", fin_vida: ""}
+    certificados: [{cn: "vpn.ejemplo.es", vence: "2026-11-20"}]
+    configuracion: {baseline: CCN-STIC, repositorio: "", ultima_revision: "2025-11-01", desviaciones: [Reglas any-any heredadas]}
+    despliegue: {entornos: [produccion], metodo: manual, cobertura_pct: 100, pendientes: ""}
+    integraciones: [SIEM]
+    casos_uso: [UC-005, UC-007]
+    playbook: ""

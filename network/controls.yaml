@@ -1,0 +1,24 @@
+# Módulo especial de red
+framework: RED
+version: "v1"
+controls:
+  - {id: NET-INV-01, dominio: Inventario, titulo: "Diagrama de red actualizado (L2/L3, zonas, flujos)", relacion: [ENS-op.pl.2]}
+  - {id: NET-INV-02, dominio: Inventario, titulo: "Inventario de dispositivos de red con versión de firmware y fin de soporte", relacion: [ENS-op.exp.1]}
+  - {id: NET-SEG-01, dominio: Segmentación, titulo: "Segmentación por zonas (usuarios, servidores, DMZ, gestión, invitados, OT/IoT)", relacion: [ENS-mp.com.4, NIS2-21.2.i]}
+  - {id: NET-SEG-02, dominio: Segmentación, titulo: "Red de gestión out-of-band separada", relacion: [ENS-mp.com.4]}
+  - {id: NET-SEG-03, dominio: Segmentación, titulo: "Microsegmentación / filtrado este-oeste en servidores críticos", relacion: [ENS-mp.com.4]}
+  - {id: NET-PER-01, dominio: Perímetro, titulo: "Firewall perimetral con política deny-by-default y revisión periódica de reglas", relacion: [ENS-mp.com.1]}
+  - {id: NET-PER-02, dominio: Perímetro, titulo: "Superficie expuesta a Internet inventariada (EASM) y justificada", relacion: [ENS-mp.com.1, NIS2-21.2.e]}
+  - {id: NET-PER-03, dominio: Perímetro, titulo: "WAF y protección anti-DDoS en servicios publicados", relacion: [ENS-mp.s.2, ENS-mp.s.4]}
+  - {id: NET-ACC-01, dominio: Acceso remoto, titulo: "VPN/ZTNA con MFA; sin RDP/SSH expuestos", relacion: [NIS2-21.2.j, ENS-op.acc.6]}
+  - {id: NET-ACC-02, dominio: Acceso remoto, titulo: "Acceso de terceros controlado, temporal y registrado", relacion: [ENS-op.ext.4]}
+  - {id: NET-NAC-01, dominio: NAC, titulo: "Control de acceso a red (802.1X / NAC) para dispositivos", relacion: [ENS-mp.eq.4]}
+  - {id: NET-WIFI-01, dominio: Wi-Fi, titulo: "WPA3/802.1X corporativo e invitados aislados", relacion: [ENS-mp.com.2]}
+  - {id: NET-DNS-01, dominio: DNS, titulo: "DNS protector/filtrado y registro de consultas", relacion: [ENS-mp.s.3]}
+  - {id: NET-DNS-02, dominio: DNS, titulo: "DNSSEC y control de dominios propios (expiración, registros huérfanos)", relacion: []}
+  - {id: NET-CRY-01, dominio: Cifrado, titulo: "TLS 1.2+ en tránsito y protocolos inseguros deshabilitados (Telnet, SMBv1, SNMPv1/2)", relacion: [NIS2-21.2.h, ENS-mp.com.2]}
+  - {id: NET-HARD-01, dominio: Bastionado, titulo: "Bastionado de equipos de red (guías CCN-STIC / CIS) y credenciales por defecto eliminadas", relacion: [ENS-op.exp.2]}
+  - {id: NET-MON-01, dominio: Monitorización, titulo: "Logs de firewall, VPN, proxy y DNS centralizados en SIEM", relacion: [ENS-op.exp.8, ENS-op.mon.1]}
+  - {id: NET-MON-02, dominio: Monitorización, titulo: "NDR / IDS en puntos clave y visibilidad de tráfico (NetFlow)", relacion: [ENS-op.mon.1]}
+  - {id: NET-OT-01, dominio: OT/IoT, titulo: "Separación IT/OT (modelo Purdue / IEC 62443) e inventario OT", relacion: [ENS-mp.com.4]}
+  - {id: NET-RES-01, dominio: Resiliencia, titulo: "Redundancia de enlaces y equipos críticos; backup de configuraciones", relacion: [NIS2-21.2.c, ENS-op.cont.4]}

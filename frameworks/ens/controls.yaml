@@ -1,0 +1,97 @@
+# ENS — Real Decreto 311/2022, Anexo II (73 medidas)
+# Aplica a: sector público (art. 2) y proveedores que le presten servicios o soluciones.
+# Categorías del sistema: BASICA | MEDIA | ALTA.
+# TODO: completar `categoria_minima` y refuerzos (R1..Rn) por medida contra la tabla del Anexo II
+#       y las guías CCN-STIC 804/808 antes de usar el scoring por categoría.
+framework: ENS
+version: "RD 311/2022"
+controls:
+  # --- Marco organizativo ---
+  - {id: ENS-org.1, grupo: Marco organizativo, titulo: Política de seguridad}
+  - {id: ENS-org.2, grupo: Marco organizativo, titulo: Normativa de seguridad}
+  - {id: ENS-org.3, grupo: Marco organizativo, titulo: Procedimientos de seguridad}
+  - {id: ENS-org.4, grupo: Marco organizativo, titulo: Proceso de autorización}
+  # --- Marco operacional: planificación ---
+  - {id: ENS-op.pl.1, grupo: Planificación, titulo: Análisis de riesgos}
+  - {id: ENS-op.pl.2, grupo: Planificación, titulo: Arquitectura de seguridad}
+  - {id: ENS-op.pl.3, grupo: Planificación, titulo: Adquisición de nuevos componentes}
+  - {id: ENS-op.pl.4, grupo: Planificación, titulo: Dimensionamiento / gestión de la capacidad}
+  - {id: ENS-op.pl.5, grupo: Planificación, titulo: Componentes certificados}
+  # --- Control de acceso ---
+  - {id: ENS-op.acc.1, grupo: Control de acceso, titulo: Identificación}
+  - {id: ENS-op.acc.2, grupo: Control de acceso, titulo: Requisitos de acceso}
+  - {id: ENS-op.acc.3, grupo: Control de acceso, titulo: Segregación de funciones y tareas}
+  - {id: ENS-op.acc.4, grupo: Control de acceso, titulo: Proceso de gestión de derechos de acceso}
+  - {id: ENS-op.acc.5, grupo: Control de acceso, titulo: Mecanismo de autenticación (usuarios externos)}
+  - {id: ENS-op.acc.6, grupo: Control de acceso, titulo: Mecanismo de autenticación (usuarios de la organización)}
+  # --- Explotación ---
+  - {id: ENS-op.exp.1, grupo: Explotación, titulo: Inventario de activos}
+  - {id: ENS-op.exp.2, grupo: Explotación, titulo: Configuración de seguridad}
+  - {id: ENS-op.exp.3, grupo: Explotación, titulo: Gestión de la configuración de seguridad}
+  - {id: ENS-op.exp.4, grupo: Explotación, titulo: Mantenimiento y actualizaciones de seguridad}
+  - {id: ENS-op.exp.5, grupo: Explotación, titulo: Gestión de cambios}
+  - {id: ENS-op.exp.6, grupo: Explotación, titulo: Protección frente a código dañino}
+  - {id: ENS-op.exp.7, grupo: Explotación, titulo: Gestión de incidentes}
+  - {id: ENS-op.exp.8, grupo: Explotación, titulo: Registro de la actividad}
+  - {id: ENS-op.exp.9, grupo: Explotación, titulo: Registro de la gestión de incidentes}
+  - {id: ENS-op.exp.10, grupo: Explotación, titulo: Protección de claves criptográficas}
+  # --- Recursos externos ---
+  - {id: ENS-op.ext.1, grupo: Recursos externos, titulo: Contratación y acuerdos de nivel de servicio}
+  - {id: ENS-op.ext.2, grupo: Recursos externos, titulo: Gestión diaria}
+  - {id: ENS-op.ext.3, grupo: Recursos externos, titulo: Protección de la cadena de suministro}
+  - {id: ENS-op.ext.4, grupo: Recursos externos, titulo: Interconexión de sistemas}
+  # --- Servicios en la nube ---
+  - {id: ENS-op.nub.1, grupo: Servicios en la nube, titulo: Protección de servicios en la nube}
+  # --- Continuidad ---
+  - {id: ENS-op.cont.1, grupo: Continuidad, titulo: Análisis de impacto}
+  - {id: ENS-op.cont.2, grupo: Continuidad, titulo: Plan de continuidad}
+  - {id: ENS-op.cont.3, grupo: Continuidad, titulo: Pruebas periódicas}
+  - {id: ENS-op.cont.4, grupo: Continuidad, titulo: Medios alternativos}
+  # --- Monitorización ---
+  - {id: ENS-op.mon.1, grupo: Monitorización, titulo: Detección de intrusión}
+  - {id: ENS-op.mon.2, grupo: Monitorización, titulo: Sistema de métricas}
+  - {id: ENS-op.mon.3, grupo: Monitorización, titulo: Vigilancia}
+  # --- Medidas de protección: instalaciones ---
+  - {id: ENS-mp.if.1, grupo: Instalaciones, titulo: Áreas separadas y con control de acceso}
+  - {id: ENS-mp.if.2, grupo: Instalaciones, titulo: Identificación de las personas}
+  - {id: ENS-mp.if.3, grupo: Instalaciones, titulo: Acondicionamiento de los locales}
+  - {id: ENS-mp.if.4, grupo: Instalaciones, titulo: Energía eléctrica}
+  - {id: ENS-mp.if.5, grupo: Instalaciones, titulo: Protección frente a incendios}
+  - {id: ENS-mp.if.6, grupo: Instalaciones, titulo: Protección frente a inundaciones}
+  - {id: ENS-mp.if.7, grupo: Instalaciones, titulo: Registro de entrada y salida de equipamiento}
+  # --- Personal ---
+  - {id: ENS-mp.per.1, grupo: Personal, titulo: Caracterización del puesto de trabajo}
+  - {id: ENS-mp.per.2, grupo: Personal, titulo: Deberes y obligaciones}
+  - {id: ENS-mp.per.3, grupo: Personal, titulo: Concienciación}
+  - {id: ENS-mp.per.4, grupo: Personal, titulo: Formación}
+  # --- Equipos ---
+  - {id: ENS-mp.eq.1, grupo: Equipos, titulo: Puesto de trabajo despejado}
+  - {id: ENS-mp.eq.2, grupo: Equipos, titulo: Bloqueo de puesto de trabajo}
+  - {id: ENS-mp.eq.3, grupo: Equipos, titulo: Protección de dispositivos portátiles}
+  - {id: ENS-mp.eq.4, grupo: Equipos, titulo: Otros dispositivos conectados a la red}
+  # --- Comunicaciones ---
+  - {id: ENS-mp.com.1, grupo: Comunicaciones, titulo: Perímetro seguro}
+  - {id: ENS-mp.com.2, grupo: Comunicaciones, titulo: Protección de la confidencialidad}
+  - {id: ENS-mp.com.3, grupo: Comunicaciones, titulo: Protección de la integridad y de la autenticidad}
+  - {id: ENS-mp.com.4, grupo: Comunicaciones, titulo: Separación de flujos de información en la red}
+  # --- Soportes de información ---
+  - {id: ENS-mp.si.1, grupo: Soportes, titulo: Marcado de soportes}
+  - {id: ENS-mp.si.2, grupo: Soportes, titulo: Criptografía}
+  - {id: ENS-mp.si.3, grupo: Soportes, titulo: Custodia}
+  - {id: ENS-mp.si.4, grupo: Soportes, titulo: Transporte}
+  - {id: ENS-mp.si.5, grupo: Soportes, titulo: Borrado y destrucción}
+  # --- Aplicaciones informáticas ---
+  - {id: ENS-mp.sw.1, grupo: Aplicaciones, titulo: Desarrollo de aplicaciones}
+  - {id: ENS-mp.sw.2, grupo: Aplicaciones, titulo: Aceptación y puesta en servicio}
+  # --- Información ---
+  - {id: ENS-mp.info.1, grupo: Información, titulo: Datos personales}
+  - {id: ENS-mp.info.2, grupo: Información, titulo: Calificación de la información}
+  - {id: ENS-mp.info.3, grupo: Información, titulo: Firma electrónica}
+  - {id: ENS-mp.info.4, grupo: Información, titulo: Sellos de tiempo}
+  - {id: ENS-mp.info.5, grupo: Información, titulo: Limpieza de documentos}
+  - {id: ENS-mp.info.6, grupo: Información, titulo: Copias de seguridad}
+  # --- Servicios ---
+  - {id: ENS-mp.s.1, grupo: Servicios, titulo: Protección del correo electrónico}
+  - {id: ENS-mp.s.2, grupo: Servicios, titulo: Protección de servicios y aplicaciones web}
+  - {id: ENS-mp.s.3, grupo: Servicios, titulo: Protección de la navegación web}
+  - {id: ENS-mp.s.4, grupo: Servicios, titulo: Protección frente a la denegación de servicio}

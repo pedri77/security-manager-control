@@ -1,0 +1,85 @@
+# Catálogo de casos de uso de detección.
+# estado: activo | en_desarrollo | propuesto | retirado
+# mitre: técnicas ATT&CK Enterprise (IDs). La táctica se indica para el cálculo de cobertura por táctica.
+version: v1
+use_cases:
+  - id: UC-001
+    nombre: Fuerza bruta / password spraying contra identidades
+    tactica: credential-access
+    mitre: [T1110, T1110.003]
+    fuentes: [Entra ID sign-in logs, AD 4625/4771, VPN]
+    severidad: alta
+    vertical: VRT-IAM
+    playbook: vulnerabilities/playbooks/caso-uso/PB-UC-001-fuerza-bruta.md
+    estado: activo
+    ultima_prueba: "2026-09-15"
+  - id: UC-002
+    nombre: Phishing con adjunto o enlace malicioso
+    tactica: initial-access
+    mitre: [T1566.001, T1566.002]
+    fuentes: [Gateway de correo, EDR, Proxy]
+    severidad: alta
+    vertical: VRT-MAIL
+    playbook: ""
+    estado: activo
+    ultima_prueba: ""
+  - id: UC-003
+    nombre: Ejecución de PowerShell ofuscado
+    tactica: execution
+    mitre: [T1059.001, T1027]
+    fuentes: [EDR, Sysmon 1, PowerShell 4104]
+    severidad: media
+    vertical: VRT-EDR
+    playbook: ""
+    estado: activo
+    ultima_prueba: ""
+  - id: UC-004
+    nombre: Volcado de LSASS
+    tactica: credential-access
+    mitre: [T1003.001]
+    fuentes: [EDR, Sysmon 10]
+    severidad: critica
+    vertical: VRT-EDR
+    playbook: ""
+    estado: activo
+    ultima_prueba: ""
+  - id: UC-005
+    nombre: Movimiento lateral por RDP/SMB anómalo
+    tactica: lateral-movement
+    mitre: [T1021.001, T1021.002]
+    fuentes: [AD 4624 tipo 10, NDR, Firewall interno]
+    severidad: alta
+    vertical: VRT-NET
+    playbook: ""
+    estado: en_desarrollo
+    ultima_prueba: ""
+  - id: UC-006
+    nombre: Borrado de copias de sombra / preparación de ransomware
+    tactica: impact
+    mitre: [T1490, T1486]
+    fuentes: [EDR, Sysmon 1]
+    severidad: critica
+    vertical: VRT-EDR
+    playbook: ""
+    estado: activo
+    ultima_prueba: ""
+  - id: UC-007
+    nombre: Explotación de servicio expuesto a Internet
+    tactica: initial-access
+    mitre: [T1190]
+    fuentes: [WAF, IDS, Logs de aplicación]
+    severidad: critica
+    vertical: VRT-APP
+    playbook: ""
+    estado: activo
+    ultima_prueba: ""
+  - id: UC-008
+    nombre: Exfiltración a servicio cloud no corporativo
+    tactica: exfiltration
+    mitre: [T1567.002]
+    fuentes: [Proxy, CASB, DLP]
+    severidad: alta
+    vertical: VRT-DATA
+    playbook: ""
+    estado: propuesto
+    ultima_prueba: ""

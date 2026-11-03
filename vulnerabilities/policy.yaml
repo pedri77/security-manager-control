@@ -1,0 +1,19 @@
+# Política de remediación de vulnerabilidades
+version: v1
+sla_remediacion_dias:
+  critica: 7
+  alta: 30
+  media: 90
+  baja: 180
+priorizacion:
+  kev_o_explotacion_activa: critica
+  expuesto_internet: subir_un_nivel
+  epss_umbral: 0.1
+  cvss:
+    critica: 9.0
+    alta: 7.0
+    media: 4.0
+excepciones:
+  requiere_aprobacion: Responsable de Seguridad
+  caducidad_max_dias: 90
+  requiere_mitigacion_compensatoria: true

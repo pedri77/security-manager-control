@@ -1,0 +1,97 @@
+# NIS2 — Directiva (UE) 2022/2555
+# Detalle técnico: Reglamento de Ejecución (UE) 2024/2690 (aplica directamente a
+# proveedores digitales: DNS, TLD, cloud, CDN, MSP/MSSP, marketplaces, buscadores, redes sociales, trust services).
+# España: transposición vía Anteproyecto de Ley de Coordinación y Gobernanza de la Ciberseguridad (en tramitación, nov. 2026).
+framework: NIS2
+version: "2022/2555"
+controls:
+  - id: NIS2-20.1
+    articulo: "Art. 20.1"
+    dominio: Gobernanza
+    titulo: Aprobación y supervisión por el órgano de dirección
+    descripcion: El órgano de dirección aprueba las medidas de gestión de riesgos de ciberseguridad, supervisa su aplicación y puede responder por su incumplimiento.
+    evidencias_sugeridas: [Acta de aprobación de la política, Informes periódicos a dirección]
+  - id: NIS2-20.2
+    articulo: "Art. 20.2"
+    dominio: Gobernanza
+    titulo: Formación del órgano de dirección
+    descripcion: Los miembros del órgano de dirección reciben formación periódica para identificar riesgos y evaluar prácticas de gestión de ciberseguridad.
+    evidencias_sugeridas: [Registro de asistencia, Contenido formativo]
+  - id: NIS2-21.2.a
+    articulo: "Art. 21.2.a"
+    dominio: Riesgos
+    titulo: Análisis de riesgos y políticas de seguridad de los sistemas de información
+    descripcion: Políticas de análisis de riesgos y de seguridad de los sistemas de información.
+    evidencias_sugeridas: [Análisis de riesgos vigente, Política de seguridad aprobada]
+  - id: NIS2-21.2.b
+    articulo: "Art. 21.2.b"
+    dominio: Incidentes
+    titulo: Gestión de incidentes
+    descripcion: Prevención, detección, análisis, contención, respuesta y recuperación ante incidentes.
+    evidencias_sugeridas: [Procedimiento de gestión de incidentes, Registro de incidentes, Playbooks]
+  - id: NIS2-21.2.c
+    articulo: "Art. 21.2.c"
+    dominio: Continuidad
+    titulo: Continuidad de negocio, copias de seguridad, recuperación y gestión de crisis
+    descripcion: Gestión de copias de seguridad, recuperación en caso de catástrofe y gestión de crisis.
+    evidencias_sugeridas: [BIA, Plan de continuidad, Pruebas de restauración, Plan de crisis]
+  - id: NIS2-21.2.d
+    articulo: "Art. 21.2.d"
+    dominio: Cadena de suministro
+    titulo: Seguridad de la cadena de suministro
+    descripcion: Aspectos de seguridad de las relaciones con proveedores y prestadores de servicios directos.
+    evidencias_sugeridas: [Inventario de proveedores críticos, Cláusulas contractuales, Evaluaciones de terceros]
+  - id: NIS2-21.2.e
+    articulo: "Art. 21.2.e"
+    dominio: Desarrollo y mantenimiento
+    titulo: Seguridad en adquisición, desarrollo y mantenimiento; gestión y divulgación de vulnerabilidades
+    descripcion: Seguridad en la adquisición, desarrollo y mantenimiento de redes y sistemas, incluida la gestión y divulgación de vulnerabilidades.
+    evidencias_sugeridas: [SDLC seguro, Gestión de parches, Política de divulgación de vulnerabilidades]
+  - id: NIS2-21.2.f
+    articulo: "Art. 21.2.f"
+    dominio: Eficacia
+    titulo: Evaluación de la eficacia de las medidas
+    descripcion: Políticas y procedimientos para evaluar la eficacia de las medidas de gestión de riesgos.
+    evidencias_sugeridas: [KPIs/KRIs, Auditorías internas, Pentests, Revisión por dirección]
+  - id: NIS2-21.2.g
+    articulo: "Art. 21.2.g"
+    dominio: Higiene y formación
+    titulo: Ciberhigiene básica y formación
+    descripcion: Prácticas básicas de ciberhigiene y formación en ciberseguridad.
+    evidencias_sugeridas: [Plan de concienciación, Simulaciones de phishing, Bastionado base]
+  - id: NIS2-21.2.h
+    articulo: "Art. 21.2.h"
+    dominio: Criptografía
+    titulo: Criptografía y cifrado
+    descripcion: Políticas y procedimientos sobre el uso de criptografía y, en su caso, cifrado.
+    evidencias_sugeridas: [Política criptográfica, Inventario de certificados y claves]
+  - id: NIS2-21.2.i
+    articulo: "Art. 21.2.i"
+    dominio: Personas y activos
+    titulo: Seguridad de RR. HH., control de acceso y gestión de activos
+    descripcion: Seguridad de los recursos humanos, políticas de control de acceso y gestión de activos.
+    evidencias_sugeridas: [Inventario de activos, Procedimiento alta/baja, Revisiones de accesos]
+  - id: NIS2-21.2.j
+    articulo: "Art. 21.2.j"
+    dominio: Autenticación y comunicaciones
+    titulo: MFA, comunicaciones seguras y comunicaciones de emergencia
+    descripcion: Autenticación multifactor o continua, comunicaciones de voz, vídeo y texto seguras y sistemas de comunicación de emergencia seguros.
+    evidencias_sugeridas: [Cobertura MFA, Canal de emergencia fuera de banda]
+  - id: NIS2-23.alerta
+    articulo: "Art. 23.4.a"
+    dominio: Notificación
+    titulo: Alerta temprana en 24 h
+    descripcion: Alerta temprana al CSIRT/autoridad sin demora indebida y en un plazo de 24 h desde el conocimiento de un incidente significativo.
+    evidencias_sugeridas: [Procedimiento de notificación, Contactos CSIRT de referencia]
+  - id: NIS2-23.notificacion
+    articulo: "Art. 23.4.b"
+    dominio: Notificación
+    titulo: Notificación del incidente en 72 h
+    descripcion: Notificación con evaluación inicial (gravedad, impacto, IoC) en 72 h.
+    evidencias_sugeridas: [Plantilla de notificación]
+  - id: NIS2-23.final
+    articulo: "Art. 23.4.d"
+    dominio: Notificación
+    titulo: Informe final en un mes
+    descripcion: Informe final como máximo un mes después de la notificación (descripción, causa raíz, mitigación, impacto transfronterizo).
+    evidencias_sugeridas: [Plantilla de informe final, Lecciones aprendidas]

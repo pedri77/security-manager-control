@@ -1,0 +1,16 @@
+# Catálogo de KPIs del SOC
+version: v1
+metrics:
+  - {id: SOC-KPI-01, nombre: MTTD, formula: "media(detected_at - occurred_at)", objetivo: "< 60 min", nis2: [NIS2-21.2.b]}
+  - {id: SOC-KPI-02, nombre: MTTA, formula: "media(acknowledged_at - detected_at)", objetivo: "según SLA por severidad", nis2: [NIS2-21.2.b]}
+  - {id: SOC-KPI-03, nombre: MTTC, formula: "media(contained_at - detected_at)", objetivo: "según SLA por severidad", nis2: [NIS2-21.2.b]}
+  - {id: SOC-KPI-04, nombre: MTTR, formula: "media(resolved_at - detected_at)", objetivo: "según SLA por severidad", nis2: [NIS2-21.2.b]}
+  - {id: SOC-KPI-05, nombre: Cumplimiento SLA, formula: "incidentes en SLA / total", objetivo: ">= 95%", nis2: [NIS2-21.2.f]}
+  - {id: SOC-KPI-06, nombre: Tasa de falsos positivos, formula: "FP / alertas cerradas", objetivo: "< 30%", nis2: [NIS2-21.2.f]}
+  - {id: SOC-KPI-07, nombre: Tasa de escalado N1 a N2, formula: "escalados / triados", objetivo: "10-25%", nis2: [NIS2-21.2.b]}
+  - {id: SOC-KPI-08, nombre: Alertas por analista y turno, formula: "alertas / (analistas * turnos)", objetivo: "definir por capacidad", nis2: [NIS2-21.2.f]}
+  - {id: SOC-KPI-09, nombre: Cobertura MITRE ATT&CK, formula: "técnicas con caso de uso activo / técnicas priorizadas", objetivo: ">= 70% de técnicas priorizadas", nis2: [NIS2-21.2.b, NIS2-21.2.f]}
+  - {id: SOC-KPI-10, nombre: Cobertura de fuentes de log, formula: "activos críticos que envían logs / activos críticos", objetivo: ">= 95%", nis2: [NIS2-21.2.b]}
+  - {id: SOC-KPI-11, nombre: Casos de uso probados, formula: "casos con prueba (BAS / purple team) en 6 meses / casos activos", objetivo: ">= 80%", nis2: [NIS2-21.2.f]}
+  - {id: SOC-KPI-12, nombre: Notificaciones NIS2 en plazo, formula: "notificaciones en 24h/72h / incidentes significativos", objetivo: "100%", nis2: [NIS2-23.alerta, NIS2-23.notificacion]}
+  - {id: SOC-KPI-13, nombre: Incidentes recurrentes, formula: "incidentes con misma causa raíz en 90 días / total", objetivo: "< 5%", nis2: [NIS2-21.2.b]}

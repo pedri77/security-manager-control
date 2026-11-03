@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "security-manager-control"
+version = "0.1.0"
+description = "Centro de control para el Security Manager: NIS2, ENS, transversal y red"
+requires-python = ">=3.10"
+dependencies = ["PyYAML>=6.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+smc = "smc.cli:main"
+
+[tool.setuptools]
+packages = ["smc"]

@@ -1,0 +1,4 @@
+cve,tecnologia_id,cvss,epss,kev,expuesto_internet,severidad,estado,responsable,detectado,remediado,playbook,notas
+CVE-0000-0001,TEC-0002,9.8,0.92,true,true,critica,abierta,Sistemas,2026-10-20,,PB-TEC-template,Ejemplo ficticio
+CVE-0000-0002,TEC-0001,7.5,0.02,false,false,alta,en_curso,Seguridad,2026-10-01,,,Ejemplo ficticio
+CVE-0000-0003,TEC-0001,5.3,0.01,false,false,media,remediada,Seguridad,2026-08-01,2026-09-15,,Ejemplo ficticio
