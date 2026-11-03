@@ -1,0 +1,52 @@
+# Fuentes oficiales y de referencia para consultar vulnerabilidades (T11, v0.5).
+# Dominios permitidos en protocols.yaml: los de esta lista más pedri77.github.io (aprendizaje).
+version: v1
+fuentes:
+- id: nvd
+  nombre: NVD
+  organismo: NIST (EE. UU.)
+  url: https://nvd.nist.gov/
+  tipo: base_vulnerabilidades
+  uso: Fuente principal de CVE con CVSS y CPE; búsqueda por palabra clave.
+- id: euvd
+  nombre: EUVD
+  organismo: ENISA (UE)
+  url: https://euvd.enisa.europa.eu/
+  tipo: base_vulnerabilidades
+  uso: Base europea de vulnerabilidades; contexto UE y explotación activa.
+- id: cisa_kev
+  nombre: CISA KEV
+  organismo: CISA (EE. UU.)
+  url: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+  tipo: explotadas_activamente
+  uso: Catálogo de vulnerabilidades explotadas; dispara prioridad crítica según policy.yaml.
+- id: cve_details
+  nombre: CVE Details
+  organismo: SecurityScorecard (comercial)
+  url: https://www.cvedetails.com/
+  tipo: agregador
+  uso: Consulta cómoda por producto y proveedor; no es fuente oficial, contrastar con NVD.
+- id: incibe_cert
+  nombre: INCIBE-CERT
+  organismo: INCIBE (España)
+  url: https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades
+  tipo: avisos_nacionales
+  uso: Avisos en español para empresas y ciudadanía.
+- id: ccn_cert
+  nombre: CCN-CERT
+  organismo: CCN (España)
+  url: https://www.ccn-cert.cni.es/es/seguridad-al-dia/vulnerabilidades.html
+  tipo: avisos_nacionales
+  uso: Avisos para administraciones y operadores del ENS.
+- id: mitre_cwe
+  nombre: MITRE CWE
+  organismo: MITRE
+  url: https://cwe.mitre.org/
+  tipo: taxonomia
+  uso: Catálogo de debilidades (CWE) citadas en protocols.yaml.
+- id: mitre_attck
+  nombre: MITRE ATT&CK
+  organismo: MITRE
+  url: https://attack.mitre.org/
+  tipo: taxonomia
+  uso: Técnicas ATT&CK enterprise e ICS citadas en protocols.yaml.
