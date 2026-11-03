@@ -1,0 +1,50 @@
+# Ejemplo ficticio: proyecto de remediación del cliente de assessments/examples/ejemplo-energia.yaml.
+# Importes inventados. Datos reales de cliente: nunca en este repo (ADR-005).
+proyecto:
+  id: PRY-ENE
+  nombre: "Plan de remediación NIS2 y segmentación OT"
+  cliente: "Distribuidora Eléctrica Ejemplo, S.A."
+  inicio: "2026-09-01"
+  fin: "2027-06-30"
+  presupuesto_total: 62000
+  presupuesto:
+    horas: 40000
+    licencias: 12000
+    servicios: 8000
+    formacion: 2000
+
+tarifas:
+  CISO: 100
+  Consultor: 80
+  Analista: 50
+
+tareas:
+  - {id: T-01, titulo: "Evaluar proveedores críticos de OT e inventario de terceros", controles: [NIS2-21.2.d, TRV-TI-01], accion: ENE-01, responsable: Consultor, horas_estimadas: 120, avance: 40, inicio: "2026-09-15", fin: "2027-01-31"}
+  - {id: T-02, titulo: "Pruebas de restauración de copias en OT", controles: [NIS2-21.2.c], accion: ENE-02, responsable: Analista, horas_estimadas: 80, avance: 60, inicio: "2026-09-15", fin: "2026-10-30"}
+  - {id: T-03, titulo: "DMZ industrial y microsegmentación", controles: [NET-SEG-02, NET-SEG-01], accion: ENE-03, responsable: Consultor, horas_estimadas: 300, avance: 10, inicio: "2026-11-01", fin: "2027-06-30", depende: [T-01]}
+  - {id: T-04, titulo: "Despliegue de EDR restante", controles: [TRV-EDR-01], accion: ENE-04, responsable: Analista, horas_estimadas: 100, avance: 100, inicio: "2026-09-01", fin: "2026-09-30"}
+  - {id: T-05, titulo: "Dirección y reporting al comité", responsable: CISO, horas_estimadas: 60, avance: 30, inicio: "2026-09-01", fin: "2027-06-30"}
+
+imputaciones:
+  - {fecha: "2026-09-20", rol: Consultor, tarea: T-01, horas: 20}
+  - {fecha: "2026-10-18", rol: Consultor, tarea: T-01, horas: 25}
+  - {fecha: "2026-10-05", rol: Analista, tarea: T-02, horas: 60}
+  - {fecha: "2026-09-25", rol: Analista, tarea: T-04, horas: 110}
+  - {fecha: "2026-10-28", rol: Consultor, tarea: T-03, horas: 15}
+  - {fecha: "2026-10-30", rol: CISO, tarea: T-05, horas: 10}
+  - {fecha: "2026-11-02", rol: CISO, tarea: T-05, horas: 6}
+
+costes:
+  - {proveedor: "Proveedor EDR ejemplo", concepto: "Licencias EDR adicionales", importe: 6500, fecha: "2026-09-10", partida: licencias, tarea: T-04}
+  - {proveedor: "Integrador ejemplo", concepto: "Diseño de DMZ industrial", importe: 3000, fecha: "2026-10-20", partida: servicios, tarea: T-03}
+  - {proveedor: "Academia ejemplo", concepto: "Curso de seguridad OT", importe: 900, fecha: "2026-10-12", partida: formacion}
+
+eventos:
+  - {id: EV-01, titulo: "Comité de seguimiento mensual", tipo: comite, fecha: "2026-11-10", lugar: "Sala del consejo"}
+  - {id: EV-02, titulo: "Auditoría interna NIS2", tipo: auditoria, fecha: "2026-11-24", fecha_fin: "2026-11-25", descripcion: "Alcance: medidas del art. 21; evidencias, pruebas y entrevistas"}
+  - {id: EV-03, titulo: "Renovación de la licencia EDR", tipo: renovacion, fecha: "2026-12-15"}
+  - {id: EV-04, titulo: "Entrega del inventario de terceros", tipo: entrega, fecha: "2027-01-31"}
+
+riesgos:
+  - {id: R-01, descripcion: "Ventana de parada OT no disponible antes de marzo", probabilidad: alta, impacto: alta, mitigacion: "Planificar con operación; segmentar en fases", responsable: CISO, estado: abierto}
+  - {id: R-02, descripcion: "Retraso del integrador en el diseño de la DMZ", probabilidad: media, impacto: media, mitigacion: "Penalización contractual y revisión quincenal", responsable: Consultor, estado: abierto}

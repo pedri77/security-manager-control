@@ -20,3 +20,8 @@ dist/
 # Salidas generadas (informes HTML y dashboard) con datos de cliente: nunca versionar (ADR-001)
 *.html
 dashboard/
+
+# PMO: presupuesto, horas y tarifas son datos de cliente (ADR-005, ADR-001)
+pmo/*
+!pmo/proyecto.template.yaml
+!pmo/examples/
