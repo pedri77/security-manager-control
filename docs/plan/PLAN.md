@@ -97,14 +97,14 @@ Revisión de ola: 3
 
 ## Ola 4
 
-- [~] **T08** — Endurecer v0.4 antes de publicar (hallazgos de revisor-ola)
+- [x] **T08** — Endurecer v0.4 antes de publicar (hallazgos de revisor-ola)
   - Hace: corrige los hallazgos 1-10 y 12 de `informes/ola-3-revisor-ola.md`: estado no válido cuenta como sin evaluar (aplicable, 0) con aviso; medidas ENS con `verificar: true` señaladas en informes Markdown/HTML («aplicabilidad pendiente de contrastar») y aviso en el resumen; `.gitignore` ignora `*.html` salvo lo versionado y `dashboard/`; recalibra `priority` para que un no_implementado de criticidad media en entidad no esencial no sea P1 (test nuevo) y documenta la fórmula; `verificar: true` en op.cont.2 y op.cont.3; cifra correcta de medidas `verificar` (37 o la que resulte) en README, PRD, CHANGELOG y Libro; `categoria_minima` desconocida tratada como BASICA y validada en `smc validate`; entradas mal formadas (`plan_accion` de texto, evaluación de texto, `cliente: null`) dan aviso, no AttributeError; el dashboard ignora `*.template.yaml`; la cabecera muestra la categoría ENS también con `proveedor_sector_publico`; test 12 con valor esperado real.
   - No hace: no contrasta el Anexo II con el BOE (queda para revisión humana); no cambia IDs ENS; no añade mapeos TRANSVERSAL/RED.
   - Toca: `smc/`, `tests/`, `frameworks/ens/controls.yaml`, `.gitignore`, `README.md`, `docs/prd/PRD-SMC-001-v1.md`, `CHANGELOG.md`, `docs/plan/informes/T08-dev-proyecto.md`
   - Depende: T07
   - Verifica: un test por hallazgo, cada uno con su contraprueba anotada en el informe; los 65 tests previos siguen verdes salvo los que cambien por la recalibración (justificados).
   - Prod: —
-  - Estado: reservada por coordinador 2026-11-03
+  - Estado: hecha en 2e15979 · evidencia informes/T08-dev-proyecto.md
 
 ## Libro
 
