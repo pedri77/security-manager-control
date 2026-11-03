@@ -86,14 +86,14 @@ Revisión de ola: 3
   - Prod: —
   - Estado: hecha en 2c13473 · evidencia informes/T06-dev-proyecto.md
 
-- [~] **T07** — Documentación y versión 0.4.0
+- [x] **T07** — Documentación y versión 0.4.0
   - Hace: actualiza `README.md` (estado v0.4, comandos nuevos, flujo), `docs/prd/PRD-SMC-001-v1.md` (roadmap: marca v0.2-v0.4 como hechas), crea `docs/adr/ADR-002-informes-html-y-dashboard-estatico.md` (por qué HTML autocontenido y dashboard estático local: soberanía, sin servidor, ADR-001), sube versión a 0.4.0 en `pyproject.toml` y `smc/__init__.py`, añade `CHANGELOG.md`.
   - No hace: no toca código de `smc/` salvo `__init__.py`.
   - Toca: `README.md`, `docs/prd/PRD-SMC-001-v1.md`, `docs/adr/ADR-002-informes-html-y-dashboard-estatico.md`, `pyproject.toml`, `smc/__init__.py`, `CHANGELOG.md`, `docs/plan/informes/T07-dev-proyecto.md`
   - Depende: T06
   - Verifica: `smc --version` da 0.4.0; todos los comandos del README se ejecutan sin error sobre los ejemplos. Contraprueba: un comando mal escrito en el README falla al ejecutarlo.
   - Prod: —
-  - Estado: reservada por coordinador 2026-11-03
+  - Estado: hecha en 7d920f4 · evidencia informes/T07-dev-proyecto.md
 
 ## Libro
 
