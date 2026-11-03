@@ -2,6 +2,11 @@
 
 Formato basado en Keep a Changelog. Versionado semántico.
 
+## 0.5.2 (2026-11-03)
+
+- Vertical `VRT-GRC` (gobierno, riesgo y cumplimiento): 20 verticales. Cubre NIS2 art. 20 (dirección y su formación) y 21.2.a/21.2.f, con controles ENS-org.*, ENS-op.pl.1, NIS2, TRV de gobierno y RGPD, criterios y baremo 0-5 comprobable. Sin recursos públicos. Añadida a la plantilla y a los dos ejemplos ficticios.
+- Informes T09 y T12: los nombres de repos privados se sustituyen por «un repo privado».
+
 ## 0.5.1 (2026-11-03)
 
 Endurecimiento tras la revisión de las olas 5-6 (hallazgos 1-10 y 12).

@@ -41,4 +41,5 @@ verticales:
   VRT-FW: {madurez: 2, producto: "Firewall ejemplo", notas: "Reglas sin revisar desde 2024"}
   VRT-MAIL: {madurez: 4, producto: "Pasarela de correo ejemplo"}
   VRT-BCK: {madurez: 2, notas: "Sin pruebas de restauración"}
+  VRT-GRC: {madurez: 3, notas: "Política aprobada y declaración de aplicabilidad; auditoría ENS pendiente"}
   VRT-MDM: {madurez: no_evaluable, motivo: "Sin inventario de móviles corporativos todavía"}

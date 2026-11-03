@@ -19,7 +19,7 @@
 `uv run --no-project --with pytest --with pyyaml python -m pytest -q`: 87 passed. OPML parsea con xml.etree y tiene un outline por feed con url_feed. Ids únicos. Sin repos privados.
 
 ## Contraprueba
-Cambiar la `url_web` de un feed a `https://github.com/pedri77/riskitera-news`: 2 tests en rojo (`test_datos_validos`, `test_ningun_repo_privado`). Revertido, 87 verdes. `test_contraprueba_repo_privado_en_rojo` cubre también `sase-evaluation-pack` en el ecosistema.
+Cambiar la `url_web` de un feed a `un repo privado`: 2 tests en rojo (`test_datos_validos`, `test_ningun_repo_privado`). Revertido, 87 verdes. `test_contraprueba_repo_privado_en_rojo` cubre también un repo privado en el ecosistema.
 
 ## Decisiones y pendiente
 - El OPML solo incluye feeds con `url_feed`; "un outline por feed" se cumple para ellos. Si se prefiere incluir los null, habría que dar una URL.
@@ -28,4 +28,4 @@ Cambiar la `url_web` de un feed a `https://github.com/pedri77/riskitera-news`: 2
 ## Verificación del coordinador (2026-11-03)
 - Verifica: pytest en worktree 87 passed; en main tras fusionar: 142 passed.
 - Superficies: OK. Toca: sin ficheros fuera. gitleaks: sin hallazgos.
-- Contraprueba: url_web de RSS-INCIBE-AVISOS -> repo privado riskitera-news -> 2 failed, 85 passed; restaurada, 87 passed.
+- Contraprueba: url_web de RSS-INCIBE-AVISOS -> un repo privado -> 2 failed, 85 passed; restaurada, 87 passed.

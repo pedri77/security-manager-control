@@ -48,4 +48,5 @@ verticales:
   VRT-NET: {madurez: 5}
   VRT-FW: {madurez: 4, producto: "Firewall ejemplo"}
   VRT-ZTNA: {madurez: 1, notas: "Piloto con un grupo de usuarios"}
+  VRT-GRC: {madurez: 4, notas: "Indicadores trimestrales al comité; auditoría anual con plan de acción"}
   VRT-HUNT: {madurez: no_evaluable, motivo: "Sin telemetría centralizada para cazar"}
