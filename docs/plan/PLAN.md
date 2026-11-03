@@ -95,6 +95,17 @@ Revisión de ola: 3
   - Prod: —
   - Estado: hecha en 7d920f4 · evidencia informes/T07-dev-proyecto.md
 
+## Ola 4
+
+- [~] **T08** — Endurecer v0.4 antes de publicar (hallazgos de revisor-ola)
+  - Hace: corrige los hallazgos 1-10 y 12 de `informes/ola-3-revisor-ola.md`: estado no válido cuenta como sin evaluar (aplicable, 0) con aviso; medidas ENS con `verificar: true` señaladas en informes Markdown/HTML («aplicabilidad pendiente de contrastar») y aviso en el resumen; `.gitignore` ignora `*.html` salvo lo versionado y `dashboard/`; recalibra `priority` para que un no_implementado de criticidad media en entidad no esencial no sea P1 (test nuevo) y documenta la fórmula; `verificar: true` en op.cont.2 y op.cont.3; cifra correcta de medidas `verificar` (37 o la que resulte) en README, PRD, CHANGELOG y Libro; `categoria_minima` desconocida tratada como BASICA y validada en `smc validate`; entradas mal formadas (`plan_accion` de texto, evaluación de texto, `cliente: null`) dan aviso, no AttributeError; el dashboard ignora `*.template.yaml`; la cabecera muestra la categoría ENS también con `proveedor_sector_publico`; test 12 con valor esperado real.
+  - No hace: no contrasta el Anexo II con el BOE (queda para revisión humana); no cambia IDs ENS; no añade mapeos TRANSVERSAL/RED.
+  - Toca: `smc/`, `tests/`, `frameworks/ens/controls.yaml`, `.gitignore`, `README.md`, `docs/prd/PRD-SMC-001-v1.md`, `CHANGELOG.md`, `docs/plan/informes/T08-dev-proyecto.md`
+  - Depende: T07
+  - Verifica: un test por hallazgo, cada uno con su contraprueba anotada en el informe; los 65 tests previos siguen verdes salvo los que cambien por la recalibración (justificados).
+  - Prod: —
+  - Estado: reservada por coordinador 2026-11-03
+
 ## Libro
 
 ### Hechos
@@ -108,7 +119,7 @@ Revisión de ola: 3
 - La tabla del Anexo II del RD 311/2022 se puede reconstruir con fiabilidad suficiente; lo dudoso va con `verificar: true`.
 
 ### Decisiones
-- 2026-11-03 · Alcance v0.2-v0.4; v0.5 fuera · sesión principal (David pidió hacerlo con el enjambre sin pedir autorización)
+- 2026-11-03 · Alcance v0.2-v0.4; v0.5 fuera · sesión principal (encargo de David: ejecutar con el enjambre)
 - 2026-11-03 · HTML con stdlib, sin dependencias nuevas · sesión principal
 - 2026-11-03 · Prioridad = 60·estado + 20·criticidad + 10·entidad + 10·cobertura; P1 >= 70, P2 >= 40, resto P3. Estado: no_implementado 1, sin evaluar 0.75, parcial 0.5, implementado/no_aplica = 0 (P3). Categoría ENS vacía o desconocida = ALTA con aviso. T04 puede reajustar el peso de «sin evaluar» · T02/T01
 - 2026-11-03 · Formato `plan_accion`: lista de {id, controles (str o lista), accion, responsable (rol), fecha_objetivo (AAAA-MM-DD), estado pendiente|en_curso|hecha|bloqueada}. Estado o fecha inválidos = aviso, no error. Una acción `hecha` no cubre una brecha aún abierta · T03
@@ -120,3 +131,4 @@ Revisión de ola: 3
 - Ola 1: 0
 - Ola 2: 0
 - Ola 3: 0
+- Ola 4: 0
