@@ -17,3 +17,13 @@ evaluaciones:
     estado: parcial
     evidencias: []
     notas: ""
+
+# Plan de acción (RF-08). Responsable = ROL, no nombre de persona.
+# estado: pendiente | en_curso | hecha | bloqueada ; fecha_objetivo: YYYY-MM-DD
+plan_accion:
+  - id: ACC-01
+    controles: [NIS2-21.2.a]
+    accion: ""
+    responsable: "RSI"
+    fecha_objetivo: "YYYY-MM-DD"
+    estado: pendiente

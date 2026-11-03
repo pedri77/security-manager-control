@@ -28,3 +28,9 @@ evaluaciones:
   NET-SEG-01: {estado: no_implementado, notas: "Red plana"}
   NET-PER-02: {estado: parcial}
   NET-ACC-01: {estado: implementado, evidencias: ["VPN con MFA"]}
+
+plan_accion:
+  - {id: ACC-01, controles: [NIS2-21.2.c], accion: "Definir y ejecutar pruebas de restauración de copias", responsable: "Responsable de sistemas", fecha_objetivo: "2026-12-15", estado: en_curso}
+  - {id: ACC-02, controles: [NIS2-21.2.b], accion: "Redactar playbooks de respuesta a incidentes", responsable: "RSI", fecha_objetivo: "2026-10-31", estado: pendiente}
+  - {id: ACC-03, controles: [NIS2-21.2.j, ENS-op.acc.6], accion: "Extender MFA a todos los accesos remotos", responsable: "Responsable de sistemas", fecha_objetivo: "2026-10-15", estado: hecha}
+  - {id: ACC-04, controles: [NET-SEG-01], accion: "Segmentar la red en VLAN por función", responsable: "Responsable de redes", fecha_objetivo: "2027-03-31", estado: bloqueada}
