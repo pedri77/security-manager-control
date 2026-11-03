@@ -34,3 +34,6 @@ ai/*
 pmo/*
 !pmo/proyecto.template.yaml
 !pmo/examples/
+
+# Calendarios exportados por smc pmo (contienen datos de cliente; docs/pmo.md: no se versionan)
+*.ics

@@ -32,6 +32,7 @@ ABIERTOS = ("abierto", "en_remediacion")
 RESULTADOS_PURPLE = ("detectado", "parcial", "no_detectado")
 ESTADOS_MEJORA = ("abierta", "en_curso", "hecha")
 RESULTADOS_RETEST = ("corregido", "persiste", "parcial")
+RETEST_FALLIDO = ("persiste", "parcial")
 PESO_RESULTADO = {"detectado": 1.0, "parcial": 0.5, "no_detectado": 0.0}
 RE_ATTACK = re.compile(r"^T\d{4}(\.\d{3})?$")
 RE_CWE = re.compile(r"^CWE-\d+$")
@@ -100,6 +101,7 @@ class EstadoHallazgos:
     aceptados_sin_revision: list[Hallazgo]
     por_severidad: dict[str, int]
     avisos: list[str] = field(default_factory=list)
+    retest_fallido: list[Hallazgo] = field(default_factory=list)
 
 
 @dataclass
@@ -267,7 +269,8 @@ def cargar_pentest(fuente) -> Pentest:
 def estado_hallazgos(datos, hoy: date | None = None) -> EstadoHallazgos:
     """Abiertos, fuera de SLA, pendientes de retest y aceptados sin fecha de revisión.
 
-    - Abierto: estado `abierto` o `en_remediacion`.
+    - Abierto: estado `abierto` o `en_remediacion`, o `corregido` con `resultado_retest` `persiste` o `parcial`
+      (retest fallido, T29): cuenta con su SLA desde `fecha_deteccion`, sale en `retest_fallido` y lleva aviso.
     - Fuera de SLA: abierto y días desde `fecha_deteccion` > SLA de su severidad efectiva (estricto).
     - Pendiente de retest: `corregido` sin `fecha_retest`.
     - Aceptado sin revisión: `aceptado` sin `fecha_revision` válida."""
@@ -275,7 +278,9 @@ def estado_hallazgos(datos, hoy: date | None = None) -> EstadoHallazgos:
     p = datos if isinstance(datos, Pentest) else cargar_pentest(datos)
     sla = sla_politica()
     avisos = list(p.avisos)
-    abiertos = [h for h in p.hallazgos if h.estado in ABIERTOS]
+    retest_fallido = [h for h in p.hallazgos if h.estado == "corregido" and h.resultado_retest in RETEST_FALLIDO]
+    avisos += [f"{h.id}: marcado corregido pero el retest dice '{h.resultado_retest}': se trata como abierto" for h in retest_fallido]
+    abiertos = [h for h in p.hallazgos if h.estado in ABIERTOS or h in retest_fallido]
     fuera: list[FueraSla] = []
     for h in abiertos:
         sev, av = tech.severidad_efectiva(h.severidad, h.kev, sla)
@@ -292,7 +297,7 @@ def estado_hallazgos(datos, hoy: date | None = None) -> EstadoHallazgos:
     for h in abiertos:
         sev, _ = tech.severidad_efectiva(h.severidad, h.kev, sla)
         por_sev[sev] += 1
-    return EstadoHallazgos(hoy, len(p.hallazgos), abiertos, fuera, pend, acep, por_sev, avisos)
+    return EstadoHallazgos(hoy, len(p.hallazgos), abiertos, fuera, pend, acep, por_sev, avisos, retest_fallido)
 
 
 # ---------------------------------------------------------------- purple team
@@ -418,7 +423,7 @@ def render_markdown(pentest: EstadoHallazgos | None = None, purple_res: Resultad
             out += ["### Fuera de SLA", "", "| ID | Título | Sev. efectiva | Días | SLA | Activo | Control |", "|---|---|---|---|---|---|---|"]
             out += [f"| {_c(f.hallazgo.id)} | {_c(f.hallazgo.titulo)} | {_c(f.severidad_efectiva)} | {f.dias} | {f.sla_dias} | "
                     f"{_c(f.hallazgo.activo or '—')} | {_c(f.hallazgo.control or '—')} |" for f in e.fuera_sla] + [""]
-        for titulo, lista in (("Pendientes de retest", e.pendientes_retest), ("Aceptados sin fecha de revisión", e.aceptados_sin_revision)):
+        for titulo, lista in (("Retest fallido (tratados como abiertos)", e.retest_fallido), ("Pendientes de retest", e.pendientes_retest), ("Aceptados sin fecha de revisión", e.aceptados_sin_revision)):
             if lista:
                 out += [f"### {titulo}", ""] + [f"- {_c(h.id)}: {_c(h.titulo)}" for h in lista] + [""]
         if e.avisos:

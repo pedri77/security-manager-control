@@ -3,9 +3,9 @@
 Rama `t25-v07`. Sin push. Plan no marcado.
 
 ## Hecho
-- `soc/verticals.yaml`: 4 verticales nuevas con nis2, controles existentes, criterios y `niveles` 0-5 (6 descriptores distintos). Total 22 tras la fusión.
+- `soc/verticals.yaml`: 4 verticales nuevas con nis2, controles existentes, criterios y `niveles` 0-5 (6 descriptores distintos). Total 22 tras la fusión (el plan pedía 24: ver «Corrección T29»).
 - Plantilla y los dos ejemplos ficticios con las 4 (ayuntamiento: IAM 2, DATA 2, OFF 1, AI `no_evaluable` con motivo; energía: IAM 4, DATA 3, AI 2, OFF 3).
-- `soc/README.md` y tests de cifras a 24; `tests/test_verticals_v07.py` (7 tests nuevos).
+- `soc/README.md` y tests de cifras a 22 (la cifra 24 de la primera versión de este informe quedó obsoleta con la fusión); `tests/test_verticals_v07.py` (7 tests nuevos).
 
 ## Decisión del coordinador (fusión, segundo commit)
 `VRT-IAM` y `VRT-DATA` ya existían, así que se fusionó en lugar de duplicar: se eliminan `VRT-IDSEC` y `VRT-DSPM` y su alcance pasa a IAM (identidad y su seguridad: IGA, MFA resistente a phishing, PAM, NHI, ITDR, revisión de accesos, AD/Entra) y DATA (clasificación, DSPM, DLP, permisos, cifrado y claves, retención), con la unión de controles, criterios ampliados y niveles 0-5 reescritos. Total: 22 verticales (20 + AI + OFF). IAM y DATA se añaden a plantilla y ejemplos (antes no estaban). Medias del ejemplo de energía: NIS2-21.2.a 3.0, 21.2.j 2.5, 21.2.i 2.67, y 3.25 sin FW/ZTNA (cambio respecto a main: entran AI=2 en 21.2.a e IAM=4 en 21.2.j). Tests: 371.
@@ -27,3 +27,6 @@ Ninguna lleva `recursos`. `URLS_PUBLICAS` no se toca.
 
 ## Queda
 - Descriptores a validar por el Security Manager. README raíz (fuera de Toca) sigue diciendo 20 verticales: lo actualiza T28.
+
+## Corrección T29
+Se entregaron 22 verticales, no 24. El plan pedía 24; la fusión de VRT-IDSEC en VRT-IAM y de VRT-DSPM en VRT-DATA la decidió el coordinador (ver arriba) y no se anotó en el plan. Las cifras de `soc/README.md` y de los tests son 22; la mención a 24 de este informe era un resto previo a la fusión.
