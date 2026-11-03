@@ -1,0 +1,345 @@
+# RIA: Reglamento (UE) 2024/1689 de Inteligencia Artificial, modificado por el Reglamento (UE) 2026/1744 (Ómnibus digital sobre IA).
+# Resumen operativo por rol y nivel de riesgo. NO es asesoramiento jurídico: el texto que obliga es el del DOUE.
+#
+# Fuentes (fecha de consulta: 2026-11-03; ver docs/plan/informes/T26-dev-proyecto.md):
+#   RIA      https://eur-lex.europa.eu/eli/reg/2024/1689/oj
+#            EUR-Lex respondió 202 sin cuerpo a clientes automáticos; se leyó la copia del DOUE en el BOE:
+#            https://www.boe.es/buscar/doc.php?id=DOUE-L-2024-81079 (art. 4, 5, 6, 9-17, 23, 24, 26, 27, 49, 50, 53-55, 111, 113)
+#   OMNIBUS  https://eur-lex.europa.eu/eli/reg/2026/1744/oj  (DO L de 24.7.2026; en vigor a los tres días: 2026-07-27, art. 4)
+#            Copia del DOUE en el BOE: https://www.boe.es/doue/2026/1744/L00001-00041.pdf
+#            Punto 40 (art. 113 RIA): alto riesgo Anexo III 2027-12-02; Anexo I 2028-08-02; art. 5.1 b bis) y b ter) 2026-12-02.
+#            Punto 39 b) (nuevo art. 111.4 RIA): art. 50.2 para sistemas en el mercado antes de 2026-08-02, a más tardar 2026-12-02.
+#            Punto 5: nuevo art. 4 (alfabetización: «apoyar la promoción», sin exigir un nivel concreto).
+#            El art. 50 (salvo su apartado 7) no cambia de fecha: aplica desde la fecha general, 2026-08-02 (art. 113 RIA).
+#
+# Esquema de cada obligación:
+#   id, articulo, titulo, descripcion   texto breve (paráfrasis, no cita)
+#   roles      proveedor | responsable_despliegue | importador | distribuidor
+#   niveles    prohibido | alto_riesgo_anexo_iii | alto_riesgo_anexo_i | transparencia | uso_general
+#              | uso_general_riesgo_sistemico | minimo
+#   aplica_desde   fecha AAAA-MM-DD, o mapa nivel -> fecha si depende del nivel
+#   supuesto   (opcional) solo aplica si el sistema lo declara en `supuestos`
+#   excepto_supuesto (opcional) no aplica si el sistema lo declara
+#   transitorio (opcional) {en_mercado_antes_de, aplica_desde}: fecha distinta para sistemas o modelos ya en el mercado
+#   evidencia  (opcional) campo del inventario que acredita el cumplimiento (supervision_humana, registro, ...)
+#   fuente     RIA | OMNIBUS (la que fija la fecha vigente)
+#   verificar  true = fecha o alcance no cerrados con el texto; `nota` explica por qué
+version: "RIA 2024/1689 + Ómnibus 2026/1744"
+consulta: 2026-11-03
+fuentes:
+  - {id: RIA, titulo: "Reglamento (UE) 2024/1689 (RIA)", url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj", copia: "https://www.boe.es/buscar/doc.php?id=DOUE-L-2024-81079", consulta: 2026-11-03}
+  - {id: OMNIBUS, titulo: "Reglamento (UE) 2026/1744 (Ómnibus digital sobre IA)", url: "https://eur-lex.europa.eu/eli/reg/2026/1744/oj", copia: "https://www.boe.es/doue/2026/1744/L00001-00041.pdf", consulta: 2026-11-03}
+roles: [proveedor, responsable_despliegue, importador, distribuidor]
+niveles: [prohibido, alto_riesgo_anexo_iii, alto_riesgo_anexo_i, transparencia, uso_general, uso_general_riesgo_sistemico, minimo]
+supuestos:
+  interaccion: "El sistema interactúa directamente con personas físicas (art. 50.1)"
+  contenido_sintetico: "Genera contenido sintético de audio, imagen, vídeo o texto (art. 50.2)"
+  emociones_biometria: "Reconocimiento de emociones o categorización biométrica (art. 50.3)"
+  ultrasuplantacion: "Genera o manipula ultrasuplantaciones (deepfakes) (art. 50.4)"
+  contenido_intimo_no_consentido: "Práctica del art. 5.1 b bis) o b ter) (añadidas por el Ómnibus)"
+  ambito_art27: "Responsable del despliegue de Derecho público o que presta servicios públicos, o Anexo III punto 5 b) o c)"
+  organismo_publico: "Responsable del despliegue que es autoridad, órgano u organismo público (art. 49.3)"
+  lugar_de_trabajo: "Uso en el lugar de trabajo por un empleador (art. 26.7)"
+  proveedor_tercer_pais: "Proveedor establecido fuera de la Unión (art. 54)"
+
+obligaciones:
+  # --- Todas las categorías ---
+  - id: AIA-001
+    articulo: "art. 4"
+    titulo: Alfabetización en materia de IA
+    descripcion: Adoptar medidas para apoyar la alfabetización en IA del personal que opera o usa el sistema, según su perfil y el contexto de uso. Tras el Ómnibus no exige garantizar un nivel concreto.
+    roles: [proveedor, responsable_despliegue]
+    niveles: [alto_riesgo_anexo_iii, alto_riesgo_anexo_i, transparencia, minimo]
+    aplica_desde: 2025-02-02
+    evidencia: alfabetizacion
+    fuente: RIA
+    nota: "Capítulo I aplicable desde 2025-02-02 (art. 113 a). Texto sustituido por el Ómnibus (punto 5), en vigor 2026-07-27."
+
+  # --- Prácticas prohibidas (art. 5) ---
+  - id: AIA-002
+    articulo: "art. 5"
+    titulo: Práctica de IA prohibida
+    descripcion: No introducir en el mercado, poner en servicio ni utilizar el sistema; retirarlo o dejar de usarlo.
+    roles: [proveedor, responsable_despliegue, importador, distribuidor]
+    niveles: [prohibido]
+    aplica_desde: 2025-02-02
+    excepto_supuesto: contenido_intimo_no_consentido
+    evidencia: retirado
+    fuente: RIA
+  - id: AIA-003
+    articulo: "art. 5.1 b bis) y b ter)"
+    titulo: Prohibición de contenido íntimo no consentido y de material de abuso sexual infantil
+    descripcion: No introducir, poner en servicio ni usar sistemas que generen o manipulen imágenes íntimas realistas de personas identificables sin su consentimiento, ni material del art. 2 c) y e) de la Directiva 2011/93/UE.
+    roles: [proveedor, responsable_despliegue, importador, distribuidor]
+    niveles: [prohibido]
+    aplica_desde: 2026-12-02
+    supuesto: contenido_intimo_no_consentido
+    evidencia: retirado
+    fuente: OMNIBUS
+    nota: "Letras añadidas por el Ómnibus (punto 7); fecha en el art. 113 a) modificado (punto 40 a)."
+
+  # --- Alto riesgo: proveedor (capítulo III, secciones 2 y 3) ---
+  - id: AIA-010
+    articulo: "art. 9"
+    titulo: Sistema de gestión de riesgos
+    descripcion: Establecer, documentar y mantener un sistema de gestión de riesgos durante todo el ciclo de vida.
+    roles: [proveedor]
+    niveles: [alto_riesgo_anexo_iii, alto_riesgo_anexo_i]
+    aplica_desde: {alto_riesgo_anexo_iii: 2027-12-02, alto_riesgo_anexo_i: 2028-08-02}
+    evidencia: gestion_riesgos
+    fuente: OMNIBUS
+  - id: AIA-011
+    articulo: "art. 10"
+    titulo: Datos y gobernanza de datos
+    descripcion: Conjuntos de datos de entrenamiento, validación y prueba con prácticas de gobernanza adecuadas a la finalidad prevista.
+    roles: [proveedor]
+    niveles: [alto_riesgo_anexo_iii, alto_riesgo_anexo_i]
+    aplica_desde: {alto_riesgo_anexo_iii: 2027-12-02, alto_riesgo_anexo_i: 2028-08-02}
+    fuente: OMNIBUS
+  - id: AIA-012
+    articulo: "art. 11"
+    titulo: Documentación técnica
+    descripcion: Elaborar la documentación técnica (Anexo IV) antes de introducir el sistema en el mercado y mantenerla actualizada.
+    roles: [proveedor]
+    niveles: [alto_riesgo_anexo_iii, alto_riesgo_anexo_i]
+    aplica_desde: {alto_riesgo_anexo_iii: 2027-12-02, alto_riesgo_anexo_i: 2028-08-02}
+    evidencia: documentacion_tecnica
+    fuente: OMNIBUS
+  - id: AIA-013
+    articulo: "art. 12"
+    titulo: Registro automático de acontecimientos
+    descripcion: El sistema debe permitir técnicamente el registro automático de acontecimientos (archivos de registro) durante todo su ciclo de vida.
+    roles: [proveedor]
+    niveles: [alto_riesgo_anexo_iii, alto_riesgo_anexo_i]
+    aplica_desde: {alto_riesgo_anexo_iii: 2027-12-02, alto_riesgo_anexo_i: 2028-08-02}
+    evidencia: registro
+    fuente: OMNIBUS
+  - id: AIA-014
+    articulo: "art. 13"
+    titulo: Transparencia e instrucciones de uso
+    descripcion: Diseñar el sistema con transparencia suficiente y acompañarlo de instrucciones de uso para el responsable del despliegue.
+    roles: [proveedor]
+    niveles: [alto_riesgo_anexo_iii, alto_riesgo_anexo_i]
+    aplica_desde: {alto_riesgo_anexo_iii: 2027-12-02, alto_riesgo_anexo_i: 2028-08-02}
+    fuente: OMNIBUS
+  - id: AIA-015
+    articulo: "art. 14"
+    titulo: Supervisión humana (diseño)
+    descripcion: Diseñar el sistema para que personas físicas puedan vigilarlo de manera efectiva mientras está en uso, con interfaz humano-máquina adecuada.
+    roles: [proveedor]
+    niveles: [alto_riesgo_anexo_iii, alto_riesgo_anexo_i]
+    aplica_desde: {alto_riesgo_anexo_iii: 2027-12-02, alto_riesgo_anexo_i: 2028-08-02}
+    evidencia: supervision_humana
+    fuente: OMNIBUS
+  - id: AIA-016
+    articulo: "art. 15"
+    titulo: Precisión, solidez y ciberseguridad
+    descripcion: Nivel adecuado de precisión, solidez y ciberseguridad, incluida la resistencia a la manipulación de datos o de entradas.
+    roles: [proveedor]
+    niveles: [alto_riesgo_anexo_iii, alto_riesgo_anexo_i]
+    aplica_desde: {alto_riesgo_anexo_iii: 2027-12-02, alto_riesgo_anexo_i: 2028-08-02}
+    evidencia: pruebas_seguridad
+    fuente: OMNIBUS
+  - id: AIA-017
+    articulo: "arts. 16 y 17"
+    titulo: Obligaciones del proveedor y sistema de gestión de la calidad
+    descripcion: Cumplir los requisitos de la sección 2, identificarse en el sistema y mantener un sistema de gestión de la calidad documentado.
+    roles: [proveedor]
+    niveles: [alto_riesgo_anexo_iii, alto_riesgo_anexo_i]
+    aplica_desde: {alto_riesgo_anexo_iii: 2027-12-02, alto_riesgo_anexo_i: 2028-08-02}
+    fuente: OMNIBUS
+  # Sección 5 y capítulo IX: el art. 113 c) modificado solo retrasa las secciones 1, 2 y 3 del capítulo III.
+  - id: AIA-018
+    articulo: "arts. 43, 47 y 48"
+    titulo: Evaluación de la conformidad, declaración UE y marcado CE
+    descripcion: Someter el sistema al procedimiento de evaluación de la conformidad, redactar la declaración UE de conformidad y colocar el marcado CE.
+    roles: [proveedor]
+    niveles: [alto_riesgo_anexo_iii, alto_riesgo_anexo_i]
+    aplica_desde: {alto_riesgo_anexo_iii: 2027-12-02, alto_riesgo_anexo_i: 2028-08-02}
+    fuente: OMNIBUS
+    verificar: true
+    nota: "Capítulo III, sección 5: el art. 113 c) modificado no la cita, así que en lectura literal aplicaría desde la fecha general (2026-08-02). Se toma la fecha del nivel porque estas obligaciones recaen sobre sistemas cuyos requisitos (secciones 1-3) aplican después. Contrastar con orientaciones de la Comisión."
+  - id: AIA-019
+    articulo: "art. 49.1"
+    titulo: Registro en la base de datos de la UE (proveedor)
+    descripcion: Registrar el sistema y al proveedor en la base de datos de la UE antes de introducirlo en el mercado (Anexo III, salvo punto 2).
+    roles: [proveedor]
+    niveles: [alto_riesgo_anexo_iii]
+    aplica_desde: 2027-12-02
+    evidencia: registro_ue
+    fuente: OMNIBUS
+    verificar: true
+    nota: "Capítulo III, sección 5 (misma duda que AIA-018: lectura literal 2026-08-02)."
+  - id: AIA-020
+    articulo: "arts. 72 y 73"
+    titulo: Vigilancia poscomercialización y notificación de incidentes graves
+    descripcion: Plan de vigilancia poscomercialización y notificación de incidentes graves a la autoridad de vigilancia del mercado.
+    roles: [proveedor]
+    niveles: [alto_riesgo_anexo_iii, alto_riesgo_anexo_i]
+    aplica_desde: {alto_riesgo_anexo_iii: 2027-12-02, alto_riesgo_anexo_i: 2028-08-02}
+    fuente: OMNIBUS
+    verificar: true
+    nota: "Capítulo IX: no está entre las excepciones del art. 113, así que en lectura literal aplicaría desde 2026-08-02; se toma la fecha del nivel por coherencia con las secciones 1-3."
+
+  # --- Alto riesgo: importador y distribuidor ---
+  - id: AIA-030
+    articulo: "art. 23"
+    titulo: Obligaciones del importador
+    descripcion: Antes de introducir el sistema, verificar la evaluación de la conformidad, la documentación técnica, el marcado CE y la declaración UE, y el representante autorizado.
+    roles: [importador]
+    niveles: [alto_riesgo_anexo_iii, alto_riesgo_anexo_i]
+    aplica_desde: {alto_riesgo_anexo_iii: 2027-12-02, alto_riesgo_anexo_i: 2028-08-02}
+    fuente: OMNIBUS
+  - id: AIA-031
+    articulo: "art. 24"
+    titulo: Obligaciones del distribuidor
+    descripcion: Antes de comercializar el sistema, verificar el marcado CE, la declaración UE de conformidad y las instrucciones de uso, y que proveedor e importador han cumplido.
+    roles: [distribuidor]
+    niveles: [alto_riesgo_anexo_iii, alto_riesgo_anexo_i]
+    aplica_desde: {alto_riesgo_anexo_iii: 2027-12-02, alto_riesgo_anexo_i: 2028-08-02}
+    fuente: OMNIBUS
+
+  # --- Alto riesgo: responsable del despliegue ---
+  - id: AIA-040
+    articulo: "art. 26.1"
+    titulo: Uso conforme a las instrucciones
+    descripcion: Medidas técnicas y organizativas para usar el sistema con arreglo a las instrucciones de uso del proveedor.
+    roles: [responsable_despliegue]
+    niveles: [alto_riesgo_anexo_iii, alto_riesgo_anexo_i]
+    aplica_desde: {alto_riesgo_anexo_iii: 2027-12-02, alto_riesgo_anexo_i: 2028-08-02}
+    fuente: OMNIBUS
+  - id: AIA-041
+    articulo: "art. 26.2"
+    titulo: Supervisión humana (asignación)
+    descripcion: Encomendar la supervisión humana a personas físicas con la competencia, la formación y la autoridad necesarias.
+    roles: [responsable_despliegue]
+    niveles: [alto_riesgo_anexo_iii, alto_riesgo_anexo_i]
+    aplica_desde: {alto_riesgo_anexo_iii: 2027-12-02, alto_riesgo_anexo_i: 2028-08-02}
+    evidencia: supervision_humana
+    fuente: OMNIBUS
+  - id: AIA-042
+    articulo: "art. 26.5"
+    titulo: Vigilancia del funcionamiento e incidentes
+    descripcion: Vigilar el funcionamiento según las instrucciones; ante riesgo, informar y suspender; ante incidente grave, informar al proveedor y a la autoridad.
+    roles: [responsable_despliegue]
+    niveles: [alto_riesgo_anexo_iii, alto_riesgo_anexo_i]
+    aplica_desde: {alto_riesgo_anexo_iii: 2027-12-02, alto_riesgo_anexo_i: 2028-08-02}
+    fuente: OMNIBUS
+  - id: AIA-043
+    articulo: "art. 26.6"
+    titulo: Conservación de los archivos de registro
+    descripcion: Conservar los registros generados automáticamente bajo su control al menos seis meses, salvo otra disposición del Derecho aplicable.
+    roles: [responsable_despliegue]
+    niveles: [alto_riesgo_anexo_iii, alto_riesgo_anexo_i]
+    aplica_desde: {alto_riesgo_anexo_iii: 2027-12-02, alto_riesgo_anexo_i: 2028-08-02}
+    evidencia: registro
+    fuente: OMNIBUS
+  - id: AIA-044
+    articulo: "art. 26.7"
+    titulo: Información a los trabajadores
+    descripcion: Antes de usar el sistema en el lugar de trabajo, informar a los representantes de los trabajadores y a los trabajadores afectados.
+    roles: [responsable_despliegue]
+    niveles: [alto_riesgo_anexo_iii, alto_riesgo_anexo_i]
+    aplica_desde: {alto_riesgo_anexo_iii: 2027-12-02, alto_riesgo_anexo_i: 2028-08-02}
+    supuesto: lugar_de_trabajo
+    evidencia: informacion_trabajadores
+    fuente: OMNIBUS
+  - id: AIA-045
+    articulo: "art. 27"
+    titulo: Evaluación de impacto en los derechos fundamentales
+    descripcion: Antes del despliegue, evaluar el impacto en los derechos fundamentales (puede remitir a la EIPD del art. 35 RGPD, apartado 4 modificado).
+    roles: [responsable_despliegue]
+    niveles: [alto_riesgo_anexo_iii]
+    aplica_desde: 2027-12-02
+    supuesto: ambito_art27
+    evidencia: evaluacion_impacto
+    fuente: OMNIBUS
+  - id: AIA-046
+    articulo: "art. 49.3"
+    titulo: Registro del uso por organismos públicos
+    descripcion: Los responsables del despliegue que sean autoridades u organismos públicos se registran y registran el sistema en la base de datos de la UE antes de usarlo.
+    roles: [responsable_despliegue]
+    niveles: [alto_riesgo_anexo_iii]
+    aplica_desde: 2027-12-02
+    supuesto: organismo_publico
+    evidencia: registro_ue
+    fuente: OMNIBUS
+    verificar: true
+    nota: "Capítulo III, sección 5 (misma duda que AIA-018: lectura literal 2026-08-02)."
+
+  # --- Transparencia (capítulo IV, art. 50): aplica a cualquier nivel si se da el supuesto ---
+  - id: AIA-050
+    articulo: "art. 50.1"
+    titulo: Informar de que se interactúa con una IA
+    descripcion: Diseñar el sistema para que las personas sepan que interactúan con una IA, salvo que resulte evidente.
+    roles: [proveedor]
+    niveles: [alto_riesgo_anexo_iii, alto_riesgo_anexo_i, transparencia, minimo]
+    aplica_desde: 2026-08-02
+    supuesto: interaccion
+    evidencia: informa_usuarios
+    fuente: RIA
+  - id: AIA-051
+    articulo: "art. 50.2"
+    titulo: Marcado del contenido sintético
+    descripcion: Marcar los resultados de audio, imagen, vídeo o texto sintéticos en formato legible por máquina y detectable como generado o manipulado.
+    roles: [proveedor]
+    niveles: [alto_riesgo_anexo_iii, alto_riesgo_anexo_i, transparencia, minimo]
+    aplica_desde: 2026-08-02
+    transitorio: {en_mercado_antes_de: 2026-08-02, aplica_desde: 2026-12-02}
+    supuesto: contenido_sintetico
+    evidencia: marcado_contenido
+    fuente: OMNIBUS
+    nota: "Fecha general 2026-08-02 (art. 113 RIA). Sistemas en el mercado antes de 2026-08-02: a más tardar 2026-12-02 (nuevo art. 111.4, Ómnibus punto 39 b)."
+  - id: AIA-052
+    articulo: "art. 50.3"
+    titulo: Informar del reconocimiento de emociones o la categorización biométrica
+    descripcion: Informar a las personas expuestas del funcionamiento del sistema y tratar sus datos conforme al RGPD.
+    roles: [responsable_despliegue]
+    niveles: [alto_riesgo_anexo_iii, alto_riesgo_anexo_i, transparencia, minimo]
+    aplica_desde: 2026-08-02
+    supuesto: emociones_biometria
+    evidencia: informa_usuarios
+    fuente: RIA
+  - id: AIA-053
+    articulo: "art. 50.4"
+    titulo: Divulgar las ultrasuplantaciones
+    descripcion: Hacer público que el contenido de imagen, audio o vídeo que constituye una ultrasuplantación ha sido generado o manipulado artificialmente.
+    roles: [responsable_despliegue]
+    niveles: [alto_riesgo_anexo_iii, alto_riesgo_anexo_i, transparencia, minimo]
+    aplica_desde: 2026-08-02
+    supuesto: ultrasuplantacion
+    evidencia: informa_usuarios
+    fuente: RIA
+
+  # --- Modelos de IA de uso general (capítulo V) ---
+  - id: AIA-060
+    articulo: "art. 53"
+    titulo: Obligaciones de los proveedores de modelos de uso general
+    descripcion: Documentación técnica del modelo (Anexo XI), información para quien lo integra (Anexo XII), política de derechos de autor y resumen público del contenido de entrenamiento.
+    roles: [proveedor]
+    niveles: [uso_general, uso_general_riesgo_sistemico]
+    aplica_desde: 2025-08-02
+    transitorio: {en_mercado_antes_de: 2025-08-02, aplica_desde: 2027-08-02}
+    evidencia: documentacion_tecnica
+    fuente: RIA
+    nota: "Capítulo V desde 2025-08-02 (art. 113 b). Modelos en el mercado antes de esa fecha: a más tardar 2027-08-02 (art. 111.3)."
+  - id: AIA-061
+    articulo: "art. 54"
+    titulo: Representante autorizado del proveedor de un modelo de uso general
+    descripcion: Los proveedores de terceros países nombran un representante autorizado en la Unión antes de introducir el modelo.
+    roles: [proveedor]
+    niveles: [uso_general, uso_general_riesgo_sistemico]
+    aplica_desde: 2025-08-02
+    transitorio: {en_mercado_antes_de: 2025-08-02, aplica_desde: 2027-08-02}
+    supuesto: proveedor_tercer_pais
+    fuente: RIA
+  - id: AIA-062
+    articulo: "art. 55"
+    titulo: Modelos de uso general con riesgo sistémico
+    descripcion: Evaluación con pruebas adversarias, evaluación y mitigación de riesgos sistémicos, notificación de incidentes graves a la Oficina de IA y ciberseguridad adecuada.
+    roles: [proveedor]
+    niveles: [uso_general_riesgo_sistemico]
+    aplica_desde: 2025-08-02
+    transitorio: {en_mercado_antes_de: 2025-08-02, aplica_desde: 2027-08-02}
+    evidencia: pruebas_seguridad
+    fuente: RIA
