@@ -187,6 +187,22 @@ def url_https(url) -> bool:
     return isinstance(url, str) and url.startswith("https://") and not any(c.isspace() or c in '<>"' for c in url)
 
 
+def md_texto(valor) -> str:
+    """Escapa texto libre para una celda o línea de Markdown: `<`, `>` y `|` (y saltos de línea)."""
+    t = " ".join(str(valor if valor is not None else "").split())
+    return t.replace("<", "&lt;").replace(">", "&gt;").replace("|", "\\|")
+
+
+def estado_vertical(r) -> str:
+    """Texto de estado de una vertical; el paraguas que no puntúa lo dice y dice dónde se detalla."""
+    if getattr(r, "puntua", True) is False:
+        hijas = ", ".join(i.removeprefix("VRT-") for i in r.detallada_en)
+        if len(r.detallada_en) > 1:
+            hijas = hijas.rsplit(", ", 1)[0] + " y " + hijas.rsplit(", ", 1)[1]
+        return f"no puntúa (detallada en {hijas})"
+    return r.estado
+
+
 def render_verticales_md(res, catalogo=None) -> str:
     """Sección Markdown de verticales: madurez, no evaluables con su motivo y recursos públicos."""
     from .verticals import cargar_verticales
@@ -195,20 +211,20 @@ def render_verticales_md(res, catalogo=None) -> str:
     out = ["## Verticales", "", f"Madurez media de las verticales evaluadas: {media}", "",
            "| Vertical | Estado | Madurez (0-5) | Producto |", "|---|---|---|---|"]
     for r in res.verticales:
-        mad = "—" if r.madurez is None else str(r.madurez)
-        out.append(f"| {r.id} {r.nombre} | {r.estado} | {mad} | {r.producto or '—'} |")
+        mad = "—" if (r.madurez is None or not r.puntua) else str(r.madurez)
+        out.append(f"| {md_texto(r.id)} {md_texto(r.nombre)} | {md_texto(estado_vertical(r))} | {mad} | {md_texto(r.producto) or '—'} |")
     if res.no_evaluables:
         out += ["", "### No evaluables", ""]
-        out += [f"- {r.id} {r.nombre}: {r.motivo}" for r in res.no_evaluables]
+        out += [f"- {md_texto(r.id)} {md_texto(r.nombre)}: {md_texto(r.motivo)}" for r in res.no_evaluables]
     enlaces = []
     for r in res.verticales:
         v = catalogo.get(r.id)
         if v and r.estado != "sin_evaluar":
-            enlaces += [f"- {r.id}: [{x['titulo']}]({x['url']})" for x in v.recursos if url_https(x.get("url"))]
+            enlaces += [f"- {r.id}: [{md_texto(x['titulo'])}]({x['url']})" for x in v.recursos if url_https(x.get("url"))]
     if enlaces:
         out += ["", "### Recursos públicos", ""] + enlaces
     if res.warnings or res.errores:
-        out += ["", "### Avisos de verticales", ""] + [f"- {w}" for w in res.warnings + res.errores]
+        out += ["", "### Avisos de verticales", ""] + [f"- {md_texto(w)}" for w in res.warnings + res.errores]
     return "\n".join(out) + "\n"
 
 
