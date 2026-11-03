@@ -7,16 +7,18 @@
 **Todo el perímetro, en una sola pantalla.**
 
 Qué exige la normativa a cada cliente, qué tiene ya implantado, con qué evidencias y qué falta, priorizado.<br>
-NIS2 · ENS · ISO 27001 · SOC · verticales · tecnologías · vulnerabilidades por protocolo · mapa de red. En local, sin servidor y sin que los datos salgan de tu equipo.
+NIS2 · ENS · ISO 27001 · SOC · verticales · tecnologías · vulnerabilidades por protocolo · mapa de red · pentest y purple team · IA (RIA) · PMO. En local, sin servidor y sin que los datos salgan de tu equipo.
 
-[![versión](https://img.shields.io/badge/versión-0.6.1-3cf58a?style=for-the-badge&labelColor=07090c)](CHANGELOG.md)
-[![tests](https://img.shields.io/badge/tests-363%20en%20verde-3cf58a?style=for-the-badge&labelColor=07090c)](tests/)
+[![versión](https://img.shields.io/badge/versión-0.7.0-3cf58a?style=for-the-badge&labelColor=07090c)](CHANGELOG.md)
+[![tests](https://img.shields.io/badge/tests-509%20en%20verde-3cf58a?style=for-the-badge&labelColor=07090c)](tests/)
 [![python](https://img.shields.io/badge/python-3.10+-3cf58a?style=for-the-badge&logo=python&logoColor=3cf58a&labelColor=07090c)](pyproject.toml)
 [![dependencias](https://img.shields.io/badge/dependencias-solo%20PyYAML-3cf58a?style=for-the-badge&labelColor=07090c)](pyproject.toml)
 
-[![verticales](https://img.shields.io/badge/verticales-20-ffb020?style=flat-square&labelColor=07090c)](soc/verticals.yaml)
+[![verticales](https://img.shields.io/badge/verticales-22-ffb020?style=flat-square&labelColor=07090c)](soc/verticals.yaml)
 [![protocolos](https://img.shields.io/badge/protocolos-28-ffb020?style=flat-square&labelColor=07090c)](vulnerabilities/protocols.yaml)
 [![RSS](https://img.shields.io/badge/RSS-17%20feeds%20·%2013%20verificados-ffb020?style=flat-square&labelColor=07090c)](resources/rss.yaml)
+[![controles](https://img.shields.io/badge/controles-129-ffb020?style=flat-square&labelColor=07090c)](frameworks/)
+[![RIA](https://img.shields.io/badge/RIA-30%20obligaciones-ffb020?style=flat-square&labelColor=07090c)](frameworks/ai-act/obligaciones.yaml)
 [![NIS2](https://img.shields.io/badge/NIS2-15%20controles-ffb020?style=flat-square&labelColor=07090c)](frameworks/nis2/controls.yaml)
 [![ENS](https://img.shields.io/badge/ENS-73%20medidas-ffb020?style=flat-square&labelColor=07090c)](frameworks/ens/controls.yaml)
 [![Transversal](https://img.shields.io/badge/ISO%2027001%20·%20RGPD%20·%20DORA%20·%20CIS-21%20controles-ffb020?style=flat-square&labelColor=07090c)](frameworks/transversal/controls.yaml)
@@ -24,7 +26,7 @@ NIS2 · ENS · ISO 27001 · SOC · verticales · tecnologías · vulnerabilidade
 [![MITRE](https://img.shields.io/badge/MITRE%20ATT%26CK-cobertura%20por%20táctica-ff4d4d?style=flat-square&labelColor=07090c)](soc/use-cases/catalog.yaml)
 [![soberanía](https://img.shields.io/badge/soberanía-ejecución%20local%20UE-5ad1ff?style=flat-square&labelColor=07090c)](docs/adr/ADR-001-catalogos-como-datos-y-datos-de-cliente-fuera-del-repo.md)
 
-[**Ver la web**](https://pedri77.github.io/smc-cinematica/) · [Empezar en 1 minuto](#empezar-en-1-minuto) · [Comandos](#comandos) · [Ecosistema](#ecosistema) · [PRD](docs/prd/PRD-SMC-001-v1.md) · [Changelog](CHANGELOG.md)
+[**Ver la web**](https://pedri77.github.io/smc-cinematica/) · [Empezar en 1 minuto](#empezar-en-1-minuto) · [Comandos](#comandos) · [Pentest y purple team](#pentest-y-purple-team) · [IA](#ia-ria-y-agentes) · [PMO](#pmo) · [Ecosistema](#ecosistema) · [PRD](docs/prd/PRD-SMC-001-v1.md) · [Changelog](CHANGELOG.md)
 
 </div>
 
@@ -104,7 +106,10 @@ Estado: no implementado 1, sin evaluar 0,75, parcial 0,5. Entidad: esencial 1, i
 |---|---|---|
 | 🛰️ **SOC** | SLA por severidad y tier, MTTD, MTTA, MTTC, MTTR | `smc soc` |
 | 🎯 **MITRE ATT&CK** | Cobertura y madurez (niveles 1-5) de 8 casos de uso con playbook; capa para ATT&CK Navigator | `smc mitre`, `smc mitre --navigator` |
-| 🧩 **Verticales** | 20 verticales (EDR/XDR, IAM, red, firewall, SASE, ZTNA, capas OSI, Threat Hunting, MDM, puesto de usuario, correo, cloud, datos, copias, OT…) con madurez 0-5 o «no evaluable» con motivo, clasificadas por medida NIS2 21.2 | `smc verticals` |
+| 🧩 **Verticales** | 22 verticales (EDR/XDR, IAM, red, firewall, SASE, ZTNA, capas OSI, Threat Hunting, MDM, puesto de usuario, correo, cloud, datos, copias, OT, IA, seguridad ofensiva…) con madurez 0-5 o «no evaluable» con motivo, clasificadas por medida NIS2 21.2 | `smc verticals` |
+| 🗡️ **Pentest y purple team** | Hallazgos con SLA y retest; ejercicios purple con cobertura por táctica | `smc pentest`, `smc purple` |
+| 🤖 **IA** | 30 obligaciones del RIA con las fechas del Ómnibus Digital y seguridad de agentes (OWASP LLM 2025, MITRE ATLAS) | `smc ai` |
+| 📅 **PMO** | Presupuesto, horas, valor ganado (EVM), riesgos y calendario `.ics` | `smc pmo` |
 | 🔑 **Tecnologías** | Licencias, fin de soporte, certificados, sobredespliegue; evaluación de cada producto y estado de sus reglas (any-any, sin uso, revisión caducada) | `smc expiring`, `smc tech` |
 | 💶 **Suscripciones** | Coste, renovaciones a 90 días y uso por debajo del 70 % de lo contratado | `smc subs` |
 | 🩹 **Vulnerabilidades** | CVEs con SLA de remediación (KEV, EPSS, CVSS) y playbooks por tecnología y caso de uso | `smc vulns` |
@@ -143,6 +148,13 @@ smc dashboard assessments/examples -o /tmp/panel                 # abre /tmp/pan
 
 smc mapa technologies/registry.template.yaml -o /tmp/mapa.json   # mapa de dispositivos
 smc visor /tmp/mapa.json -o /tmp/visor.html                      # visor 3D, ábrelo en el navegador
+
+smc pentest offensive/examples/ejemplo-pentest.yaml              # hallazgos, SLA y retest
+smc purple offensive/examples/ejemplo-purple.yaml                # cobertura purple por táctica
+smc mitre --purple offensive/examples/ejemplo-purple.yaml        # madurez ATT&CK con los ejercicios detectados
+smc ai ai/inventario.template.yaml                               # RIA y seguridad de agentes
+smc pmo pmo/examples/ejemplo-energia.yaml --ics /tmp/eventos.ics --assessment assessments/examples/ejemplo-energia.yaml
+smc report assessments/examples/ejemplo-energia.yaml -o /tmp/completo.html --pentest offensive/examples/ejemplo-pentest.yaml --purple offensive/examples/ejemplo-purple.yaml --ai ai/inventario.template.yaml --pmo pmo/examples/ejemplo-energia.yaml
 ```
 
 ## Comandos
@@ -152,10 +164,15 @@ smc validate                                              # valida catálogos
 smc list                                                  # controles por marco
 smc gap <evaluación.yaml> [-o informe.md] [--hoy AAAA-MM-DD]
 smc plan <evaluación.yaml> [--hoy AAAA-MM-DD]             # vencidas y brechas sin acción
-smc report <evaluación.yaml> -o informe.html [--registry registry.yaml] [--hoy AAAA-MM-DD]   # con registro: tecnologías, reglas, suscripciones
-smc dashboard <dir_evaluaciones> -o <dir_salida> [--hoy AAAA-MM-DD]
+smc report <evaluación.yaml> -o informe.html [--registry registry.yaml] [--pentest p.yaml] [--purple p.yaml] \
+        [--ai inventario.yaml] [--pmo proyecto.yaml] [--hoy AAAA-MM-DD]   # secciones opcionales
+smc dashboard <dir_evaluaciones> -o <dir_salida> [--hoy AAAA-MM-DD]   # acompañantes <evaluación>.pentest|purple|ai|pmo.yaml
 smc soc soc/incidents.template.csv                        # MTTD/MTTA/MTTC/MTTR y % SLA
-smc mitre [--navigator [-o capa.json]] [--hoy AAAA-MM-DD] # cobertura y madurez ATT&CK; capa Navigator
+smc mitre [--navigator [-o capa.json]] [--purple p.yaml] [--hoy AAAA-MM-DD]   # cobertura y madurez ATT&CK; capa Navigator
+smc pentest <pentest.yaml> [--hoy AAAA-MM-DD]             # hallazgos abiertos, fuera de SLA, retest pendiente
+smc purple <purple.yaml> [--hoy AAAA-MM-DD]               # cobertura por táctica, no detectadas, mejoras
+smc ai <inventario.yaml> [--hoy AAAA-MM-DD]               # obligaciones del RIA y seguridad de agentes
+smc pmo <proyecto.yaml> [--ics eventos.ics] [--registry registry.yaml] [--assessment evaluación.yaml] [--hoy AAAA-MM-DD]
 smc verticals <evaluación.yaml>                           # madurez por vertical y por medida NIS2
 smc tech technologies/registry.template.yaml [--hoy AAAA-MM-DD] [--days 180]   # evaluación y estado de reglas
 smc subs technologies/registry.template.yaml [--hoy AAAA-MM-DD] [--days 90]    # suscripciones y renovaciones
@@ -172,6 +189,56 @@ smc --version
 
 Estados de control: `implementado` (1,0) · `parcial` (0,5) · `no_implementado` (0) · `no_aplica` (excluido) · sin evaluar (0, listado aparte; un estado no válido se trata igual, con aviso). Una acción `bloqueada` o `hecha` no cubre una brecha abierta.
 
+## Pentest y purple team
+
+```mermaid
+flowchart LR
+    P["🗡️ Pentest<br/><sub>campañas · hallazgos · CVSS · CWE</sub>"] --> S["⏱️ SLA y retest<br/><sub>política de vulnerabilidades · KEV = crítica</sub>"]
+    U["🟣 Purple team<br/><sub>ejercicios por técnica ATT&CK</sub>"] --> C["📈 Cobertura por táctica<br/><sub>detectado 1 · parcial 0,5 · no 0</sub>"]
+    U --> M["🎯 Madurez MITRE<br/><sub>detectado = probada (con --purple)</sub>"]
+    S --> R["📊 Informe y dashboard"]
+    C --> R
+    M --> R
+
+    style P fill:#0d1117,stroke:#ff4d4d,color:#e6edf3
+    style S fill:#0d1117,stroke:#ffb020,color:#e6edf3
+    style U fill:#0d1117,stroke:#5ad1ff,color:#e6edf3
+    style C fill:#0d1117,stroke:#3cf58a,color:#e6edf3
+    style M fill:#0d1117,stroke:#3cf58a,color:#e6edf3
+    style R fill:#0d1117,stroke:#3cf58a,color:#e6edf3
+```
+
+- `smc pentest <fichero>`: hallazgos abiertos, **fuera de SLA** (días desde la detección frente al plazo de [`vulnerabilities/policy.yaml`](vulnerabilities/policy.yaml)), **pendientes de retest** y aceptados sin fecha de revisión. Plantilla en [`offensive/pentest.template.yaml`](offensive/pentest.template.yaml).
+- `smc purple <fichero>`: cobertura por táctica con el último ejercicio de cada técnica, técnicas no detectadas, mejoras abiertas y ejercicios de más de 12 meses. Plantilla en [`offensive/purple.template.yaml`](offensive/purple.template.yaml).
+- **Purple y madurez MITRE.** Con `--purple` (en `smc mitre` y `smc report`), un ejercicio `detectado` y con fecha cuenta como prueba del caso de uso: nivel 4 («probada») y 5 si es de los últimos 90 días. Sin el fichero purple la madurez no cambia; `parcial` y `no_detectado` no suben nada.
+- Los datos de un cliente (`offensive/*`) no se versionan: `.gitignore` solo deja plantillas y ejemplos ficticios.
+
+## IA: RIA y agentes
+
+`smc ai <inventario>` cruza el inventario de sistemas de IA de la organización (rol, nivel de riesgo, fecha de puesta en el mercado y evidencias) con las **30 obligaciones** del Reglamento (UE) 2024/1689 (RIA) y dice cuáles aplican, desde cuándo y cuáles faltan por evidencia.
+
+| Obligación | Aplica desde |
+|---|---|
+| Prohibiciones y alfabetización (arts. 4 y 5) | 2025-02-02 |
+| Transparencia, art. 50 (el marcado del art. 50.2 de sistemas ya en el mercado, hasta 2026-12-02) | 2026-08-02 |
+| Alto riesgo del Anexo III (art. 6.2) | 2027-12-02 |
+| Alto riesgo del Anexo I (art. 6.1) | 2028-08-02 |
+
+Las fechas son las vigentes tras el **Ómnibus Digital sobre IA, Reglamento (UE) 2026/1744**. Cuatro obligaciones (evaluación de la conformidad, registro y vigilancia poscomercialización) llevan «verificar»: el texto no dice de forma expresa si siguen la fecha del nivel.
+
+> [!IMPORTANT]
+> **Esto no es asesoramiento jurídico.** SMC orienta; el texto que obliga es el publicado en el DOUE. El informe lo repite al principio.
+
+Además, `smc ai` revisa cada agente con herramientas (seis comprobaciones AGT-01 a AGT-06: límite de llamadas, permisos, supervisión humana, registro, prompt injection y exfiltración) con su correspondencia en OWASP Top 10 for LLM Applications 2025 y MITRE ATLAS. Un dato ausente cuenta como «no consta», nunca como cumplido. El catálogo está en [`frameworks/ai-act/obligaciones.yaml`](frameworks/ai-act/obligaciones.yaml) y la plantilla en [`ai/inventario.template.yaml`](ai/inventario.template.yaml).
+
+## PMO
+
+`smc pmo <proyecto>` lleva el proyecto de remediación del cliente: presupuesto frente a coste real por partida (horas, licencias, servicios, formación), horas por rol y mes, **valor ganado** (PV, EV, AC, CPI, SPI), tareas retrasadas o sin control asociado, riesgos y próximos eventos a 30 días.
+
+- `--ics eventos.ics` exporta el calendario (RFC 5545) para tu agenda.
+- `--assessment` valida cada tarea contra el `plan_accion` de la evaluación y hereda sus controles; `--registry` suma las suscripciones del registro de tecnologías.
+- Fórmulas y un caso calculado a mano en [`docs/pmo.md`](docs/pmo.md). Tarifas y presupuestos son datos de cliente: `pmo/*` está ignorado salvo plantilla y ejemplo ([ADR-005](docs/adr/ADR-005-pmo-datos-de-cliente.md)).
+
 ## Ecosistema
 
 SMC enlaza con material público del mismo autor. Solo páginas públicas y repos públicos; la lista vive en [`resources/ecosistema.yaml`](resources/ecosistema.yaml) y `smc validate` la comprueba.
@@ -187,7 +254,7 @@ SMC enlaza con material público del mismo autor. Solo páginas públicas y repo
 | Correo | [Correo básico](https://pedri77.github.io/Basicos_email/) |
 | Inteligencia de amenazas | [KEV dashboard](https://github.com/pedri77/kev_dash_project) (repo) · [Threat intelligence feeds](https://github.com/pedri77/threat-intelligence-feeds) (repo) |
 
-**En preparación** (sin enlace hasta que sea público): un pack de evaluación **ZTNA**. El visor 3D del mapa ya está en SMC (véase más abajo).
+Pack de evaluación ZTNA privado, disponible bajo petición. El visor 3D del mapa ya está en SMC (véase más abajo).
 
 ## Visor 3D del mapa de red
 
@@ -221,17 +288,20 @@ Decisiones: [ADR-003](docs/adr/ADR-003-mapa-3d-desde-teardown.md) y [ADR-004](do
 
 ```
 security-manager-control/
-├── frameworks/          nis2 · ens · transversal (controls.yaml)
+├── frameworks/          nis2 · ens · transversal (controls.yaml) · ai-act (obligaciones RIA)
 ├── mappings/            nis2-ens-iso27001.csv
 ├── network/             módulo de red
 ├── normativa/           NIS2 completa · guías CCN-CERT
-├── soc/                 SLA · métricas · 20 verticales · casos de uso MITRE
+├── soc/                 SLA · métricas · 22 verticales · casos de uso MITRE
 ├── technologies/        registro de tecnologías
 ├── vulnerabilities/     política · tracker · 28 protocolos · playbooks
 ├── resources/           inventario interno y de terceros · RSS · ecosistema
 ├── assessments/         plantilla + ejemplos ficticios
-├── smc/                 CLI (gap, plan, report, dashboard, soc, mitre, mapa, visor…) · assets/ three.js vendorizado
-├── tests/               346 tests
+├── offensive/           plantillas de pentest y purple team + ejemplos
+├── ai/                  plantilla de inventario de IA
+├── pmo/                 plantilla de proyecto + ejemplo
+├── smc/                 CLI (gap, plan, report, dashboard, soc, mitre, pentest, purple, ai, pmo, mapa, visor…) · assets/ three.js vendorizado
+├── tests/               509 tests
 └── docs/                PRD · ADR · plan del enjambre · imágenes
 ```
 
@@ -245,7 +315,8 @@ security-manager-control/
 | v0.4 | Dashboard multicliente (estático, local) | ✅ |
 | v0.5 | 20 verticales (Threat Hunting, MDM, puesto, firewall, SASE, ZTNA, capas OSI), evaluación de tecnologías, reglas y suscripciones, 28 protocolos con fuentes oficiales, madurez MITRE con 8 playbooks y capa Navigator, 17 feeds RSS, ecosistema y mapa de red (`smc mapa`) | ✅ |
 | v0.6 | Visor 3D offline del mapa (`smc visor`), informe y dashboard con tecnologías, reglas, suscripciones y madurez MITRE (`--registry`), Anexo II del ENS contrastado con el BOE (45 de 73 medidas) | ✅ |
-| v0.7 | Contrastar las 28 medidas ENS que dependen de las dimensiones C/I/T/A/D con las guías CCN-STIC; probar el visor en GPU integrada y móvil; conectores de evidencias, ingesta NVD/KEV/EPSS, cumplimiento por dominio | 📋 |
+| v0.7 | Pentesting y purple team (`smc pentest`, `smc purple`, madurez MITRE con `--purple`), RIA con las fechas del Ómnibus Digital y seguridad de agentes (`smc ai`), PMO con valor ganado y calendario (`smc pmo`), 22 verticales, informe y dashboard con las secciones nuevas | ✅ |
+| v0.8 | Contrastar las 28 medidas ENS que dependen de las dimensiones C/I/T/A/D con las guías CCN-STIC; probar el visor en GPU integrada y móvil; conectores de evidencias, ingesta NVD/KEV/EPSS, cumplimiento por dominio | 📋 |
 
 ## Limitaciones conocidas
 
@@ -254,6 +325,7 @@ security-manager-control/
 
 - Las verticales nuevas (mapeo NIS2, controles), la madurez de los casos de uso y los protocolos son juicio inicial sobre datos de muestra, sin fuente normativa ni SOC real. La capa OSI de TLS y BGP es una convención discutible.
 - El visor 3D está probado en Chrome con render por software; falta probarlo en GPU integrada y en móvil en vertical.
+- Los descriptores de nivel de las verticales de IA y seguridad ofensiva están pendientes de validar por el Security Manager. El catálogo RIA no sustituye al texto del DOUE: las obligaciones marcadas «verificar» necesitan revisión humana.
 - Las criticidades NIS2 son un juicio inicial sin fuente normativa: afectan al orden de prioridad, no al cumplimiento.
 - «Sin evaluar» puntúa como no cumplido: una evaluación incompleta sale en rojo. Es lo esperado; el informe separa las brechas evaluadas de las pendientes.
 - La ley española de transposición de NIS2 (*Anteproyecto de Ley de Coordinación y Gobernanza de la Ciberseguridad*) sigue en tramitación: revisar el catálogo cuando se publique en el BOE.

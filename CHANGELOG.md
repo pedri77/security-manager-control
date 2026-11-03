@@ -2,6 +2,22 @@
 
 Formato basado en Keep a Changelog. Versionado semántico.
 
+## 0.7.0 (2026-11-03)
+
+Ola 13: seguridad ofensiva, IA y PMO. No cambia los IDs de los catálogos existentes.
+
+- `smc pentest <fichero> [--hoy]`: hallazgos abiertos, fuera de SLA, pendientes de retest y aceptados sin revisión (`smc.offensive`).
+- `smc purple <fichero> [--hoy]`: cobertura por táctica, técnicas no detectadas, mejoras abiertas y ejercicios de más de 12 meses.
+- Madurez MITRE con purple (`smc mitre --purple`, `smc report --purple`): un ejercicio `detectado` con fecha cuenta como prueba del caso de uso (nivel 4; 5 si es de los últimos 90 días). Sin el fichero purple la madurez no cambia; `parcial` y `no_detectado` no suben nada.
+- `smc ai <inventario> [--hoy]`: 30 obligaciones del RIA (Reglamento (UE) 2024/1689) con las fechas del Ómnibus Digital (Reglamento (UE) 2026/1744: alto riesgo del Anexo III desde 2027-12-02, del Anexo I desde 2028-08-02, art. 50 desde 2026-08-02) y seguridad de agentes AGT-01 a AGT-06 (OWASP LLM 2025, MITRE ATLAS). No es asesoramiento jurídico; 4 obligaciones quedan en «verificar».
+- `smc pmo <proyecto> [--ics eventos.ics] [--registry r.yaml] [--assessment a.yaml] [--hoy]`: presupuesto por partida, horas, EVM, tareas retrasadas, riesgos y calendario iCalendar.
+- 22 verticales (nuevas: IA y seguridad ofensiva; IAM y DATA absorben identidad y datos).
+- `smc report --pentest --purple --ai --pmo` y `smc dashboard` (ficheros `<evaluación>.pentest|purple|ai|pmo.yaml`) añaden las secciones nuevas. Todo se escapa y solo se enlazan URLs `https://`.
+- `smc validate` valida `frameworks/ai-act/` y las plantillas de IA, pentest, purple y PMO.
+- `.gitignore` excluye `offensive/*` y `ai/*` (salvo plantillas y ejemplos), como `pmo/*`.
+- Ecosistema: ECO-ZTNA pasa de pendiente a `privado` (sin URL, disponible bajo petición); el validador admite el estado `privado` y sigue rechazando cualquier URL privada.
+- README: secciones de pentest y purple team, IA y PMO; cifras reales; hoja de ruta.
+
 ## 0.6.1 (2026-11-03)
 
 Endurecimiento tras la revisión de la ola 9 (T23). No cambia catálogos ni el esquema `smc-mapa/1`.

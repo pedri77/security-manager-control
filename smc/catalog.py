@@ -140,3 +140,19 @@ def validar_v05() -> list[str]:
         errores += [f"tecnologías {t.get('id')}: vertical inexistente {t['vertical']}"
                     for t in _tecnologias(reg) if t.get("vertical") and t["vertical"] not in ids]
     return errores
+
+
+def validar_v07() -> list[str]:
+    """Validaciones de la ola 13: catálogo RIA (`frameworks/ai-act/`) y plantillas de IA, pentest, purple team y PMO."""
+    from . import ai_act, offensive, pmo
+    errores = [f"ia: {e}" for e in ai_act.validar_catalogo()]
+    errores += [f"ia: plantilla de inventario: {e}" for e in ai_act.validar_inventario(ai_act.INVENTARIO_TEMPLATE)]
+    ofe = offensive.OFFENSIVE_DIR
+    errores += [f"pentest: plantilla: {e}" for e in offensive.validar_pentest(ofe / "pentest.template.yaml")]
+    errores += [f"purple: plantilla: {e}" for e in offensive.validar_purple(ofe / "purple.template.yaml")]
+    for ej, validar in ((ofe / "examples" / "ejemplo-pentest.yaml", offensive.validar_pentest),
+                        (ofe / "examples" / "ejemplo-purple.yaml", offensive.validar_purple)):
+        errores += [f"{ej.name}: {e}" for e in validar(ej)]
+    plantilla = ROOT / "pmo" / "proyecto.template.yaml"
+    errores += [f"pmo: plantilla: {a}" for a in pmo.cargar_proyecto(plantilla).avisos]
+    return errores

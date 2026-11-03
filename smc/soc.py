@@ -93,7 +93,7 @@ def render_soc(m: dict) -> str:
     return "\n".join(out) + "\n"
 
 
-def mitre_coverage(uc_path: Path = UC_FILE, hoy=None) -> str:
+def mitre_coverage(uc_path: Path = UC_FILE, hoy=None, purple=None) -> str:
     data = yaml.safe_load(Path(uc_path).read_text(encoding="utf-8"))
     activos = [u for u in data["use_cases"] if u["estado"] == "activo"]
     tecnicas = sorted({t for u in activos for t in u["mitre"]})
@@ -103,7 +103,7 @@ def mitre_coverage(uc_path: Path = UC_FILE, hoy=None) -> str:
     sin_probar = [u["id"] for u in activos if not u.get("ultima_prueba")]
     from . import mitre
     sin_playbook = [u["id"] for u in activos if not mitre.playbook_existe(u)]
-    mad = mitre.madurez(uc_path, hoy)
+    mad = mitre.madurez(uc_path, hoy, purple=purple)
     out = ["# Cobertura MITRE ATT&CK", "",
            f"Casos de uso activos: {len(activos)}/{len(data['use_cases'])} · Técnicas cubiertas: {len(tecnicas)}", "",
            "| Táctica | Técnicas |", "|---|---|"]
