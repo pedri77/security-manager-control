@@ -124,8 +124,9 @@ def test_informe_md_y_html_con_verticales():
 def test_xss_en_motivo_escapado():
     doc = render_html(analyse(_ev(), HOY))
     assert XSS not in doc and "&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;" in doc
-    # contraprueba: sin el escape, el payload sí aparecería (el markdown no escapa y lo conserva)
-    assert XSS in render_markdown(analyse(_ev(), HOY))
+    # T17 (hallazgo 10): el Markdown también escapa `<` y `>`; el payload ya no aparece en crudo en ninguna salida
+    md = render_markdown(analyse(_ev(), HOY))
+    assert XSS not in md and "&lt;script&gt;" in md
 
 
 class _Hrefs(HTMLParser):

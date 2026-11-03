@@ -2,6 +2,19 @@
 
 Formato basado en Keep a Changelog. Versionado semántico.
 
+## 0.5.1 (2026-11-03)
+
+Endurecimiento tras la revisión de las olas 5-6 (hallazgos 1-10 y 12).
+
+- Mapa: la KEV cuenta como crítica a efectos de SLA (7 días) según `policy.yaml`; toda KEV o crítica abierta pone el dispositivo al menos en ámbar aunque esté dentro de SLA. La severidad se normaliza (minúsculas, sin tildes) y la desconocida cuenta como crítica con aviso. `smc vulns` usa la misma severidad efectiva.
+- Reglas: `tech.reglas()` devuelve `any_any` con independencia del estado y `smc tech` lo destaca (una revisión reciente ya no oculta un any-any).
+- Verticales: VRT-NET con subverticales evaluadas se muestra como «no puntúa (detallada en FW, SASE, ZTNA y OSI)» en Markdown y HTML. Cada vertical lleva `niveles` (descriptor por nivel 0-5) y el catálogo valida que haya 6. Mapeos ENS: VRT-EDR a ENS-op.exp.6 y VRT-ENDUSER a ENS-op.exp.4. El Markdown escapa `<`, `>` y `|`.
+- Plantilla de registro: los dos firewalls pasan a VRT-FW (capa por defecto 4; la declarada manda).
+- MITRE: la madurez por táctica es el mínimo de los casos activos (antes, el máximo) y sale en `smc mitre`; los casos no activos se listan aparte.
+- Suscripciones: `coste_anual` no numérico da aviso.
+- Informe T15: el gris de la ejecución real es AST-0001, no TEC-0001.
+- Tests de versión, XSS (Markdown), capa OSI por vertical y táctica por mínimo ajustados a estos cambios (anotado en el informe T17).
+
 ## 0.5.0 (2026-11-03)
 
 - Verticales: catálogo de 19 (nuevas HUNT, MDM, ENDUSER, FW, SASE, ZTNA, OSI; VRT-NET como paraguas sin doble cómputo). `smc verticals`; sección «Verticales» en informes y columna en el dashboard.

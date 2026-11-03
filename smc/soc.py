@@ -110,6 +110,11 @@ def mitre_coverage(uc_path: Path = UC_FILE, hoy=None) -> str:
     out += [f"| {t} | {', '.join(sorted(v))} |" for t, v in sorted(por_tactica.items())]
     out += ["", "| Técnica | Madurez (0-5) |", "|---|---|"]
     out += [f"| {t} | {n} |" for t, n in mad["tecnicas"].items()]
+    out += ["", "| Táctica | Madurez (mínimo de casos activos, 0-5) |", "|---|---|"]
+    out += [f"| {t} | {n} |" for t, n in mad["tacticas"].items()]
+    if mad["no_activos"]:
+        out += ["", "Casos no activos (no cuentan para la táctica): "
+                + ", ".join(f"{k} ({v['estado']}, nivel {v['nivel']}, {v['tactica']})" for k, v in mad["no_activos"].items())]
     out += ["", f"Sin prueba registrada: {', '.join(sin_probar) or '—'}",
             f"Sin playbook: {', '.join(sin_playbook) or '—'}"]
     return "\n".join(out) + "\n"
