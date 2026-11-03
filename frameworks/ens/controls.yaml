@@ -1,9 +1,15 @@
 # ENS — Real Decreto 311/2022, Anexo II (73 medidas)
+# Fuente: BOE-A-2022-7191, texto consolidado, Anexo II, tabla de medidas (apartado 2.4).
+#   https://www.boe.es/buscar/act.php?id=BOE-A-2022-7191  ·  https://www.boe.es/eli/es/rd/2022/05/03/311/con
+# Fecha de consulta: 2026-11-03 (contraste T21; ver docs/plan/informes/T21-dev-proyecto.md).
 # Aplica a: sector público (art. 2) y proveedores que le presten servicios o soluciones.
 # Categorías del sistema: BASICA | MEDIA | ALTA.
-# `categoria_minima`: categoría más baja en la que la medida aplica. `refuerzos_por_categoria`: refuerzos R1..Rn exigibles.
-# `verificar: true` = rellenado de memoria sin acceso a la fuente; contrastar con Anexo II y CCN-STIC 804/808 (ver informe T01).
-# TODO: contrastar las medidas con `verificar: true` antes de dar el scoring por categoría como definitivo.
+# `categoria_minima`: categoría más baja con «aplica» o «+ Rn» en la tabla (columnas BÁSICA/MEDIA/ALTA; «n.a.» = no aplica).
+# `refuerzos_por_categoria`: lo que dice la celda de esa categoría, tal cual (no acumulado: ALTA «+ R2» se guarda [R2]).
+#   Una alternativa se guarda como cadena «[R1 o R2 o R3]» (se elige uno de los refuerzos).
+# `dimensiones`: la medida depende de las dimensiones C/I/T/A/D (columna «Por categoría o dimensión(es)»), no solo de la categoría.
+#   En ellas `categoria_minima` es una aproximación (nivel BAJO/MEDIO/ALTO ≈ categoría) y se mantiene `verificar: true` con `nota`.
+# `verificar: true` = pendiente de contrastar (dependencia de dimensiones o de guías CCN-STIC no consultadas).
 framework: ENS
 version: "RD 311/2022"
 controls:
@@ -12,87 +18,87 @@ controls:
   - {id: ENS-org.2, grupo: Marco organizativo, titulo: Normativa de seguridad, categoria_minima: BASICA}
   - {id: ENS-org.3, grupo: Marco organizativo, titulo: Procedimientos de seguridad, categoria_minima: BASICA}
   - {id: ENS-org.4, grupo: Marco organizativo, titulo: Proceso de autorización, categoria_minima: BASICA}
-  # --- Marco operacional: planificación ---
-  - {id: ENS-op.pl.1, grupo: Planificación, titulo: Análisis de riesgos, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1], ALTA: [R1, R2]}, verificar: true}
-  - {id: ENS-op.pl.2, grupo: Planificación, titulo: Arquitectura de seguridad, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1], ALTA: [R1, R2]}, verificar: true}
+  # --- Planificación ---
+  - {id: ENS-op.pl.1, grupo: Planificación, titulo: Análisis de riesgos, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1], ALTA: [R2]}}
+  - {id: ENS-op.pl.2, grupo: Planificación, titulo: Arquitectura de Seguridad, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1], ALTA: [R1, R2, R3]}}
   - {id: ENS-op.pl.3, grupo: Planificación, titulo: Adquisición de nuevos componentes, categoria_minima: BASICA}
-  - {id: ENS-op.pl.4, grupo: Planificación, titulo: Dimensionamiento / gestión de la capacidad, categoria_minima: MEDIA, refuerzos_por_categoria: {ALTA: [R1]}, verificar: true}
-  - {id: ENS-op.pl.5, grupo: Planificación, titulo: Componentes certificados, categoria_minima: MEDIA, verificar: true}
+  - {id: ENS-op.pl.4, grupo: Planificación, titulo: Dimensionamiento/gestión de la capacidad, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1], ALTA: [R1]}, dimensiones: [D], verificar: true, nota: "Tabla del Anexo II leída; aplicabilidad real según el nivel de las dimensiones D (BAJO/MEDIO/ALTO), aproximada aquí por categoría. Falta contrastar con CCN-STIC."}
+  - {id: ENS-op.pl.5, grupo: Planificación, titulo: Componentes certificados, categoria_minima: MEDIA}
   # --- Control de acceso ---
-  - {id: ENS-op.acc.1, grupo: Control de acceso, titulo: Identificación, categoria_minima: BASICA}
-  - {id: ENS-op.acc.2, grupo: Control de acceso, titulo: Requisitos de acceso, categoria_minima: BASICA}
-  - {id: ENS-op.acc.3, grupo: Control de acceso, titulo: Segregación de funciones y tareas, categoria_minima: MEDIA, verificar: true}
-  - {id: ENS-op.acc.4, grupo: Control de acceso, titulo: Proceso de gestión de derechos de acceso, categoria_minima: BASICA}
-  - {id: ENS-op.acc.5, grupo: Control de acceso, titulo: Mecanismo de autenticación (usuarios externos), categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1], ALTA: [R1, R2]}, verificar: true}
-  - {id: ENS-op.acc.6, grupo: Control de acceso, titulo: Mecanismo de autenticación (usuarios de la organización), categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1], ALTA: [R1, R2, R3]}, verificar: true}
+  - {id: ENS-op.acc.1, grupo: Control de acceso, titulo: Identificación, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1], ALTA: [R1]}, dimensiones: [T, A], verificar: true, nota: "Tabla del Anexo II leída; aplicabilidad real según el nivel de las dimensiones T/A (BAJO/MEDIO/ALTO), aproximada aquí por categoría. Falta contrastar con CCN-STIC."}
+  - {id: ENS-op.acc.2, grupo: Control de acceso, titulo: Requisitos de acceso, categoria_minima: BASICA, refuerzos_por_categoria: {ALTA: [R1]}, dimensiones: [C, I, T, A], verificar: true, nota: "Tabla del Anexo II leída; aplicabilidad real según el nivel de las dimensiones C/I/T/A (BAJO/MEDIO/ALTO), aproximada aquí por categoría. Falta contrastar con CCN-STIC."}
+  - {id: ENS-op.acc.3, grupo: Control de acceso, titulo: Segregación de funciones y tareas, categoria_minima: MEDIA, refuerzos_por_categoria: {ALTA: [R1]}, dimensiones: [C, I, T, A], verificar: true, nota: "Tabla del Anexo II leída; aplicabilidad real según el nivel de las dimensiones C/I/T/A (BAJO/MEDIO/ALTO), aproximada aquí por categoría. Falta contrastar con CCN-STIC."}
+  - {id: ENS-op.acc.4, grupo: Control de acceso, titulo: Proceso de gestión de derechos de acceso, categoria_minima: BASICA, dimensiones: [C, I, T, A], verificar: true, nota: "Tabla del Anexo II leída; aplicabilidad real según el nivel de las dimensiones C/I/T/A (BAJO/MEDIO/ALTO), aproximada aquí por categoría. Falta contrastar con CCN-STIC."}
+  - {id: ENS-op.acc.5, grupo: Control de acceso, titulo: Mecanismo de autenticación (usuarios externos), categoria_minima: BASICA, refuerzos_por_categoria: {BASICA: ["[R1 o R2 o R3 o R4]"], MEDIA: ["[R2 o R3 o R4]", R5], ALTA: ["[R2 o R3 o R4]", R5]}, dimensiones: [C, I, T, A], verificar: true, nota: "Tabla del Anexo II leída; aplicabilidad real según el nivel de las dimensiones C/I/T/A (BAJO/MEDIO/ALTO), aproximada aquí por categoría. Falta contrastar con CCN-STIC."}
+  - {id: ENS-op.acc.6, grupo: Control de acceso, titulo: Mecanismo de autenticación (usuarios de la organización), categoria_minima: BASICA, refuerzos_por_categoria: {BASICA: ["[R1 o R2 o R3 o R4]", R8, R9], MEDIA: ["[R1 o R2 o R3 o R4]", R5, R8, R9], ALTA: ["[R1 o R2 o R3 o R4]", R5, R6, R7, R8, R9]}, dimensiones: [C, I, T, A], verificar: true, nota: "Tabla del Anexo II leída; aplicabilidad real según el nivel de las dimensiones C/I/T/A (BAJO/MEDIO/ALTO), aproximada aquí por categoría. Falta contrastar con CCN-STIC."}
   # --- Explotación ---
-  - {id: ENS-op.exp.1, grupo: Explotación, titulo: Inventario de activos, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1], ALTA: [R1, R2]}, verificar: true}
+  - {id: ENS-op.exp.1, grupo: Explotación, titulo: Inventario de activos, categoria_minima: BASICA}
   - {id: ENS-op.exp.2, grupo: Explotación, titulo: Configuración de seguridad, categoria_minima: BASICA}
-  - {id: ENS-op.exp.3, grupo: Explotación, titulo: Gestión de la configuración de seguridad, categoria_minima: MEDIA, verificar: true}
-  - {id: ENS-op.exp.4, grupo: Explotación, titulo: Mantenimiento y actualizaciones de seguridad, categoria_minima: BASICA}
-  - {id: ENS-op.exp.5, grupo: Explotación, titulo: Gestión de cambios, categoria_minima: MEDIA, verificar: true}
-  - {id: ENS-op.exp.6, grupo: Explotación, titulo: Protección frente a código dañino, categoria_minima: BASICA}
-  - {id: ENS-op.exp.7, grupo: Explotación, titulo: Gestión de incidentes, categoria_minima: BASICA}
-  - {id: ENS-op.exp.8, grupo: Explotación, titulo: Registro de la actividad, categoria_minima: BASICA}
-  - {id: ENS-op.exp.9, grupo: Explotación, titulo: Registro de la gestión de incidentes, categoria_minima: MEDIA, verificar: true}
-  - {id: ENS-op.exp.10, grupo: Explotación, titulo: Protección de claves criptográficas, categoria_minima: BASICA, verificar: true}
+  - {id: ENS-op.exp.3, grupo: Explotación, titulo: Gestión de la configuración de seguridad, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1], ALTA: [R1, R2, R3]}}
+  - {id: ENS-op.exp.4, grupo: Explotación, titulo: Mantenimiento y actualizaciones de seguridad, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1], ALTA: [R1, R2]}}
+  - {id: ENS-op.exp.5, grupo: Explotación, titulo: Gestión de cambios, categoria_minima: MEDIA, refuerzos_por_categoria: {ALTA: [R1]}}
+  - {id: ENS-op.exp.6, grupo: Explotación, titulo: Protección frente a código dañino, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1, R2], ALTA: [R1, R2, R3, R4]}}
+  - {id: ENS-op.exp.7, grupo: Explotación, titulo: Gestión de incidentes, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1, R2], ALTA: [R1, R2, R3]}}
+  - {id: ENS-op.exp.8, grupo: Explotación, titulo: Registro de la actividad, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1, R2, R3, R4], ALTA: [R1, R2, R3, R4, R5]}, dimensiones: [T], verificar: true, nota: "Tabla del Anexo II leída; aplicabilidad real según el nivel de las dimensiones T (BAJO/MEDIO/ALTO), aproximada aquí por categoría. Falta contrastar con CCN-STIC."}
+  - {id: ENS-op.exp.9, grupo: Explotación, titulo: Registro de la gestión de incidentes, categoria_minima: BASICA}
+  - {id: ENS-op.exp.10, grupo: Explotación, titulo: Protección de claves criptográficas, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1], ALTA: [R1]}}
   # --- Recursos externos ---
-  - {id: ENS-op.ext.1, grupo: Recursos externos, titulo: Contratación y acuerdos de nivel de servicio, categoria_minima: BASICA, verificar: true}
-  - {id: ENS-op.ext.2, grupo: Recursos externos, titulo: Gestión diaria, categoria_minima: MEDIA, verificar: true}
-  - {id: ENS-op.ext.3, grupo: Recursos externos, titulo: Protección de la cadena de suministro, categoria_minima: MEDIA, verificar: true}
-  - {id: ENS-op.ext.4, grupo: Recursos externos, titulo: Interconexión de sistemas, categoria_minima: BASICA, verificar: true}
+  - {id: ENS-op.ext.1, grupo: Recursos externos, titulo: Contratación y acuerdos de nivel de servicio, categoria_minima: MEDIA}
+  - {id: ENS-op.ext.2, grupo: Recursos externos, titulo: Gestión diaria, categoria_minima: MEDIA}
+  - {id: ENS-op.ext.3, grupo: Recursos externos, titulo: Protección de la cadena de suministro, categoria_minima: ALTA}
+  - {id: ENS-op.ext.4, grupo: Recursos externos, titulo: Interconexión de sistemas, categoria_minima: MEDIA, refuerzos_por_categoria: {ALTA: [R1]}}
   # --- Servicios en la nube ---
-  - {id: ENS-op.nub.1, grupo: Servicios en la nube, titulo: Protección de servicios en la nube, categoria_minima: BASICA, verificar: true}
-  # --- Continuidad ---
-  - {id: ENS-op.cont.1, grupo: Continuidad, titulo: Análisis de impacto, categoria_minima: MEDIA}
-  - {id: ENS-op.cont.2, grupo: Continuidad, titulo: Plan de continuidad, categoria_minima: MEDIA, verificar: true}
-  - {id: ENS-op.cont.3, grupo: Continuidad, titulo: Pruebas periódicas, categoria_minima: MEDIA, verificar: true}
-  - {id: ENS-op.cont.4, grupo: Continuidad, titulo: Medios alternativos, categoria_minima: ALTA}
-  # --- Monitorización ---
-  - {id: ENS-op.mon.1, grupo: Monitorización, titulo: Detección de intrusión, categoria_minima: MEDIA, refuerzos_por_categoria: {ALTA: [R1]}, verificar: true}
-  - {id: ENS-op.mon.2, grupo: Monitorización, titulo: Sistema de métricas, categoria_minima: MEDIA, verificar: true}
-  - {id: ENS-op.mon.3, grupo: Monitorización, titulo: Vigilancia, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1], ALTA: [R1, R2]}, verificar: true}
-  # --- Medidas de protección: instalaciones ---
-  - {id: ENS-mp.if.1, grupo: Instalaciones, titulo: Áreas separadas y con control de acceso, categoria_minima: BASICA}
-  - {id: ENS-mp.if.2, grupo: Instalaciones, titulo: Identificación de las personas, categoria_minima: BASICA}
-  - {id: ENS-mp.if.3, grupo: Instalaciones, titulo: Acondicionamiento de los locales, categoria_minima: BASICA}
-  - {id: ENS-mp.if.4, grupo: Instalaciones, titulo: Energía eléctrica, categoria_minima: BASICA}
-  - {id: ENS-mp.if.5, grupo: Instalaciones, titulo: Protección frente a incendios, categoria_minima: BASICA}
-  - {id: ENS-mp.if.6, grupo: Instalaciones, titulo: Protección frente a inundaciones, categoria_minima: BASICA}
-  - {id: ENS-mp.if.7, grupo: Instalaciones, titulo: Registro de entrada y salida de equipamiento, categoria_minima: MEDIA, verificar: true}
-  # --- Personal ---
-  - {id: ENS-mp.per.1, grupo: Personal, titulo: Caracterización del puesto de trabajo, categoria_minima: BASICA, verificar: true}
-  - {id: ENS-mp.per.2, grupo: Personal, titulo: Deberes y obligaciones, categoria_minima: BASICA}
-  - {id: ENS-mp.per.3, grupo: Personal, titulo: Concienciación, categoria_minima: BASICA}
-  - {id: ENS-mp.per.4, grupo: Personal, titulo: Formación, categoria_minima: BASICA}
-  # --- Equipos ---
-  - {id: ENS-mp.eq.1, grupo: Equipos, titulo: Puesto de trabajo despejado, categoria_minima: BASICA}
-  - {id: ENS-mp.eq.2, grupo: Equipos, titulo: Bloqueo de puesto de trabajo, categoria_minima: MEDIA}
-  - {id: ENS-mp.eq.3, grupo: Equipos, titulo: Protección de dispositivos portátiles, categoria_minima: BASICA, verificar: true}
-  - {id: ENS-mp.eq.4, grupo: Equipos, titulo: Otros dispositivos conectados a la red, categoria_minima: BASICA, verificar: true}
-  # --- Comunicaciones ---
-  - {id: ENS-mp.com.1, grupo: Comunicaciones, titulo: Perímetro seguro, categoria_minima: BASICA, refuerzos_por_categoria: {ALTA: [R1]}, verificar: true}
-  - {id: ENS-mp.com.2, grupo: Comunicaciones, titulo: Protección de la confidencialidad, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1], ALTA: [R1, R2]}, verificar: true}
-  - {id: ENS-mp.com.3, grupo: Comunicaciones, titulo: Protección de la integridad y de la autenticidad, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1], ALTA: [R1, R2]}, verificar: true}
-  - {id: ENS-mp.com.4, grupo: Comunicaciones, titulo: Separación de flujos de información en la red, categoria_minima: ALTA, verificar: true}
-  # --- Soportes de información ---
-  - {id: ENS-mp.si.1, grupo: Soportes, titulo: Marcado de soportes, categoria_minima: BASICA}
-  - {id: ENS-mp.si.2, grupo: Soportes, titulo: Criptografía, categoria_minima: ALTA, verificar: true}
-  - {id: ENS-mp.si.3, grupo: Soportes, titulo: Custodia, categoria_minima: BASICA}
-  - {id: ENS-mp.si.4, grupo: Soportes, titulo: Transporte, categoria_minima: BASICA}
-  - {id: ENS-mp.si.5, grupo: Soportes, titulo: Borrado y destrucción, categoria_minima: BASICA, verificar: true}
-  # --- Aplicaciones informáticas ---
-  - {id: ENS-mp.sw.1, grupo: Aplicaciones, titulo: Desarrollo de aplicaciones, categoria_minima: BASICA, verificar: true}
-  - {id: ENS-mp.sw.2, grupo: Aplicaciones, titulo: Aceptación y puesta en servicio, categoria_minima: BASICA, verificar: true}
-  # --- Información ---
-  - {id: ENS-mp.info.1, grupo: Información, titulo: Datos personales, categoria_minima: BASICA}
-  - {id: ENS-mp.info.2, grupo: Información, titulo: Calificación de la información, categoria_minima: BASICA, verificar: true}
-  - {id: ENS-mp.info.3, grupo: Información, titulo: Firma electrónica, categoria_minima: BASICA, verificar: true}
-  - {id: ENS-mp.info.4, grupo: Información, titulo: Sellos de tiempo, categoria_minima: ALTA, verificar: true}
-  - {id: ENS-mp.info.5, grupo: Información, titulo: Limpieza de documentos, categoria_minima: BASICA}
-  - {id: ENS-mp.info.6, grupo: Información, titulo: Copias de seguridad, categoria_minima: BASICA}
-  # --- Servicios ---
-  - {id: ENS-mp.s.1, grupo: Servicios, titulo: Protección del correo electrónico, categoria_minima: BASICA}
-  - {id: ENS-mp.s.2, grupo: Servicios, titulo: Protección de servicios y aplicaciones web, categoria_minima: BASICA}
-  - {id: ENS-mp.s.3, grupo: Servicios, titulo: Protección de la navegación web, categoria_minima: MEDIA, verificar: true}
-  - {id: ENS-mp.s.4, grupo: Servicios, titulo: Protección frente a la denegación de servicio, categoria_minima: MEDIA, verificar: true}
+  - {id: ENS-op.nub.1, grupo: Servicios en la nube, titulo: Protección de servicios en la nube, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1], ALTA: [R1, R2]}}
+  # --- Continuidad del servicio ---
+  - {id: ENS-op.cont.1, grupo: Continuidad del servicio, titulo: Análisis de impacto, categoria_minima: MEDIA, dimensiones: [D], verificar: true, nota: "Tabla del Anexo II leída; aplicabilidad real según el nivel de las dimensiones D (BAJO/MEDIO/ALTO), aproximada aquí por categoría. Falta contrastar con CCN-STIC."}
+  - {id: ENS-op.cont.2, grupo: Continuidad del servicio, titulo: Plan de continuidad, categoria_minima: ALTA, dimensiones: [D], verificar: true, nota: "Tabla del Anexo II leída; aplicabilidad real según el nivel de las dimensiones D (BAJO/MEDIO/ALTO), aproximada aquí por categoría. Falta contrastar con CCN-STIC."}
+  - {id: ENS-op.cont.3, grupo: Continuidad del servicio, titulo: Pruebas periódicas, categoria_minima: ALTA, dimensiones: [D], verificar: true, nota: "Tabla del Anexo II leída; aplicabilidad real según el nivel de las dimensiones D (BAJO/MEDIO/ALTO), aproximada aquí por categoría. Falta contrastar con CCN-STIC."}
+  - {id: ENS-op.cont.4, grupo: Continuidad del servicio, titulo: Medios alternativos, categoria_minima: ALTA, dimensiones: [D], verificar: true, nota: "Tabla del Anexo II leída; aplicabilidad real según el nivel de las dimensiones D (BAJO/MEDIO/ALTO), aproximada aquí por categoría. Falta contrastar con CCN-STIC."}
+  # --- Monitorización del sistema ---
+  - {id: ENS-op.mon.1, grupo: Monitorización del sistema, titulo: Detección de intrusión, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1], ALTA: [R1, R2]}}
+  - {id: ENS-op.mon.2, grupo: Monitorización del sistema, titulo: Sistema de métricas, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1, R2], ALTA: [R1, R2]}}
+  - {id: ENS-op.mon.3, grupo: Monitorización del sistema, titulo: Vigilancia, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1, R2], ALTA: [R1, R2, R3, R4, R5, R6]}}
+  # --- Protección de las instalaciones e infraestructuras ---
+  - {id: ENS-mp.if.1, grupo: Protección de las instalaciones e infraestructuras, titulo: Áreas separadas y con control de acceso, categoria_minima: BASICA}
+  - {id: ENS-mp.if.2, grupo: Protección de las instalaciones e infraestructuras, titulo: Identificación de las personas, categoria_minima: BASICA}
+  - {id: ENS-mp.if.3, grupo: Protección de las instalaciones e infraestructuras, titulo: Acondicionamiento de los locales, categoria_minima: BASICA}
+  - {id: ENS-mp.if.4, grupo: Protección de las instalaciones e infraestructuras, titulo: Energía eléctrica, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1], ALTA: [R1]}, dimensiones: [D], verificar: true, nota: "Tabla del Anexo II leída; aplicabilidad real según el nivel de las dimensiones D (BAJO/MEDIO/ALTO), aproximada aquí por categoría. Falta contrastar con CCN-STIC."}
+  - {id: ENS-mp.if.5, grupo: Protección de las instalaciones e infraestructuras, titulo: Protección frente a incendios, categoria_minima: BASICA, dimensiones: [D], verificar: true, nota: "Tabla del Anexo II leída; aplicabilidad real según el nivel de las dimensiones D (BAJO/MEDIO/ALTO), aproximada aquí por categoría. Falta contrastar con CCN-STIC."}
+  - {id: ENS-mp.if.6, grupo: Protección de las instalaciones e infraestructuras, titulo: Protección frente a inundaciones, categoria_minima: MEDIA, dimensiones: [D], verificar: true, nota: "Tabla del Anexo II leída; aplicabilidad real según el nivel de las dimensiones D (BAJO/MEDIO/ALTO), aproximada aquí por categoría. Falta contrastar con CCN-STIC."}
+  - {id: ENS-mp.if.7, grupo: Protección de las instalaciones e infraestructuras, titulo: Registro de entrada y salida de equipamiento, categoria_minima: BASICA}
+  # --- Gestión del personal ---
+  - {id: ENS-mp.per.1, grupo: Gestión del personal, titulo: Caracterización del puesto de trabajo, categoria_minima: MEDIA}
+  - {id: ENS-mp.per.2, grupo: Gestión del personal, titulo: Deberes y obligaciones, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1], ALTA: [R1]}}
+  - {id: ENS-mp.per.3, grupo: Gestión del personal, titulo: Concienciación, categoria_minima: BASICA}
+  - {id: ENS-mp.per.4, grupo: Gestión del personal, titulo: Formación, categoria_minima: BASICA}
+  # --- Protección de los equipos ---
+  - {id: ENS-mp.eq.1, grupo: Protección de los equipos, titulo: Puesto de trabajo despejado, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1], ALTA: [R1]}}
+  - {id: ENS-mp.eq.2, grupo: Protección de los equipos, titulo: Bloqueo de puesto de trabajo, categoria_minima: MEDIA, refuerzos_por_categoria: {ALTA: [R1]}, dimensiones: [A], verificar: true, nota: "Tabla del Anexo II leída; aplicabilidad real según el nivel de las dimensiones A (BAJO/MEDIO/ALTO), aproximada aquí por categoría. Falta contrastar con CCN-STIC."}
+  - {id: ENS-mp.eq.3, grupo: Protección de los equipos, titulo: Protección de dispositivos portátiles, categoria_minima: BASICA, refuerzos_por_categoria: {ALTA: [R1, R2]}}
+  - {id: ENS-mp.eq.4, grupo: Protección de los equipos, titulo: Otros dispositivos conectados a la red, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1], ALTA: [R1]}, dimensiones: [C], verificar: true, nota: "Tabla del Anexo II leída; aplicabilidad real según el nivel de las dimensiones C (BAJO/MEDIO/ALTO), aproximada aquí por categoría. Falta contrastar con CCN-STIC."}
+  # --- Protección de las comunicaciones ---
+  - {id: ENS-mp.com.1, grupo: Protección de las comunicaciones, titulo: Perímetro seguro, categoria_minima: BASICA}
+  - {id: ENS-mp.com.2, grupo: Protección de las comunicaciones, titulo: Protección de la confidencialidad, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1], ALTA: [R1, R2, R3]}, dimensiones: [C], verificar: true, nota: "Tabla del Anexo II leída; aplicabilidad real según el nivel de las dimensiones C (BAJO/MEDIO/ALTO), aproximada aquí por categoría. Falta contrastar con CCN-STIC."}
+  - {id: ENS-mp.com.3, grupo: Protección de las comunicaciones, titulo: Protección de la integridad y de la autenticidad, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1, R2], ALTA: [R1, R2, R3, R4]}, dimensiones: [I, A], verificar: true, nota: "Tabla del Anexo II leída; aplicabilidad real según el nivel de las dimensiones I/A (BAJO/MEDIO/ALTO), aproximada aquí por categoría. Falta contrastar con CCN-STIC."}
+  - {id: ENS-mp.com.4, grupo: Protección de las comunicaciones, titulo: Separación de flujos de información en la red, categoria_minima: MEDIA, refuerzos_por_categoria: {MEDIA: ["[R1 o R2 o R3]"], ALTA: ["[R2 o R3]", R4]}}
+  # --- Protección de los soportes de información ---
+  - {id: ENS-mp.si.1, grupo: Protección de los soportes de información, titulo: Marcado de soportes, categoria_minima: MEDIA, dimensiones: [C], verificar: true, nota: "Tabla del Anexo II leída; aplicabilidad real según el nivel de las dimensiones C (BAJO/MEDIO/ALTO), aproximada aquí por categoría. Falta contrastar con CCN-STIC."}
+  - {id: ENS-mp.si.2, grupo: Protección de los soportes de información, titulo: Criptografía, categoria_minima: MEDIA, refuerzos_por_categoria: {ALTA: [R1, R2]}, dimensiones: [C, I], verificar: true, nota: "Tabla del Anexo II leída; aplicabilidad real según el nivel de las dimensiones C/I (BAJO/MEDIO/ALTO), aproximada aquí por categoría. Falta contrastar con CCN-STIC."}
+  - {id: ENS-mp.si.3, grupo: Protección de los soportes de información, titulo: Custodia, categoria_minima: BASICA}
+  - {id: ENS-mp.si.4, grupo: Protección de los soportes de información, titulo: Transporte, categoria_minima: BASICA}
+  - {id: ENS-mp.si.5, grupo: Protección de los soportes de información, titulo: Borrado y destrucción, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1], ALTA: [R1]}, dimensiones: [C], verificar: true, nota: "Tabla del Anexo II leída; aplicabilidad real según el nivel de las dimensiones C (BAJO/MEDIO/ALTO), aproximada aquí por categoría. Falta contrastar con CCN-STIC."}
+  # --- Protección de las aplicaciones informáticas ---
+  - {id: ENS-mp.sw.1, grupo: Protección de las aplicaciones informáticas, titulo: Desarrollo de aplicaciones, categoria_minima: MEDIA, refuerzos_por_categoria: {MEDIA: [R1, R2, R3, R4], ALTA: [R1, R2, R3, R4]}}
+  - {id: ENS-mp.sw.2, grupo: Protección de las aplicaciones informáticas, titulo: Aceptación y puesta en servicio, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1], ALTA: [R1]}}
+  # --- Protección de la información ---
+  - {id: ENS-mp.info.1, grupo: Protección de la información, titulo: Datos personales, categoria_minima: BASICA}
+  - {id: ENS-mp.info.2, grupo: Protección de la información, titulo: Calificación de la información, categoria_minima: MEDIA, dimensiones: [C], verificar: true, nota: "Tabla del Anexo II leída; aplicabilidad real según el nivel de las dimensiones C (BAJO/MEDIO/ALTO), aproximada aquí por categoría. Falta contrastar con CCN-STIC."}
+  - {id: ENS-mp.info.3, grupo: Protección de la información, titulo: Firma electrónica, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1, R2, R3], ALTA: [R1, R2, R3, R4]}, dimensiones: [I, A], verificar: true, nota: "Tabla del Anexo II leída; aplicabilidad real según el nivel de las dimensiones I/A (BAJO/MEDIO/ALTO), aproximada aquí por categoría. Falta contrastar con CCN-STIC."}
+  - {id: ENS-mp.info.4, grupo: Protección de la información, titulo: Sellos de tiempo, categoria_minima: ALTA, dimensiones: [T], verificar: true, nota: "Tabla del Anexo II leída; aplicabilidad real según el nivel de las dimensiones T (BAJO/MEDIO/ALTO), aproximada aquí por categoría. Falta contrastar con CCN-STIC."}
+  - {id: ENS-mp.info.5, grupo: Protección de la información, titulo: Limpieza de documentos, categoria_minima: BASICA, dimensiones: [C], verificar: true, nota: "Tabla del Anexo II leída; aplicabilidad real según el nivel de las dimensiones C (BAJO/MEDIO/ALTO), aproximada aquí por categoría. Falta contrastar con CCN-STIC."}
+  - {id: ENS-mp.info.6, grupo: Protección de la información, titulo: Copias de seguridad, categoria_minima: BASICA, refuerzos_por_categoria: {MEDIA: [R1], ALTA: [R1, R2]}, dimensiones: [D], verificar: true, nota: "Tabla del Anexo II leída; aplicabilidad real según el nivel de las dimensiones D (BAJO/MEDIO/ALTO), aproximada aquí por categoría. Falta contrastar con CCN-STIC."}
+  # --- Protección de los servicios ---
+  - {id: ENS-mp.s.1, grupo: Protección de los servicios, titulo: Protección del correo electrónico, categoria_minima: BASICA}
+  - {id: ENS-mp.s.2, grupo: Protección de los servicios, titulo: Protección de servicios y aplicaciones web, categoria_minima: BASICA, refuerzos_por_categoria: {BASICA: ["[R1 o R2]"], MEDIA: ["[R1 o R2]"], ALTA: [R2, R3]}}
+  - {id: ENS-mp.s.3, grupo: Protección de los servicios, titulo: Protección de la navegación web, categoria_minima: BASICA, refuerzos_por_categoria: {ALTA: [R1]}}
+  - {id: ENS-mp.s.4, grupo: Protección de los servicios, titulo: Protección frente a denegación de servicio, categoria_minima: MEDIA, refuerzos_por_categoria: {ALTA: [R1]}, dimensiones: [D], verificar: true, nota: "Tabla del Anexo II leída; aplicabilidad real según el nivel de las dimensiones D (BAJO/MEDIO/ALTO), aproximada aquí por categoría. Falta contrastar con CCN-STIC."}
