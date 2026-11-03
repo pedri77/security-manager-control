@@ -48,7 +48,7 @@ def test_dashboard_dos_filas_y_enlaces(dir_ej, tmp_path):
     idx = (out / "index.html").read_text(encoding="utf-8")
     p = _parse(idx)
     assert p.rows == 3  # cabecera + 2 clientes
-    enlaces = [h for h in p.hrefs if h.endswith(".html")]
+    enlaces = [h for h in p.hrefs if h.endswith(".html") and h != "mitre.html"]   # v0.6: mitre.html es común, no un cliente
     assert len(enlaces) == 2
     for h in enlaces:
         assert "/" not in h and ":" not in h          # relativos

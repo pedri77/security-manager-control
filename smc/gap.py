@@ -228,6 +228,74 @@ def render_verticales_md(res, catalogo=None) -> str:
     return "\n".join(out) + "\n"
 
 
+def _num_md(x, dec: int = 0) -> str:
+    import math
+    if isinstance(x, bool) or not isinstance(x, (int, float)) or not math.isfinite(x):
+        return "—"
+    return f"{x:.{dec}f}"
+
+
+def render_v06_md(registry=None, hoy: date | None = None, mitre_datos: dict | None = None) -> str:
+    """Secciones v0.6 en Markdown: tecnologías, reglas y suscripciones (si hay `registry`, dict o ruta) y
+    madurez MITRE (siempre). Cálculo en `smc.tech` y `smc.mitre`. Texto libre por `md_texto`."""
+    from . import mitre, tech
+    hoy = hoy or date.today()
+    out: list[str] = []
+    if registry is not None:
+        if isinstance(registry, (str, Path)):
+            registry = _load(Path(registry))
+        if not isinstance(registry, dict) or not isinstance(registry.get("technologies"), list):
+            raise ValueError("no es un registro de tecnologías (falta la lista 'technologies')")
+        filas = tech.evaluar_tecnologias(registry)
+        out += ["## Tecnologías evaluadas", "", "| Tecnología | Vertical | Cobertura | Configuración | Madurez (0-5) | Avisos |",
+                "|---|---|---|---|---|---|"]
+        for f in filas:
+            cob = "—" if f["cobertura_pct"] is None else f"{_num_md(f['cobertura_pct'])} %"
+            out.append(f"| {md_texto(f['id'])} {md_texto(f['nombre'])} | {md_texto(f['vertical']) or '—'} | {cob} | "
+                       f"{md_texto(f['configuracion'])} | {_num_md(f['madurez'], 1) if f['madurez'] is not None else '—'} | "
+                       f"{md_texto('; '.join(f['avisos'])) or '—'} |")
+        r = tech.reglas(registry, hoy)
+        out += ["", "## Estado de las reglas", "",
+                f"Revisadas: {len(r['revisadas'])} · Sin revisar o caducadas: {len(r['sin_revisar'])} · "
+                f"No evaluables: {len(r['no_evaluables'])} · Con any-any: {len(r['any_any'])}"]
+        if r["any_any"]:
+            out += ["", "**ATENCIÓN: reglas any-any**", ""]
+            out += [f"- {md_texto(f['id'])} {md_texto(f['nombre'])}: {f['reglas_any_any']} (estado: {md_texto(f['estado'])})"
+                    for f in r["any_any"]]
+        if r["sin_revisar"]:
+            out += ["", "### Sin revisar o revisión caducada", ""]
+            out += [f"- {md_texto(f['id'])} {md_texto(f['nombre'])}: última revisión {f['ultima_revision'] or 'nunca'}"
+                    for f in r["sin_revisar"]]
+        if r["no_evaluables"]:
+            out += ["", "### No evaluables", ""]
+            out += [f"- {md_texto(f['id'])} {md_texto(f['nombre'])}: {md_texto(f['motivo'])}" for f in r["no_evaluables"]]
+        if r["avisos"]:
+            out += ["", "### Avisos de reglas", ""] + [f"- {md_texto(a)}" for a in r["avisos"]]
+        sb = tech.suscripciones(registry, hoy)
+        tot: dict[str, float] = {}
+        for (_p, mon), c in sb["coste_por_proveedor"].items():
+            tot[mon] = tot.get(mon, 0.0) + (c if _num_md(c) != "—" else 0.0)
+        out += ["", "## Suscripciones", "",
+                "Coste anual total: " + (" + ".join(f"{_num_md(v)} {md_texto(m)}" for m, v in sorted(tot.items())) or "—"), "",
+                "### Vencen en 90 días", ""]
+        out += [f"- {x['fecha']} · {md_texto(x['id'])} {md_texto(x['nombre'])} ({md_texto(x['proveedor'])}, "
+                f"{_num_md(x['coste_anual'])} {md_texto(x['moneda'])})" for x in sb["renovaciones"]] or ["- Ninguna"]
+        out += ["", f"### Uso bajo el umbral del {_num_md(tech.UMBRAL_INFRAUSO * 100)} %", ""]
+        out += [f"- {md_texto(x['id'])} {md_texto(x['nombre'])}: {_num_md(x['uso_pct'], 1)} % en uso"
+                for x in sb["infrautilizadas"]] or ["- Ninguna"]
+        if sb["avisos"]:
+            out += ["", "### Avisos de suscripciones", ""] + [f"- {md_texto(a)}" for a in sb["avisos"]]
+        out.append("")
+    datos = mitre_datos if mitre_datos is not None else {"madurez": mitre.madurez(hoy=hoy), "sin_playbook": mitre.sin_playbook()}
+    m = datos["madurez"]
+    out += ["## Madurez MITRE ATT&CK", "", f"Técnicas con caso de uso: {len(m['tecnicas'])} · Casos de uso: {len(m['casos'])}", "",
+            "| Táctica | Madurez (0-5) |", "|---|---|"]
+    out += [f"| {md_texto(t)} | {n} |" for t, n in m["tacticas"].items()]
+    out += ["", f"### Casos sin playbook ({len(datos['sin_playbook'])})", ""]
+    out += [f"- {md_texto(i)}" for i in datos["sin_playbook"]] or ["- Ninguno"]
+    return "\n".join(out) + "\n"
+
+
 def _plan_section(an: Analisis) -> str:
     todas = [b for r in an.results for b in r.brechas]
     md = _plan.render_plan_md(an.plan, an.hoy, todas)
@@ -241,7 +309,7 @@ def _marca(c: Control) -> str:
     return " (verificar)" if c.extra.get("verificar") else ""
 
 
-def render_markdown(an: Analisis | dict, results=None, warnings=None) -> str:
+def render_markdown(an: Analisis | dict, results=None, warnings=None, registry=None) -> str:
     if not isinstance(an, Analisis):   # compatibilidad con la firma antigua (cliente, results, warnings)
         an = Analisis(an, results, warnings or [], date.today(), None, [], [], [], [])
     cliente, results, warnings = an.cliente, an.results, an.warnings
@@ -287,6 +355,7 @@ def render_markdown(an: Analisis | dict, results=None, warnings=None) -> str:
                     for c in r.no_aplican]
     if an.verticales is not None:
         out += ["", render_verticales_md(an.verticales).rstrip("\n")]
+    out += ["", render_v06_md(registry, an.hoy).rstrip("\n")]
     out += ["", _plan_section(an).rstrip("\n")]
     if warnings:
         out += ["", "## Avisos", ""] + [f"- {w}" for w in warnings]
@@ -297,8 +366,8 @@ def _load(path: Path) -> dict:
     return yaml.safe_load(Path(path).read_text(encoding="utf-8"))
 
 
-def run(path: Path, hoy: date | None = None) -> str:
-    return render_markdown(analyse(_load(path), hoy))
+def run(path: Path, hoy: date | None = None, registry=None) -> str:
+    return render_markdown(analyse(_load(path), hoy), registry=registry)
 
 
 def run_plan(path: Path, hoy: date | None = None) -> str:
