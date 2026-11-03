@@ -73,6 +73,7 @@ class Tarea:
     fin: date | None
     depende: list[str]
     presupuesto: Decimal            # BAC de la tarea (ver docs/pmo.md)
+    presupuesto_explicito: bool = False   # T29: `presupuesto` declarado en el fichero
 
 
 @dataclass
@@ -247,7 +248,8 @@ def cargar_proyecto(origen) -> Proyecto:
             bac = horas * tarifas.get(rol, Decimal("0"))
         proy.tareas.append(Tarea(tid, str(t.get("titulo") or ""), [str(c) for c in _lista(t.get("controles"))],
                                  str(t.get("accion") or ""), rol, horas, avance, ti, tf,
-                                 [str(d) for d in _lista(t.get("depende"))], bac))
+                                 [str(d) for d in _lista(t.get("depende"))], bac,
+                                 t.get("presupuesto") is not None))
     for t in proy.tareas:
         for d in t.depende:
             if d not in ids:
@@ -383,6 +385,12 @@ def analizar(proyecto: Proyecto, hoy: date | None = None, assessment: dict | Non
         real[c.partida] += c.importe
         if c.tarea:
             ac_tarea[c.tarea] += c.importe
+
+    # T29: AC incluye los costes no laborales de la tarea; sin `presupuesto` explícito el BAC solo lleva horas × tarifa.
+    for t in proyecto.tareas:
+        if not t.presupuesto_explicito and any(c.tarea == t.id for c in costes):
+            av.append(f"{t.id}: tiene costes no laborales y no tiene 'presupuesto' explícito: el BAC solo cuenta "
+                      f"horas × tarifa y el CPI sale sesgado a la baja")
 
     por_partida = {}
     for k in PARTIDAS:

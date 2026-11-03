@@ -9,7 +9,7 @@
 Qué exige la normativa a cada cliente, qué tiene ya implantado, con qué evidencias y qué falta, priorizado.<br>
 NIS2 · ENS · ISO 27001 · SOC · verticales · tecnologías · vulnerabilidades por protocolo · mapa de red · pentest y purple team · IA (RIA) · PMO. En local, sin servidor y sin que los datos salgan de tu equipo.
 
-[![versión](https://img.shields.io/badge/versión-0.7.0-3cf58a?style=for-the-badge&labelColor=07090c)](CHANGELOG.md)
+[![versión](https://img.shields.io/badge/versión-0.7.1-3cf58a?style=for-the-badge&labelColor=07090c)](CHANGELOG.md)
 [![tests](https://img.shields.io/badge/tests-509%20en%20verde-3cf58a?style=for-the-badge&labelColor=07090c)](tests/)
 [![python](https://img.shields.io/badge/python-3.10+-3cf58a?style=for-the-badge&logo=python&logoColor=3cf58a&labelColor=07090c)](pyproject.toml)
 [![dependencias](https://img.shields.io/badge/dependencias-solo%20PyYAML-3cf58a?style=for-the-badge&labelColor=07090c)](pyproject.toml)
@@ -18,7 +18,7 @@ NIS2 · ENS · ISO 27001 · SOC · verticales · tecnologías · vulnerabilidade
 [![protocolos](https://img.shields.io/badge/protocolos-28-ffb020?style=flat-square&labelColor=07090c)](vulnerabilities/protocols.yaml)
 [![RSS](https://img.shields.io/badge/RSS-17%20feeds%20·%2013%20verificados-ffb020?style=flat-square&labelColor=07090c)](resources/rss.yaml)
 [![controles](https://img.shields.io/badge/controles-129-ffb020?style=flat-square&labelColor=07090c)](frameworks/)
-[![RIA](https://img.shields.io/badge/RIA-30%20obligaciones-ffb020?style=flat-square&labelColor=07090c)](frameworks/ai-act/obligaciones.yaml)
+[![RIA](https://img.shields.io/badge/RIA-31%20obligaciones-ffb020?style=flat-square&labelColor=07090c)](frameworks/ai-act/obligaciones.yaml)
 [![NIS2](https://img.shields.io/badge/NIS2-15%20controles-ffb020?style=flat-square&labelColor=07090c)](frameworks/nis2/controls.yaml)
 [![ENS](https://img.shields.io/badge/ENS-73%20medidas-ffb020?style=flat-square&labelColor=07090c)](frameworks/ens/controls.yaml)
 [![Transversal](https://img.shields.io/badge/ISO%2027001%20·%20RGPD%20·%20DORA%20·%20CIS-21%20controles-ffb020?style=flat-square&labelColor=07090c)](frameworks/transversal/controls.yaml)
@@ -108,7 +108,7 @@ Estado: no implementado 1, sin evaluar 0,75, parcial 0,5. Entidad: esencial 1, i
 | 🎯 **MITRE ATT&CK** | Cobertura y madurez (niveles 1-5) de 8 casos de uso con playbook; capa para ATT&CK Navigator | `smc mitre`, `smc mitre --navigator` |
 | 🧩 **Verticales** | 22 verticales (EDR/XDR, IAM, red, firewall, SASE, ZTNA, capas OSI, Threat Hunting, MDM, puesto de usuario, correo, cloud, datos, copias, OT, IA, seguridad ofensiva…) con madurez 0-5 o «no evaluable» con motivo, clasificadas por medida NIS2 21.2 | `smc verticals` |
 | 🗡️ **Pentest y purple team** | Hallazgos con SLA y retest; ejercicios purple con cobertura por táctica | `smc pentest`, `smc purple` |
-| 🤖 **IA** | 30 obligaciones del RIA con las fechas del Ómnibus Digital y seguridad de agentes (OWASP LLM 2025, MITRE ATLAS) | `smc ai` |
+| 🤖 **IA** | 31 obligaciones del RIA con las fechas del Ómnibus Digital y seguridad de agentes (OWASP LLM 2025, MITRE ATLAS) | `smc ai` |
 | 📅 **PMO** | Presupuesto, horas, valor ganado (EVM), riesgos y calendario `.ics` | `smc pmo` |
 | 🔑 **Tecnologías** | Licencias, fin de soporte, certificados, sobredespliegue; evaluación de cada producto y estado de sus reglas (any-any, sin uso, revisión caducada) | `smc expiring`, `smc tech` |
 | 💶 **Suscripciones** | Coste, renovaciones a 90 días y uso por debajo del 70 % de lo contratado | `smc subs` |
@@ -215,7 +215,7 @@ flowchart LR
 
 ## IA: RIA y agentes
 
-`smc ai <inventario>` cruza el inventario de sistemas de IA de la organización (rol, nivel de riesgo, fecha de puesta en el mercado y evidencias) con las **30 obligaciones** del Reglamento (UE) 2024/1689 (RIA) y dice cuáles aplican, desde cuándo y cuáles faltan por evidencia.
+`smc ai <inventario>` cruza el inventario de sistemas de IA de la organización (rol, nivel de riesgo, fecha de puesta en el mercado y evidencias) con las **31 obligaciones** del Reglamento (UE) 2024/1689 (RIA) y dice cuáles aplican, desde cuándo y cuáles faltan por evidencia.
 
 | Obligación | Aplica desde |
 |---|---|

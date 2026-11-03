@@ -199,7 +199,9 @@ def test_ejemplo_carga_y_enlaza_con_la_evaluacion():
             for c in t.controles:
                 assert c in ev["evaluaciones"]
     a = analizar(p, HOY, assessment=ev)
-    assert a.avisos == []
+    # T29: el ejemplo tiene costes no laborales en T-03 y T-04 sin `presupuesto` explícito: solo esos avisos.
+    assert [x.split(":")[0] for x in a.avisos] == ["T-03", "T-04"]
+    assert all("costes no laborales" in x for x in a.avisos)
     assert [t.id for t in a.tareas_sin_control] == ["T-05"]
     assert [t.id for t in a.tareas_retrasadas] == ["T-02"]
     assert a.evm.cpi is not None and a.evm.spi is not None

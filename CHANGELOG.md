@@ -2,6 +2,17 @@
 
 Formato basado en Keep a Changelog. Versionado semántico.
 
+## 0.7.1 (2026-11-03)
+
+Endurecimiento de v0.7 tras la revisión de las olas 12-13 (T29). Sin funciones nuevas.
+
+- Madurez MITRE con purple: un ejercicio solo cuenta si su técnica está entre las del caso de uso, y por caso y técnica manda el ejercicio más reciente (un `parcial` o `no_detectado` posterior anula el `detectado` anterior). La madurez nunca baja de lo declarado en el catálogo.
+- Pentest: un hallazgo `corregido` con `resultado_retest` `persiste` o `parcial` se trata como abierto (SLA desde `fecha_deteccion`), sale en `retest_fallido` y en los avisos.
+- RIA: nueva obligación AIA-070 (art. 111.2, Ómnibus punto 39 a): alto riesgo ya en el mercado antes de la fecha del capítulo III, obligado solo con cambios significativos de diseño; autoridades públicas, a más tardar 2030-08-02. Campos opcionales de inventario `cambios_significativos` y `autoridad_publica` (junto a `en_mercado_desde`). 31 obligaciones.
+- RIA/ATLAS: AML.T0101, AML.M0036 y AML.M0037 comprobados contra ATLAS 2026.10 (existen). El `ATLAS.yaml` de la raíz de `atlas-data` está obsoleto (5.6.0) y no los lleva.
+- PMO: aviso cuando una tarea tiene costes no laborales y no tiene `presupuesto` explícito (el BAC solo cuenta horas por tarifa y el CPI sale sesgado).
+- `.gitignore` excluye `*.ics`.
+
 ## 0.7.0 (2026-11-03)
 
 Ola 13: seguridad ofensiva, IA y PMO. No cambia los IDs de los catálogos existentes.

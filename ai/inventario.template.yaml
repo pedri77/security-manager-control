@@ -7,6 +7,9 @@
 # supuestos (opcional): interaccion | contenido_sintetico | emociones_biometria | ultrasuplantacion
 #   | contenido_intimo_no_consentido | ambito_art27 | organismo_publico | lugar_de_trabajo | proveedor_tercer_pais
 # en_mercado_desde (opcional): primera introducción en el mercado o puesta en servicio (activa periodos transitorios).
+# cambios_significativos (opcional, true|false): alto riesgo ya en el mercado que sufre cambios significativos de diseño tras la
+#   fecha del capítulo III (art. 111.2 RIA). autoridad_publica (opcional, true|false): destinado a autoridades públicas
+#   (art. 111.2: medidas a más tardar el 2030-08-02). Solo tienen efecto si en_mercado_desde es anterior a esa fecha.
 # Evidencias (true/false o mapa con `existe: true|false`): supervision_humana, registro, alfabetizacion,
 #   evaluacion_impacto, informa_usuarios, marcado_contenido, documentacion_tecnica, gestion_riesgos,
 #   pruebas_seguridad, registro_ue, informacion_trabajadores, retirado. Ausente = pendiente.

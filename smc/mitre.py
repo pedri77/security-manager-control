@@ -11,10 +11,12 @@ en `no_activos`; una táctica sin casos activos no aparece en `tacticas`.
 Ejercicios purple team (v0.7, decisión de T28): si se pasa el resultado de cargar un fichero purple
 (`purple=` en `madurez`/`a_navigator`, `--purple` en la CLI y en `smc report`), un ejercicio con resultado
 `detectado` y fecha válida cuenta como prueba del caso de uso (equivale a `deteccion: probada` con
-`ultima_prueba` = el ejercicio detectado más reciente, nunca posterior a `hoy`): nivel 4, y 5 si esa fecha
-está en los últimos 90 días. Como en la prueba declarada, el caso necesita su playbook; un caso con
-`deteccion: sin` no cambia. Resultado `parcial` o `no_detectado` y ejercicios sin fecha no suben nada, y la
-madurez nunca baja por un ejercicio. Sin fichero purple la madurez es la de siempre.
+`ultima_prueba` = ese ejercicio, nunca posterior a `hoy`): nivel 4, y 5 si esa fecha está en los últimos
+90 días. T29: el ejercicio solo cuenta si su `tecnica` está entre las técnicas del caso; por caso y técnica
+manda el ejercicio más reciente, así que un `parcial` o `no_detectado` posterior anula el `detectado`
+anterior (no sube). Como en la prueba declarada, el caso necesita su playbook; un caso con
+`deteccion: sin` no cambia. Ejercicios sin fecha no suben nada, y la madurez nunca baja por un ejercicio
+(el catálogo es el suelo). Sin fichero purple la madurez es la de siempre.
 """
 from __future__ import annotations
 
@@ -49,8 +51,14 @@ def playbook_existe(u: dict, root: Path = ROOT) -> bool:
     return bool(pb) and (Path(root) / pb).is_file()
 
 
-def pruebas_purple(purple, hoy: date) -> dict[str, date]:
-    """{caso de uso: fecha del ejercicio `detectado` más reciente, no posterior a `hoy`}.
+def pruebas_purple(purple, hoy: date, tecnicas_por_caso: dict[str, list[str]] | None = None) -> dict[str, date]:
+    """{caso de uso: fecha de su prueba purple}, con las reglas de T29.
+
+    - Solo cuentan ejercicios cuya `tecnica` está en las técnicas del caso (`tecnicas_por_caso`;
+      None = sin filtro) y con fecha válida no posterior a `hoy`.
+    - Por caso y técnica manda el ejercicio más reciente (con la misma fecha, el no `detectado`):
+      solo sube si ese es `detectado`.
+    - La fecha del caso es la del `detectado` más reciente entre sus técnicas vigentes.
 
     `purple`: `offensive.Purple`, ruta o dict; None = sin pruebas."""
     if purple is None:
@@ -58,11 +66,20 @@ def pruebas_purple(purple, hoy: date) -> dict[str, date]:
     if not hasattr(purple, "ejercicios"):
         from . import offensive
         purple = offensive.cargar_purple(purple)
-    out: dict[str, date] = {}
+    ultimo: dict[tuple[str, str], tuple[date, bool]] = {}
     for e in purple.ejercicios:
-        if e.resultado == "detectado" and e.fecha is not None and e.fecha <= hoy:
-            if e.caso_uso not in out or e.fecha > out[e.caso_uso]:
-                out[e.caso_uso] = e.fecha
+        if e.fecha is None or e.fecha > hoy:
+            continue
+        if tecnicas_por_caso is not None and e.tecnica not in tecnicas_por_caso.get(e.caso_uso, ()):
+            continue
+        k = (e.caso_uso, e.tecnica)
+        det = e.resultado == "detectado"
+        if k not in ultimo or e.fecha > ultimo[k][0] or (e.fecha == ultimo[k][0] and not det):
+            ultimo[k] = (e.fecha, det)
+    out: dict[str, date] = {}
+    for (uc, _t), (f, det) in ultimo.items():
+        if det and (uc not in out or f > out[uc]):
+            out[uc] = f
     return out
 
 
@@ -86,7 +103,7 @@ def madurez(uc_path: Path = UC_FILE, hoy: date | None = None, root: Path = ROOT,
     """{'tecnicas': {id: nivel}, 'tacticas': {nombre: nivel (mínimo de activos)},
     'casos': {uc: nivel}, 'no_activos': {uc: {'nivel', 'estado', 'tactica'}}}"""
     hoy = hoy or date.today()
-    pruebas = pruebas_purple(purple, hoy)
+    pruebas = pruebas_purple(purple, hoy, {u["id"]: list(u.get("mitre", [])) for u in cargar(uc_path)})
     tec: dict[str, int] = {}
     tac: dict[str, int] = {}
     casos: dict[str, int] = {}
