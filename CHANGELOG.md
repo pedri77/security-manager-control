@@ -2,6 +2,18 @@
 
 Formato basado en Keep a Changelog. Versionado semántico.
 
+## 0.5.0 (2026-11-03)
+
+- Verticales: catálogo de 19 (nuevas HUNT, MDM, ENDUSER, FW, SASE, ZTNA, OSI; VRT-NET como paraguas sin doble cómputo). `smc verticals`; sección «Verticales» en informes y columna en el dashboard.
+- Tecnologías: evaluación y estado de reglas (`smc tech`) y suscripciones (`smc subs`).
+- Protocolos: 28 protocolos por capa OSI y 8 fuentes oficiales (`smc protocols`).
+- MITRE: madurez de casos de uso (niveles 1-5), 7 playbooks nuevos (PB-UC-002 a 008) y capa Navigator (`smc mitre --navigator`).
+- Recursos: 17 feeds RSS (13 verificados) con OPML (`smc rss`) y registro del ecosistema público.
+- Mapa de red: `smc mapa` (JSON `smc-mapa/1`), diseño en `docs/mapa-3d.md` y ADR-003. Las plantillas de registro e inventario llevan `zona` y `capa_osi` ficticias.
+- `smc validate` suma los catálogos de la v0.5. Los informes admiten enlaces `https://` a los recursos públicos (nada se carga de fuera).
+- 196 tests. Los README ya no dicen «12 verticales».
+- Pendiente para v0.6: visor 3D, contraste del Anexo II del ENS con el BOE, conectores de evidencias, ingesta NVD/KEV/EPSS, cumplimiento por dominio.
+
 ## 0.4.1 (2026-11-03)
 
 Endurecimiento tras la revisión de la ola 3.

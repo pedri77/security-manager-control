@@ -1,6 +1,7 @@
 """T15: mapa de dispositivos (JSON smc-mapa/1)."""
 import json
 import shutil
+import tempfile
 from datetime import date
 from pathlib import Path
 
@@ -18,12 +19,26 @@ TRK = ROOT / "vulnerabilities" / "tracker.template.csv"
 ENERGIA = ROOT / "assessments" / "examples" / "ejemplo-energia.yaml"
 HOY = date(2026, 11, 3)
 
+def _sin_zonas(origen, clave, destino):
+    """Copia de una plantilla sin `zona` ni `capa_osi` (las plantillas ya las traen desde T16)."""
+    data = yaml.safe_load(origen.read_text(encoding="utf-8"))
+    for e in data[clave]:
+        e.pop("zona", None)
+        e.pop("capa_osi", None)
+    destino.write_text(yaml.safe_dump(data, allow_unicode=True), encoding="utf-8")
+    return destino
+
+
+_TMP = Path(tempfile.mkdtemp(prefix="smc-mapa-test-"))
+REG_SIN = _sin_zonas(REG, "technologies", _TMP / "reg.yaml")
+INV_SIN = _sin_zonas(INV, "activos", _TMP / "inv.yaml")
+
 ZONAS_POR_ID = {"TEC-0001": "usuarios", "TEC-0002": "perimetro", "TEC-0003": "perimetro",
                 "TEC-0004": "usuarios", "TEC-0005": "nube"}
 
 
 def registro_con_zonas(tmp_path, sin=()):
-    data = yaml.safe_load(REG.read_text(encoding="utf-8"))
+    data = yaml.safe_load(REG_SIN.read_text(encoding="utf-8"))
     for t in data["technologies"]:
         z = ZONAS_POR_ID.get(t["id"])
         if z and t["id"] not in sin:
@@ -44,7 +59,7 @@ def por_id(m):
 
 
 def test_esquema_valido_con_plantillas(tmp_path):
-    m = construir_mapa(registro_con_zonas(tmp_path), INV, TRK, ENERGIA, HOY)
+    m = construir_mapa(registro_con_zonas(tmp_path), INV_SIN, TRK, ENERGIA, HOY)
     assert validar_mapa(m) == []
     assert m["schema"] == "smc-mapa/1"
     assert m["resumen"]["dispositivos"] == 6 and m["resumen"]["sin_zona"] == 1   # AST-0001 sin zona
@@ -52,7 +67,7 @@ def test_esquema_valido_con_plantillas(tmp_path):
 
 
 def test_json_serializable_sin_rutas_absolutas(tmp_path):
-    m = construir_mapa(registro_con_zonas(tmp_path), INV, TRK, ENERGIA, HOY)
+    m = construir_mapa(registro_con_zonas(tmp_path), INV_SIN, TRK, ENERGIA, HOY)
     texto = json.dumps(m, ensure_ascii=False)
     assert not mapa.contiene_ruta_absoluta(m)
     assert str(ROOT) not in texto and str(tmp_path) not in texto and "/Users/" not in texto
@@ -84,8 +99,16 @@ def test_zona_desconocida_va_a_sin_zona_con_motivo(tmp_path):
     assert validar_mapa(m) == []
 
 
+def test_plantillas_traen_zona_y_nada_cae_en_sin_zona():
+    m = construir_mapa(REG, INV, TRK, ENERGIA, HOY)
+    assert m["resumen"]["dispositivos"] == 6 and m["resumen"]["sin_zona"] == 0
+    assert sum(z["n_dispositivos"] for z in m["zonas"]) == 6
+    assert all(d["capa_osi_origen"] == "declarada" for z in m["zonas"] for d in z["dispositivos"])
+    assert validar_mapa(m) == []
+
+
 def test_plantilla_sin_zonas_todo_en_sin_zona():
-    m = construir_mapa(REG, INV, TRK, None, HOY)
+    m = construir_mapa(REG_SIN, INV_SIN, TRK, None, HOY)
     assert m["resumen"]["sin_zona"] == m["resumen"]["dispositivos"] == 6
     assert all(z["n_dispositivos"] == 0 and z["semaforo"] == "gris" for z in m["zonas"])
     assert validar_mapa(m) == []
@@ -147,10 +170,10 @@ def test_semaforo_de_zona_es_el_peor(tmp_path):
 
 
 def test_capa_osi_declarada_o_por_vertical():
-    m = por_id(construir_mapa(REG, None, None, None, HOY))
+    m = por_id(construir_mapa(REG_SIN, None, None, None, HOY))
     assert m["TEC-0002"]["capa_osi"] == 3 and m["TEC-0002"]["capa_osi_origen"] == "vertical"
     assert m["TEC-0001"]["capa_osi"] == 7
-    data = yaml.safe_load(REG.read_text(encoding="utf-8"))
+    data = yaml.safe_load(REG_SIN.read_text(encoding="utf-8"))
     data["technologies"][1]["capa_osi"] = 4
     data["technologies"][0]["capa_osi"] = 9           # inválida: se ignora y cae a la vertical
     m = por_id(construir_mapa(data, None, None, None, HOY))
@@ -181,13 +204,13 @@ def test_entradas_mal_formadas_no_rompen():
 
 
 def test_validador_detecta_esquema_roto(tmp_path):
-    m = construir_mapa(registro_con_zonas(tmp_path), INV, TRK, None, HOY)
+    m = construir_mapa(registro_con_zonas(tmp_path), INV_SIN, TRK, None, HOY)
     m["schema"] = "otro/1"
     assert validar_mapa(m)
-    m = construir_mapa(registro_con_zonas(tmp_path), INV, TRK, None, HOY)
+    m = construir_mapa(registro_con_zonas(tmp_path), INV_SIN, TRK, None, HOY)
     por_id(m)["TEC-0002"]["semaforo"] = "azul"
     assert any("azul" in e for e in validar_mapa(m))
-    m = construir_mapa(registro_con_zonas(tmp_path), INV, TRK, None, HOY)
+    m = construir_mapa(registro_con_zonas(tmp_path), INV_SIN, TRK, None, HOY)
     m["sin_zona"][0]["zona"] = "dmz"
     assert any("sin_zona" in e for e in validar_mapa(m))
     assert validar_mapa([]) and validar_mapa({"schema": "smc-mapa/1"})

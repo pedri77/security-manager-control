@@ -57,6 +57,14 @@ Un centro de control que, a partir del perfil del cliente, determine los marcos 
 - RF-16 Playbooks versionados por tecnología y por caso de uso, enlazados desde ambos registros.
 - RF-17 Desde cualquier control, consultar su base legal (NIS2/RE 2024/2690) y las guías CCN-CERT aplicables (`smc refs`).
 - RF-18 Marcar guías pendientes de verificación y vigilar cambios de estado (p. ej. CCN-STIC 892 en revisión).
+- RF-19 Catálogo de 19 verticales (incluye Threat Hunting, MDM, puesto de usuario, firewall, SASE, ZTNA y protección por capas OSI) con madurez 0-5 o «no evaluable» con motivo obligatorio; sin doble cómputo con la vertical paraguas VRT-NET (`smc verticals`).
+- RF-20 Evaluar cada tecnología del registro (cobertura, configuración, madurez) y el estado de sus reglas: any-any, sin uso y revisión caducada (180 días); «no evaluable» con motivo (`smc tech`).
+- RF-21 Controlar suscripciones: coste, renovaciones próximas (90 días) y uso por debajo del 70 % de lo contratado (`smc subs`).
+- RF-22 Catálogo de 28 protocolos por capa OSI con sus debilidades típicas y 8 fuentes oficiales de vulnerabilidades (NVD, ENISA, CISA KEV…) (`smc protocols`).
+- RF-23 Madurez MITRE (niveles 1-5) de los casos de uso con detección, playbook y vertical, y export de capa para ATT&CK Navigator (`smc mitre --navigator`).
+- RF-24 Listado de feeds RSS de seguridad (17, 13 verificados) con export OPML (`smc rss`) y registro del ecosistema público de recursos, con proyectos pendientes sin URL.
+- RF-25 Mapa de dispositivos por zona y capa OSI con semáforo (rojo, ámbar, gris, verde) y JSON `smc-mapa/1` sin datos sensibles, base de un visor 3D (`smc mapa`, ADR-003).
+- RF-26 `smc validate` comprueba los catálogos de la v0.5 y sus referencias cruzadas; informe HTML y dashboard muestran la madurez por vertical.
 
 ## 6. Requisitos no funcionales
 
@@ -72,7 +80,8 @@ Un centro de control que, a partir del perfil del cliente, determine los marcos 
 | v0.2 | Aplicabilidad ENS por categoría, priorización por riesgo, mapeos completos | Hecha (con 39 medidas ENS por verificar, ver sección 8) |
 | v0.3 | Informe HTML y plan de acción (`smc report`, `smc plan`). PDF: se obtiene imprimiendo el HTML desde el navegador | Hecha |
 | v0.4 | Dashboard estático multicliente (`smc dashboard`), ver ADR-002 | Hecha |
-| v0.5 | Conectores de evidencias (EDR, SIEM, escáneres, EASM, firewall); ingesta NVD/KEV/EPSS; capa ATT&CK Navigator | Pendiente |
+| v0.5 | Verticales ampliadas, evaluación de tecnologías y suscripciones, protocolos, madurez MITRE con Navigator, RSS, ecosistema y mapa de red (RF-19 a RF-26) | Hecha |
+| v0.6 | Visor 3D del mapa, contraste del Anexo II del ENS con el BOE, conectores de evidencias (EDR, SIEM, escáneres, EASM, firewall), ingesta NVD/KEV/EPSS, cumplimiento por dominio | Pendiente |
 
 Nota: el dashboard de v0.4 se resolvió como sitio estático generado en local, no como aplicación web con servidor (ADR-002).
 

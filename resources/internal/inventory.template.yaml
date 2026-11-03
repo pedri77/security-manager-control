@@ -18,6 +18,8 @@ activos:
   - id: AST-0001
     nombre: ""
     tipo: servidor
+    zona: servidores               # perimetro | dmz | usuarios | servidores | gestion | invitados | ot_iot | nube (ficticio)
+    capa_osi: 7                    # 1-7, opcional (ver docs/mapa-3d.md)
     propietario: ""
     criticidad: "baja | media | alta"
     categoria_ens: "BASICA | MEDIA | ALTA | n/a"
