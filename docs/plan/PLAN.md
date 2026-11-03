@@ -25,7 +25,7 @@ Revisión de ola: 3
 | Grupo | Coordinador | Tareas |
 |---|---|---|
 | smc | coordinador | T01, T02, T03, T04, T05, T06, T07, T08 |
-| smc-v05 | coordinador | T09, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28, T29 |
+| smc-v05 | coordinador | T09, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28, T29, T30, T31, T32, T33, T34, T35 |
 
 ## Ola 1
 
@@ -320,6 +320,58 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en 51f5745 · evidencia informes/T29-dev-proyecto.md
 
+## Ola 15 (v0.8)
+
+- [ ] **T30** — CI en GitHub Actions y política de versiones
+  - Hace: `.github/workflows/tests.yml` que en cada push y pull request a `main` instala con `uv` (Python 3.11 y 3.12), ejecuta `uv run --extra dev pytest -q`, `smc validate` y los comandos de ejemplo del README que no escriben fuera de un directorio temporal; permisos mínimos (`permissions: contents: read`), acciones fijadas por SHA de commit con el tag en comentario, sin secretos ni red más allá de instalar dependencias. `docs/release.md`: versionado semántico, qué sube mayor/menor/parche, checklist de release (tests, validate, gitleaks, nombres de repos privados, CHANGELOG, versión en `pyproject.toml` y `smc/__init__.py`, tag anotado `vX.Y.Z`, push del tag lo hace David). Un test que comprueba que la versión de `pyproject.toml`, `smc/__init__.py` y la última entrada del CHANGELOG coinciden.
+  - No hace: no toca README (lo hace T35) ni crea tags (los crea la sesión principal). No publica en PyPI.
+  - Toca: `.github/workflows/tests.yml`, `docs/release.md`, `tests/test_version.py`, `docs/plan/informes/T30-dev-proyecto.md`
+  - Depende: T29
+  - Verifica: el YAML del workflow parsea con `yaml.safe_load` y tiene `permissions` y acciones con SHA de 40 hex (test); `act` no es obligatorio; contraprueba: cambiar la versión en `smc/__init__.py` pone `test_version` en rojo.
+  - Prod: —
+
+- [ ] **T31** — Comparación entre evaluaciones (evolución)
+  - Hace: `smc/compare.py` con `comparar(anterior, actual, hoy=None) -> Comparacion` que reutiliza `smc.gap.analyse` sobre las dos evaluaciones (no reimplementa el análisis) y devuelve: cumplimiento por marco antes, después y delta; controles que mejoran, empeoran, cerrados (brecha que deja de serlo), nuevas brechas y sin cambio; P1 antes y después; madurez de verticales antes, después y delta (vía `smc.verticals.evaluar`, `estricto=False`); acciones del `plan_accion` cerradas entre una y otra. Avisos si los clientes no coinciden, si la evaluación «actual» es más antigua (campo `fecha` si existe; si no, aviso) o si la categoría ENS cambia (el delta ENS no es comparable y se marca). `render_markdown(comp)`. Un segundo ejemplo ficticio `assessments/examples/historico/ejemplo-energia-2026-q1.yaml` (mismo cliente ficticio que `ejemplo-energia.yaml`, unos meses antes, con más brechas) para demostrar la evolución.
+  - No hace: no toca `smc/gap.py`, `smc/cli.py`, ni el informe HTML (lo integra T35). No cambia `ejemplo-energia.yaml`.
+  - Toca: `smc/compare.py`, `tests/test_compare.py`, `assessments/examples/historico/`, `docs/plan/informes/T31-dev-proyecto.md`
+  - Depende: T29
+  - Verifica: deltas calculados a mano en el test sobre el par de ejemplos; contraprueba: intercambiar anterior y actual invierte el signo y da aviso de fechas; clientes distintos dan aviso. Comprobar que los tests existentes que leen `assessments/examples/` (dashboard) no cambian con la subcarpeta nueva; si cambian, anotarlo y decidir con el coordinador.
+  - Prod: —
+
+- [ ] **T32** — Salida para auditor: declaración de aplicabilidad y registro de evidencias
+  - Hace: `smc/soa.py` con `declaracion(assessment, hoy=None)` que, a partir de `smc.gap.analyse`, produce filas por control de cada marco aplicable (marco, id, título, aplica sí/no, justificación de no aplicación —`notas` o el motivo de categoría ENS—, estado, evidencias, prioridad si es brecha, refuerzos ENS de la categoría, mapeo a otros marcos de `mappings/`) y una hoja de evidencias (control, evidencia, fecha y caducidad si la evidencia es un dict, ver formato en Decisiones). Exportadores: `a_csv(filas) -> str` (stdlib `csv`, UTF-8 con BOM para Excel, sin inyección de fórmulas: celdas que empiezan por `= + - @` o tabulador se prefijan con `'`), `a_xlsx(hojas) -> bytes` (SpreadsheetML mínimo con `zipfile` de la stdlib, sin dependencias, cadenas en línea escapadas para XML, dos hojas: «Aplicabilidad» y «Evidencias») y `a_html(filas) -> str` imprimible a PDF desde el navegador (`@media print`, escape, sin JS ni CDN). Aviso fijo: «Documento de trabajo generado por SMC; la declaración formal la firma el responsable de seguridad».
+  - No hace: no toca `smc/cli.py` ni `smc/gap.py`. No genera PDF directamente (sin dependencias).
+  - Toca: `smc/soa.py`, `tests/test_soa.py`, `docs/plan/informes/T32-dev-proyecto.md`
+  - Depende: T29
+  - Verifica: el xlsx abre con `zipfile` y su XML parsea con `xml.etree` (test) y contiene las dos hojas; ENS MEDIA del ejemplo da 73 filas ENS con las no aplicables justificadas; contraprueba: una evidencia `=HYPERLINK(...)` sale prefijada en CSV y XLSX y un `<script>` sale escapado en HTML.
+  - Prod: —
+
+- [ ] **T33** — Evidencias con fecha, caducidad y huella
+  - Hace: admite en `evidencias` de cada control, además de texto, un dict `{ref, fecha (AAAA-MM-DD), caduca (AAAA-MM-DD) | vigencia_dias, sha256 (64 hex, opcional)}` (formato en Decisiones). `smc/evidencias.py`: `normalizar(e)`, `estado(e, hoy)` (vigente, caduca_pronto ≤ 30 días, caducada, sin_fecha), `verificar_huellas(assessment, base: Path)` (calcula sha256 de `base/ref` cuando `ref` es una ruta relativa sin `..` ni absoluta y la compara; no sigue enlaces simbólicos fuera de `base`) y `render_markdown`. En `smc/gap.py`: `FrameworkResult` gana `evidencia_caducada` (implementados cuyas evidencias están todas caducadas), listado en el Markdown y aviso; **no cambia la puntuación** (decisión anotada; se revisa con David). Texto plano sigue funcionando igual. Plantilla con un ejemplo del formato dict comentado y el ejemplo `ejemplo-energia.yaml` con dos evidencias en formato dict (una caducada) para demostrarlo.
+  - No hace: no toca `smc/cli.py` ni el informe HTML (lo integra T35); no sube ficheros de evidencia al repo.
+  - Toca: `smc/evidencias.py`, `smc/gap.py`, `assessments/assessment.template.yaml`, `assessments/examples/ejemplo-energia.yaml`, `tests/test_evidencias.py`, `docs/plan/informes/T33-dev-proyecto.md`
+  - Depende: T29
+  - Verifica: tests con `hoy` inyectado para los cuatro estados; huella correcta e incorrecta sobre un fichero temporal; contraprueba: `ref: ../../etc/passwd` y una ruta absoluta no se leen (aviso); todos los tests anteriores siguen verdes (las cifras de cumplimiento del ejemplo no cambian).
+  - Prod: —
+
+- [ ] **T34** — Flecos de la v0.7: art. 111.2 del RIA y retest fallido en el informe
+  - Hace: (a) en `smc/ai_act.py`, cuando un sistema de alto riesgo tiene `en_mercado_desde` anterior a la fecha de su nivel y `cambios_significativos` no es verdadero, las obligaciones del capítulo III de ese nivel no se emiten como pendientes: salen en una lista `regimen_transitorio` con la fecha en que pasarían a aplicar (2030-08-02 si `autoridad_publica`; si no, «solo con cambios significativos»); AIA-070 sigue apareciendo como aviso; actualiza la `nota` de AIA-070. Las obligaciones que no son del capítulo III (art. 4, 5, 50, uso general) no se recortan. Contrastar el alcance con el texto del art. 111.2 en EUR-Lex (excepción a «sin red» ya aprobada para el RIA). (b) En `smc/report_html.py`, la sección de pentest muestra una tabla «Retest fallido» propia (escapada) cuando `retest_fallido` no está vacío.
+  - No hace: no toca `smc/cli.py` ni otras secciones del informe.
+  - Toca: `smc/ai_act.py`, `frameworks/ai-act/obligaciones.yaml`, `smc/report_html.py`, `tests/test_t34.py`, `docs/plan/informes/T34-dev-proyecto.md`
+  - Depende: T29
+  - Verifica: sistema Anexo III en mercado desde 2026-01-01 sin cambios: sin obligaciones de capítulo III pendientes y con régimen transitorio; con `cambios_significativos: true`: vuelven todas (contraprueba); con `autoridad_publica: true` y `hoy` 2030-08-03: vuelven. Informe HTML con un hallazgo de retest fallido muestra la tabla y escapa `<script>`.
+  - Prod: —
+
+## Ola 16 (v0.8.0)
+
+- [ ] **T35** — Integración v0.8 y documentación
+  - Hace: subcomandos `smc compare <anterior.yaml> <actual.yaml> [--hoy] [-o]`, `smc soa <evaluación.yaml> --formato csv|xlsx|html -o <fichero>` y `smc evidencias <evaluación.yaml> [--base <dir>] [--hoy]`; `smc report ... --anterior <evaluación.yaml>` añade una sección «Evolución» (escapada); el dashboard muestra la evidencia caducada por cliente. README (mismo estilo, cifras reales, badge del workflow de CI, sección de comparación, salida para auditor y evidencias), PRD (RF nuevos), CHANGELOG 0.8.0, versión 0.8.0.
+  - No hace: no cambia la lógica de T31-T34 salvo errores (anotados).
+  - Toca: `smc/cli.py`, `smc/report_html.py`, `smc/dashboard.py`, `smc/catalog.py`, `tests/test_cli_v08.py`, `README.md`, `docs/prd/PRD-SMC-001-v1.md`, `CHANGELOG.md`, `pyproject.toml`, `smc/__init__.py`, `docs/plan/informes/T35-dev-proyecto.md`
+  - Depende: T30, T31, T32, T33, T34
+  - Verifica: cada comando nuevo rc=0 sobre los ejemplos; `smc soa` en los tres formatos; todos los comandos del README rc=0; `test_version` verde con 0.8.0.
+  - Prod: —
+
 ## Libro
 
 ### Hechos
@@ -382,6 +434,9 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 - 2026-11-03 · T26: excepción a «sin red» para leer el RIA y el Ómnibus (BOE/DOUE) · sesión principal
 - 2026-11-03 · Olas 12-13 revisadas (APTA con reservas): T29 con hallazgos 1-6 y 9 · sesión principal
 
+- 2026-11-03 · v0.8: CI y versiones, comparación entre evaluaciones, salida para auditor (CSV, XLSX con stdlib, HTML imprimible), evidencias con caducidad y huella, flecos v0.7 (art. 111.2 recorta capítulo III; retest fallido en HTML). Fuera: importadores, DORA completo y contraste CCN-STIC (v0.9) · David («si, prepara la v0.8»)
+- 2026-11-03 · Formato de evidencia (T32, T33): `str` o `{ref: str, fecha: AAAA-MM-DD, caduca: AAAA-MM-DD | vigencia_dias: int, sha256: 64 hex opcional}`; si hay `vigencia_dias`, caduca = fecha + días. Evidencia caducada avisa y se lista, no cambia la puntuación · sesión principal
+
 ### Atasco
 - Ola 1: 0
 - Ola 2: 0
@@ -397,3 +452,5 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 - Ola 12: 0
 - Ola 13: 0
 - Ola 14: 0
+- Ola 15: 0
+- Ola 16: 0
