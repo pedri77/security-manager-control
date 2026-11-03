@@ -40,3 +40,12 @@ plan_accion:
   - {id: ENE-02, controles: [NIS2-21.2.c], accion: "Probar la restauración de copias en sistemas OT", responsable: "Responsable de OT", fecha_objetivo: "2026-10-30", estado: en_curso}
   - {id: ENE-03, controles: [NET-SEG-02, NET-SEG-01], accion: "Crear DMZ industrial y microsegmentar el entorno OT", responsable: "Responsable de redes", fecha_objetivo: "2027-06-30", estado: pendiente}
   - {id: ENE-04, controles: [TRV-EDR-01], accion: "Completar el despliegue de EDR", responsable: "Responsable de puesto de trabajo", fecha_objetivo: "2026-09-30", estado: hecha}
+
+# Madurez por vertical (0-5; no_evaluable exige motivo y no puntúa). Productos ficticios.
+verticales:
+  VRT-EDR: {madurez: 4, producto: "EDR ejemplo", notas: "Cobertura 97 %"}
+  VRT-OT: {madurez: 2, notas: "Monitorización pasiva solo en una subestación"}
+  VRT-NET: {madurez: 5}
+  VRT-FW: {madurez: 4, producto: "Firewall ejemplo"}
+  VRT-ZTNA: {madurez: 1, notas: "Piloto con un grupo de usuarios"}
+  VRT-HUNT: {madurez: no_evaluable, motivo: "Sin telemetría centralizada para cazar"}
