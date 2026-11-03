@@ -2,7 +2,7 @@
 
 Centro de control para el **Security Manager**: una única vista para saber qué necesita un cliente en materia de seguridad, qué tiene ya implantado, con qué evidencias, y dónde están los huecos.
 
-> Estado: **v0.4.0**. Catálogos de controles, análisis de brechas con aplicabilidad ENS por categoría y priorización por riesgo, plan de acción, informe HTML autocontenido y dashboard estático multicliente. Todo local, sin servidor ni dependencias de red. La v0.5 (conectores de evidencias) queda fuera de esta versión.
+> Estado: **v0.4.1**. Catálogos de controles, análisis de brechas con aplicabilidad ENS por categoría y priorización por riesgo, plan de acción, informe HTML autocontenido y dashboard estático multicliente. Todo local, sin servidor ni dependencias de red. La v0.5 (conectores de evidencias) queda fuera de esta versión.
 
 ## Qué cubre
 
@@ -66,7 +66,7 @@ security-manager-control/
 2. **Selección de marcos**, NIS2 siempre; ENS si `sector_publico: true`; transversal y red siempre.
 3. **Inventario**, recursos internos y externos (plantillas en `resources/`).
 4. **Evaluación**, estado de cada control + evidencias.
-5. **Informe de brechas**, `smc gap <fichero>` genera el informe en Markdown, con brechas ordenadas por prioridad (P1 a P3).
+5. **Informe de brechas**, `smc gap <fichero>` genera el informe en Markdown, con brechas ordenadas por prioridad (P1 a P3). Prioridad = 50·estado + 30·criticidad + 10·entidad + 10·cobertura multinorma; P1 >= 75, P2 >= 40, resto P3 (estado: no_implementado 1, sin evaluar 0.75, parcial 0.5; entidad: esencial 1, importante 0.5, otra 0). Un no_implementado de criticidad media en entidad importante o no obligada sin cobertura multinorma es P2; de criticidad alta en entidad esencial, P1.
 6. **Plan de acción**, rellenar `plan_accion:` en la evaluación y revisarlo con `smc plan <fichero>` (acciones vencidas y brechas P1 sin acción).
 7. **Entrega**, `smc report` para el informe HTML de un cliente (imprimible a PDF desde el navegador) y `smc dashboard` para la vista multicliente.
 
@@ -90,11 +90,11 @@ smc refs NIS2-21.2.b                                      # normativa y guías C
 
 `gap`, `plan`, `report` y `dashboard` aceptan `--hoy AAAA-MM-DD` para fijar la fecha de referencia (por defecto, la del sistema). `smc --version` muestra la versión instalada.
 
-Las salidas (`informe.md`, `informe.html`, `dashboard/`) contienen datos de la evaluación: no las guardes dentro de este repositorio si son de un cliente real (ver ADR-001).
+Las salidas (`informe.md`, `informe.html`, `dashboard/`) contienen datos de la evaluación: escríbelas fuera del repositorio (p. ej. un directorio temporal o de trabajo del cliente). `.gitignore` ignora `*.html` y `dashboard/` como red de seguridad (ver ADR-001).
 
 Los informes HTML y el dashboard son ficheros únicos con CSS en línea, sin JavaScript, fuentes ni recursos externos (ver ADR-002). Se pueden abrir sin conexión o enviar como adjunto.
 
-Estados de control: `implementado` (1.0) · `parcial` (0.5) · `no_implementado` (0) · `no_aplica` (excluido) · sin evaluar (cuenta como 0 y se lista aparte).
+Estados de control: `implementado` (1.0) · `parcial` (0.5) · `no_implementado` (0) · `no_aplica` (excluido) · sin evaluar (cuenta como 0 y se lista aparte; un estado no válido se trata igual, con aviso). Una acción del plan `bloqueada` o `hecha` no cubre una brecha abierta.
 
 ## Convenciones
 
@@ -102,10 +102,10 @@ Estados de control: `implementado` (1.0) · `parcial` (0.5) · `no_implementado`
 - Documentos versionados: `PRD-SMC-001-v1.md`, `ADR-001-<slug>.md`.
 - Evidencia antes que checkbox: un control `implementado` sin evidencia se marca como aviso en el informe.
 
-## Limitaciones conocidas (v0.4.0)
+## Limitaciones conocidas (v0.4.1)
 
-- **ENS sin contrastar:** 39 de las 73 medidas de `frameworks/ens/controls.yaml` llevan `verificar: true`. Su `categoria_minima` (y todos los `refuerzos_por_categoria`) se rellenó de memoria, sin la tabla del Anexo II del RD 311/2022 delante. Hasta revisarlas, la aplicabilidad por categoría no es definitiva y el TODO de cabecera del YAML se mantiene.
+- **ENS sin contrastar:** 39 de las 73 medidas de `frameworks/ens/controls.yaml` llevan `verificar: true` (recuento con PyYAML; los informes las marcan con «(verificar)» y avisan en el resumen). Su `categoria_minima` (y todos los `refuerzos_por_categoria`) se rellenó de memoria, sin la tabla del Anexo II del RD 311/2022 delante. Hasta revisarlas, la aplicabilidad por categoría no es definitiva y el TODO de cabecera del YAML se mantiene.
 - **Posible discrepancia de ID:** en el RD 311/2022 `op.exp.10` es la protección de los registros de actividad y `op.exp.11` la protección de claves criptográficas; el catálogo tiene `op.exp.10` como claves. No se han cambiado IDs (son contrato, ADR-001); hay que revisar si falta una medida o está desplazada.
 - **Criticidades NIS2:** el campo `criticidad` de `frameworks/nis2/controls.yaml` es un juicio inicial sin fuente normativa. Afecta al orden de prioridad, no al cumplimiento.
-- **«Sin evaluar» pesa 0.75 en la prioridad** y puntúa como no cumplido. Una evaluación incompleta se llena de P1/P2 en «sin evaluar» y el semáforo del dashboard sale en rojo (media por debajo del 50 %); los dos ejemplos ficticios salen en rojo por eso. Es lo esperado, no una brecha real: el informe separa las brechas evaluadas de las pendientes de evaluar.
+- **«Sin evaluar» pesa 0.75 en la prioridad** y puntúa como no cumplido. Una evaluación incompleta se llena de P2 (y algún P1) en «sin evaluar» y el semáforo del dashboard sale en rojo (media por debajo del 50 %); los dos ejemplos ficticios salen en rojo por eso. Es lo esperado, no una brecha real: el informe separa las brechas evaluadas de las pendientes de evaluar.
 - La ley española de transposición de NIS2 sigue en tramitación: revisar el catálogo al publicarse en el BOE.

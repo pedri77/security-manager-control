@@ -66,6 +66,7 @@ class Analisis:
     vencidas: list[_plan.Accion]
     p1_sin_accion: list[str]           # IDs de brechas P1 que ninguna acción abierta cubre
     brechas_sin_accion: list[str]      # IDs de todas las brechas sin acción
+    ens_verificar: list[str] = field(default_factory=list)   # IDs de medidas ENS con `verificar: true` (si ENS en alcance)
 
     def __iter__(self):
         return iter((self.cliente, self.results, self.warnings))
@@ -79,10 +80,17 @@ def frameworks_in_scope(cliente: dict) -> list[str]:
     return fws
 
 
+NOTA_VERIFICAR = "aplicabilidad pendiente de contrastar"
+
+
+def _estado_de(ev) -> object:
+    return ev.get("estado") if isinstance(ev, dict) else None
+
+
 def _heredado(control: Control, evals: dict) -> list[tuple[str, str]]:
     out = []
     for eq in sorted(_mapping.equivalentes(control.id)):
-        estado = (evals.get(eq) or {}).get("estado")
+        estado = _estado_de(evals.get(eq))
         if estado in SCORES:
             out.append((eq, estado))
     return out
@@ -90,11 +98,23 @@ def _heredado(control: Control, evals: dict) -> list[tuple[str, str]]:
 
 def analyse(assessment: dict, hoy: date | None = None) -> Analisis:
     hoy = hoy or date.today()
-    cliente = assessment.get("cliente", {})
-    evals = assessment.get("evaluaciones", {}) or {}
+    warnings: list[str] = []
+    if not isinstance(assessment, dict):
+        warnings.append("La evaluación no es un mapa YAML: se trata como vacía")
+        assessment = {}
+    cliente = assessment.get("cliente")
+    if not isinstance(cliente, dict):
+        if cliente is not None:
+            warnings.append("'cliente' no es un mapa: se ignora")
+        cliente = {}
+    evals = assessment.get("evaluaciones")
+    if not isinstance(evals, dict):
+        if evals:
+            warnings.append("'evaluaciones' no es un mapa: se ignora")
+        evals = {}
     catalogs = load_all()
     known = {c.id for cs in catalogs.values() for c in cs}
-    warnings = [f"Control desconocido en la evaluación: {cid}" for cid in evals if cid not in known]
+    warnings += [f"Control desconocido en la evaluación: {cid}" for cid in evals if cid not in known]
 
     scope = frameworks_in_scope(cliente)
     categoria = None
@@ -115,15 +135,18 @@ def analyse(assessment: dict, hoy: date | None = None) -> Analisis:
                 continue
             ref = tuple(_ens.refuerzos(c, categoria)) if fw == "ENS" else ()
             ev = evals.get(c.id)
+            estado = _estado_de(ev)
+            if ev is not None and not isinstance(ev, dict):
+                warnings.append(f"{c.id}: evaluación mal formada (no es un mapa); cuenta como sin evaluar")
+                ev = None
+            elif ev is not None and estado not in VALID_STATES:
+                warnings.append(f"{c.id}: estado no válido '{estado}'; cuenta como sin evaluar")
+                ev = None
             if ev is None:
                 sin_evaluar.append(c)
                 aplicables += 1
                 p, n = prioridad(c, None, cliente)
                 detalle.append(SinEvaluar(c, p, n, _heredado(c, evals), ref))
-                continue
-            estado = ev.get("estado")
-            if estado not in VALID_STATES:
-                warnings.append(f"{c.id}: estado no válido '{estado}'")
                 continue
             if estado == "no_aplica":
                 continue
@@ -140,12 +163,17 @@ def analyse(assessment: dict, hoy: date | None = None) -> Analisis:
         results.append(FrameworkResult(fw, len(controls), aplicables, puntuacion, sin_evaluar, brechas,
                                        sin_evidencia, no_aplican, detalle))
 
+    pa = assessment.get("plan_accion")
+    if pa not in (None, []) and not isinstance(pa, list):
+        warnings.append("'plan_accion' no es una lista: se ignora")
     plan = _plan.cargar_plan(assessment)
     todas = [b for r in results for b in r.brechas]
     sin_accion = _plan.brechas_sin_accion(todas, plan)
     p1 = [b.control.id for b in todas if b.nivel == "P1" and b.control.id in set(sin_accion)]
     p1.sort(key=lambda i: next(-b.puntuacion for b in todas if b.control.id == i))
-    return Analisis(cliente, results, warnings, hoy, categoria, plan, _plan.vencidas(plan, hoy), p1, sin_accion)
+    verificar = [c.id for c in catalogs["ENS"] if c.extra.get("verificar")] if "ENS" in scope else []
+    return Analisis(cliente, results, warnings, hoy, categoria, plan, _plan.vencidas(plan, hoy), p1, sin_accion,
+                    verificar)
 
 
 def _plan_section(an: Analisis) -> str:
@@ -157,6 +185,10 @@ def _plan_section(an: Analisis) -> str:
     return md
 
 
+def _marca(c: Control) -> str:
+    return " (verificar)" if c.extra.get("verificar") else ""
+
+
 def render_markdown(an: Analisis | dict, results=None, warnings=None) -> str:
     if not isinstance(an, Analisis):   # compatibilidad con la firma antigua (cliente, results, warnings)
         an = Analisis(an, results, warnings or [], date.today(), None, [], [], [], [])
@@ -165,7 +197,7 @@ def render_markdown(an: Analisis | dict, results=None, warnings=None) -> str:
     out.append(
         f"- Sector: {cliente.get('sector', '—')} · Entidad NIS2: {cliente.get('tipo_entidad_nis2', '—')}"
         f" · Sector público: {'sí' if cliente.get('sector_publico') else 'no'}"
-        + (f" · Categoría ENS: {an.categoria_ens or cliente.get('categoria_ens')}" if cliente.get("sector_publico") else "")
+        + (f" · Categoría ENS: {an.categoria_ens}" if an.categoria_ens else "")
     )
     out.append(f"- Fecha: {cliente.get('fecha', '—')}")
     out += ["", "## Resumen", "", "| Marco | Controles | Aplicables | Cumplimiento | Brechas | Sin evaluar | No aplican |",
@@ -173,13 +205,17 @@ def render_markdown(an: Analisis | dict, results=None, warnings=None) -> str:
     for r in results:
         out.append(f"| {r.framework} | {r.total} | {r.aplicables} | {r.puntuacion}% | {len(r.brechas)} | "
                    f"{len(r.sin_evaluar)} | {len(r.no_aplican)} |")
+    if an.ens_verificar:
+        out += ["", f"> **Aviso ENS:** {len(an.ens_verificar)} medidas ENS tienen {NOTA_VERIFICAR} "
+                "con el Anexo II del RD 311/2022 (`verificar`); «no aplica» y los refuerzos por categoría no son "
+                "definitivos. Se marcan con (verificar)."]
     for r in results:
         out += ["", f"## {r.framework}"]
         if r.brechas:
             out += ["", "### Brechas (por prioridad)", "", "| P | Control | Título | Estado | Refuerzos ENS | Notas |",
                     "|---|---|---|---|---|---|"]
             for b in r.brechas:
-                out.append(f"| {b.nivel} | {b.control.id} | {b.control.titulo} | {b.estado} | "
+                out.append(f"| {b.nivel} | {b.control.id}{_marca(b.control)} | {b.control.titulo} | {b.estado} | "
                            f"{', '.join(b.refuerzos) or '—'} | {b.notas} |")
         if r.sin_evidencia:
             out += ["", "### Implementados sin evidencia (revisar)", ""]
@@ -187,7 +223,7 @@ def render_markdown(an: Analisis | dict, results=None, warnings=None) -> str:
         if r.sin_evaluar_detalle:
             out += ["", f"### Sin evaluar ({len(r.sin_evaluar)})", ""]
             for d in r.sin_evaluar_detalle:
-                line = f"- {d.nivel} · {d.control.id} — {d.control.titulo}"
+                line = f"- {d.nivel} · {d.control.id}{_marca(d.control)} — {d.control.titulo}"
                 if d.refuerzos:
                     line += f" · refuerzos: {', '.join(d.refuerzos)}"
                 if d.heredado_de:
@@ -195,7 +231,8 @@ def render_markdown(an: Analisis | dict, results=None, warnings=None) -> str:
                 out.append(line)
         if r.no_aplican:
             out += ["", f"### No aplican a la categoría {an.categoria_ens} ({len(r.no_aplican)})", ""]
-            out += [f"- {c.id} — {c.titulo} (mínima {c.extra.get('categoria_minima', '—')})" for c in r.no_aplican]
+            out += [f"- {c.id}{_marca(c)} — {c.titulo} (mínima {c.extra.get('categoria_minima', '—')})"
+                    for c in r.no_aplican]
     out += ["", _plan_section(an).rstrip("\n")]
     if warnings:
         out += ["", "## Avisos", ""] + [f"- {w}" for w in warnings]

@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from datetime import date
 
 ESTADOS = ("pendiente", "en_curso", "hecha", "bloqueada")
+NO_CUBREN = ("hecha", "bloqueada")
 
 
 @dataclass
@@ -32,8 +33,15 @@ def _fecha(valor) -> date | None:
 def cargar_plan(assessment: dict) -> list[Accion]:
     """Lee `plan_accion` de la evaluación. Tolera datos incompletos con avisos en cada Accion."""
     out: list[Accion] = []
-    for i, raw in enumerate((assessment or {}).get("plan_accion") or [], 1):
+    lista = (assessment or {}).get("plan_accion") if isinstance(assessment, dict) else None
+    if not isinstance(lista, list):
+        lista = []
+    for i, raw in enumerate(lista, 1):
         avisos = []
+        if not isinstance(raw, dict):
+            out.append(Accion(f"ACC-{i:02d}", [], "", "", None, "pendiente",
+                              ["entrada mal formada (no es un mapa); se ignora su contenido"]))
+            continue
         estado = raw.get("estado", "pendiente")
         if estado not in ESTADOS:
             avisos.append(f"estado no válido '{estado}'")
@@ -42,7 +50,7 @@ def cargar_plan(assessment: dict) -> list[Accion]:
         if fecha is None:
             avisos.append("fecha_objetivo ausente o no válida")
         controles = raw.get("controles") or []
-        if isinstance(controles, str):
+        if not isinstance(controles, list):
             controles = [controles]
         out.append(Accion(
             id=str(raw.get("id") or f"ACC-{i:02d}"),
@@ -66,12 +74,13 @@ def _id(b) -> str:
 
 
 def brechas_sin_accion(brechas, plan: list[Accion]) -> list[str]:
-    """IDs de control en brecha que ninguna acción no-hecha cubre.
+    """IDs de control en brecha que ninguna acción abierta y desbloqueada cubre.
 
     `brechas`: IDs (str) o tuplas (Control, estado, notas) como devuelve gap.
-    Una acción `hecha` no cuenta: si el control sigue en brecha, falta acción.
+    Una acción `hecha` no cuenta (si el control sigue en brecha, falta acción) ni una `bloqueada`
+    (no avanza: no es una acción que la cubra de verdad). Solo cubren `pendiente` y `en_curso`.
     """
-    cubiertos = {c for a in plan if a.estado != "hecha" for c in a.controles}
+    cubiertos = {c for a in plan if a.estado not in NO_CUBREN for c in a.controles}
     return [i for i in (_id(b) for b in brechas) if i not in cubiertos]
 
 

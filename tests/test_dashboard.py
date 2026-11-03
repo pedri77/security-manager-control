@@ -128,7 +128,8 @@ def test_ayuntamiento_datos(tmp_path):
     assert "ENS" in ay.cumplimiento and "ENS" not in en.cumplimiento
     assert ay.vencidas == 1 and ay.semaforo == "rojo"
     assert en.analisis.cliente["tipo_entidad_nis2"] == "esencial" and not en.analisis.cliente["sector_publico"]
-    assert en.vencidas == 1 and en.p1 >= 1 and en.p1_sin_accion >= 0
+    assert en.vencidas == 1 and en.p1 == 5 and en.p1_sin_accion == 1
+    assert en.analisis.p1_sin_accion == ["NIS2-23.notificacion"]
 
 
 def test_slugs_unicos_y_seguros():

@@ -45,8 +45,8 @@ controls:
   - {id: ENS-op.nub.1, grupo: Servicios en la nube, titulo: Protección de servicios en la nube, categoria_minima: BASICA, verificar: true}
   # --- Continuidad ---
   - {id: ENS-op.cont.1, grupo: Continuidad, titulo: Análisis de impacto, categoria_minima: MEDIA}
-  - {id: ENS-op.cont.2, grupo: Continuidad, titulo: Plan de continuidad, categoria_minima: MEDIA}
-  - {id: ENS-op.cont.3, grupo: Continuidad, titulo: Pruebas periódicas, categoria_minima: MEDIA}
+  - {id: ENS-op.cont.2, grupo: Continuidad, titulo: Plan de continuidad, categoria_minima: MEDIA, verificar: true}
+  - {id: ENS-op.cont.3, grupo: Continuidad, titulo: Pruebas periódicas, categoria_minima: MEDIA, verificar: true}
   - {id: ENS-op.cont.4, grupo: Continuidad, titulo: Medios alternativos, categoria_minima: ALTA}
   # --- Monitorización ---
   - {id: ENS-op.mon.1, grupo: Monitorización, titulo: Detección de intrusión, categoria_minima: MEDIA, refuerzos_por_categoria: {ALTA: [R1]}, verificar: true}
