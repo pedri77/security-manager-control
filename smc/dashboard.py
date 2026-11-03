@@ -46,6 +46,7 @@ class Fila:
     p1_sin_accion: int
     semaforo: str
     media: float
+    vert_media: float | None = None   # madurez media de verticales (0-5); None si no hay sección o nada evaluado
 
 
 @dataclass
@@ -106,7 +107,8 @@ def recopilar(directorio: Path, hoy: date | None = None) -> Resultado:
         media = round(sum(cumpl.values()) / len(cumpl), 1) if cumpl else 0.0
         p1 = sum(1 for r in an.results for b in r.brechas if b.nivel == "P1")
         res.filas.append(Fila(slug, f.name, an, cumpl, p1, len(an.vencidas), len(an.p1_sin_accion),
-                              semaforo(media, p1, len(an.p1_sin_accion), len(an.vencidas)), media))
+                              semaforo(media, p1, len(an.p1_sin_accion), len(an.vencidas)), media,
+                              an.verticales.madurez_media if an.verticales is not None else None))
     return res
 
 
@@ -121,7 +123,7 @@ def render_index(res: Resultado, hoy: date) -> str:
     marcos = sorted({m for f in res.filas for m in f.cumplimiento}, key=lambda m: ("NIS2", "ENS", "TRANSVERSAL", "RED").index(m)
                     if m in ("NIS2", "ENS", "TRANSVERSAL", "RED") else 99)
     cab = ["Cliente", "Sector", "Entidad NIS2", "Categoría ENS"] + [f"{m} %" for m in marcos] + \
-          ["Brechas P1", "Acciones vencidas", "Fecha de evaluación", "Semáforo"]
+          ["Madurez verticales", "Brechas P1", "Acciones vencidas", "Fecha de evaluación", "Semáforo"]
     h = "".join(f"<th>{_e(c)}</th>" for c in cab)
     filas = []
     for f in res.filas:
@@ -130,7 +132,7 @@ def render_index(res: Resultado, hoy: date) -> str:
                   _e(c.get("tipo_entidad_nis2", "—")), _e(f.analisis.categoria_ens or "—")]
         for m in marcos:
             celdas.append(f"{_e(f.cumplimiento[m])} %" if m in f.cumplimiento else "—")
-        celdas += [_e(f.p1), f'<span class="venc">{_e(f.vencidas)}</span>' if f.vencidas else "0",
+        celdas += [("—" if f.vert_media is None else f"{_e(f.vert_media)} / 5"), _e(f.p1), f'<span class="venc">{_e(f.vencidas)}</span>' if f.vencidas else "0",
                    _e(c.get("fecha", "—")),
                    f'<span class="sem {f.semaforo}">{SEMAFORO_TXT[f.semaforo]}</span>']
         filas.append("<tr>" + "".join(f"<td>{x}</td>" for x in celdas) + "</tr>")
