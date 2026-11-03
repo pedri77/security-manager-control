@@ -1,0 +1,15 @@
+# Plantilla de ejercicios purple team. Datos reales de un cliente: fuera del repositorio (ADR-001).
+# tecnica: ID ATT&CK (T1234 o T1234.001). caso_uso: ID de soc/use-cases/catalog.yaml (debe existir).
+# resultado: detectado | parcial | no_detectado. tiempo_deteccion_min: minutos hasta la alerta (solo si hubo detección).
+# mejora.estado: abierta | en_curso | hecha.
+version: v1
+ejercicios:
+  - id: PP-000
+    fecha: "2026-01-01"
+    tecnica: T1110.003
+    caso_uso: UC-001
+    resultado: detectado
+    tiempo_deteccion_min: 10
+    mejora:
+      descripcion: Mejora acordada
+      estado: abierta
