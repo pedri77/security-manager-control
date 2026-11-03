@@ -31,3 +31,9 @@ Sustituir en `analyse` la condición de aplicabilidad ENS por `if False:` -> `te
 
 ## Queda
 Informe HTML (T05) y dashboard (T06). PLAN.md sin marcar.
+
+## Verificación del coordinador (2026-11-03)
+- Alcance: solo ficheros de «Toca» (informe, gap.py, cli.py, test_gap_v02.py). superficies.py diff dev-proyecto: OK. Sin secretos.
+- Cuadre ENS MEDIA: total 73 = 68 aplicables + 4 no aplican a MEDIA + 1 evaluada como no_aplica (ENS-mp.if.6, excluida de aplicables). Cuadra.
+- Verifica: 48 passed.
+- Contraprueba: condición ENS sustituida por «if False and ...» → 2 failed, 46 passed (test_media_excluye_medidas_solo_alta, test_contraprueba_forzar_alta_cambia_aplicables). Restaurada.
