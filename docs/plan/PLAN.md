@@ -25,7 +25,7 @@ Revisión de ola: 3
 | Grupo | Coordinador | Tareas |
 |---|---|---|
 | smc | coordinador | T01, T02, T03, T04, T05, T06, T07, T08 |
-| smc-v05 | coordinador | T09, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23 |
+| smc-v05 | coordinador | T09, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28 |
 
 ## Ola 1
 
@@ -260,6 +260,54 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en f621bca · evidencia informes/T23-dev-proyecto.md
 
+## Ola 12 (v0.7)
+
+- [~] **T24** — Pentesting (seguimiento) y purple team
+  - Hace: módulo `smc/offensive.py` y carpeta `offensive/` con: plantilla `pentest.template.yaml` (campañas de pentest: alcance, tipo interno/externo/web/red team, proveedor, fechas; hallazgos con id, severidad, CVSS opcional, CWE, activo, control SMC relacionado, estado abierto/en_remediacion/corregido/aceptado/falso_positivo, fecha_deteccion, fecha_retest, resultado_retest) con SLA por severidad tomado de `vulnerabilities/policy.yaml` (reutiliza, no duplica); plantilla `purple.template.yaml` (ejercicios purple team: técnica ATT&CK, caso de uso del SOC de `soc/use-cases/catalog.yaml`, fecha, resultado detectado/parcial/no_detectado, tiempo de detección, mejora acordada y su estado). Funciones: `cargar_pentest`, `estado_hallazgos(datos, hoy)` (abiertos, fuera de SLA, pendientes de retest, aceptados sin fecha de revisión), `purple(datos, hoy)` (cobertura por táctica, técnicas no detectadas, mejoras abiertas, ejercicios con más de 12 meses) y `render_markdown`. Validación: ids ATT&CK con regex y casos de uso existentes. Ejemplos ficticios.
+  - No hace: no toca `smc/cli.py`, `smc/mitre.py` ni catálogos existentes (no sube la madurez MITRE con ejercicios purple: lo decide T28).
+  - Toca: `offensive/`, `smc/offensive.py`, `tests/test_offensive.py`, `docs/plan/informes/T24-dev-proyecto.md`
+  - Depende: T23
+  - Verifica: tests con `hoy` inyectado; contraprueba: un hallazgo crítico abierto más allá del SLA aparece fuera de SLA y un caso de uso inexistente en purple da error.
+  - Prod: —
+  - Estado: reservada por coordinador 2026-11-03
+
+- [~] **T25** — Verticales de identidad, dato, IA y seguridad ofensiva
+  - Hace: añade a `soc/verticals.yaml`, con el formato vigente (nis2, controles existentes, criterios y `niveles` 0-5 concretos): `VRT-IAM` (identidad y su seguridad: IGA y ciclo de vida, MFA resistente a phishing, PAM, identidades no humanas y de servicio, ITDR, revisión de accesos, AD/Entra hardening), `VRT-DATA` (seguridad del dato: clasificación, DSPM, DLP en endpoint/correo/nube, identidades y permisos con acceso al dato, cifrado y claves, retención), `VRT-AI` (IA: inventario de sistemas y modelos, clasificación según el RIA, gobierno, seguridad de agentes y LLM según OWASP Top 10 for LLM Applications y MITRE ATLAS, permisos y herramientas de agentes, registro y supervisión humana) y `VRT-OFF` (pentesting y purple team: plan anual, retest, ejercicios purple, red team). Controles solo con IDs existentes en los catálogos. Recursos solo de la lista pública (si no hay, ninguno). Añade las 4 a la plantilla y a los dos ejemplos ficticios. Cifras: 24 verticales.
+  - No hace: no toca `smc/` salvo `URLS_PUBLICAS` si hiciera falta (no debería).
+  - Toca: `soc/verticals.yaml`, `soc/README.md`, `assessments/assessment.template.yaml`, `assessments/examples/`, `tests/test_verticals.py`, `tests/test_t18.py`, `tests/test_verticals_v07.py`, `docs/plan/informes/T25-dev-proyecto.md`
+  - Depende: T23
+  - Verifica: `smc validate` OK; `smc verticals` sobre los ejemplos muestra las 4; contraprueba: un control inexistente en VRT-AI pone un test en rojo.
+  - Prod: —
+  - Estado: reservada por coordinador 2026-11-03
+
+- [~] **T26** — RIA (Reglamento (UE) 2024/1689) y seguridad de agentes de IA
+  - Hace: `frameworks/ai-act/obligaciones.yaml`: obligaciones por rol (proveedor, responsable del despliegue, importador, distribuidor) y por nivel de riesgo (prohibido art. 5, alto riesgo Anexo I y Anexo III, transparencia art. 50, modelos de uso general art. 53-55, riesgo mínimo), con artículo, descripción breve y fecha de aplicación vigente tras el Ómnibus Digital (Reglamento (UE) 2026/1744: alto riesgo Anexo III 2027-12-02, Anexo I 2028-08-02; contrastar art. 50 y demás fechas en el texto del DOUE o EUR-Lex; lo no contrastado lleva `verificar: true` con nota). `ai/inventario.template.yaml`: sistemas de IA del cliente (nombre, finalidad, rol, nivel de riesgo, datos personales, proveedor del modelo, agentes con herramientas y permisos, supervisión humana, registro). `smc/ai_act.py`: `clasificar` (valida nivel y rol), `obligaciones(inventario, hoy)` (obligaciones aplicables por sistema con estado por fecha: vigente / aplicable desde), `riesgos_agente` (comprobaciones de seguridad de agentes basadas en OWASP Top 10 for LLM Applications 2025 y MITRE ATLAS: herramientas sin límite, permisos excesivos, sin supervisión humana, sin registro, prompt injection sin mitigación) y `render_markdown`. Fuentes con URL https en la cabecera.
+  - No hace: no toca `soc/verticals.yaml` (es de T25) ni `smc/cli.py`; no es asesoramiento jurídico (aviso en el render).
+  - Toca: `frameworks/ai-act/`, `ai/`, `smc/ai_act.py`, `tests/test_ai_act.py`, `docs/plan/informes/T26-dev-proyecto.md`
+  - Depende: T23
+  - Verifica: tests con `hoy` inyectado antes y después de 2027-12-02; contraprueba: un sistema de alto riesgo sin supervisión humana genera la obligación pendiente; un nivel de riesgo inexistente da error.
+  - Prod: —
+  - Estado: reservada por coordinador 2026-11-03
+
+- [~] **T27** — PMO: vida del proyecto, horas, costes y presupuesto
+  - Hace: `smc/pmo.py` y `pmo/` con plantilla `proyecto.template.yaml` y un ejemplo ficticio: proyecto (cliente ficticio, fechas, presupuesto total y por partida: horas, licencias, servicios, formación), tareas (id, título, controles o brechas SMC relacionados, acción del `plan_accion` opcional, responsable por rol, horas estimadas, horas imputadas, % avance, fechas, dependencias), tarifas por rol, imputaciones de horas (fecha, rol, tarea, horas), costes no laborales (proveedor, concepto, importe, fecha, partida), eventos e hitos (comités, auditorías, renovaciones, entregas) y riesgos del proyecto. Cálculos con `hoy` inyectado: coste real por partida, desviación sobre presupuesto, valor ganado simple (PV, EV, AC, CPI, SPI), tareas retrasadas, tareas sin control asociado, próximos eventos (30 días), horas por rol y mes. Opcional: sumar `coste_anual` de suscripciones de un registry vía `smc.tech` (sin recalcular). `render_markdown` y export de eventos a iCalendar (`.ics`, texto escapado según RFC 5545). `docs/pmo.md` y ADR-005 (presupuesto, horas y tarifas son datos de cliente: fuera del repositorio, ADR-001).
+  - No hace: no toca `smc/cli.py` ni el informe HTML (lo integra T28); no es un gestor de proyectos completo (sin Gantt interactivo).
+  - Toca: `pmo/`, `smc/pmo.py`, `tests/test_pmo.py`, `docs/pmo.md`, `docs/adr/ADR-005-pmo-datos-de-cliente.md`, `docs/plan/informes/T27-dev-proyecto.md`
+  - Depende: T23
+  - Verifica: EVM correcto en un caso calculado a mano en el test; contraprueba: una imputación a una tarea inexistente da aviso y un importe no numérico no rompe; el .ics valida (líneas CRLF, escapado de `,;\`).
+  - Prod: —
+  - Estado: reservada por coordinador 2026-11-03
+
+## Ola 13 (v0.7.0)
+
+- [ ] **T28** — Integración v0.7 y documentación
+  - Hace: subcomandos `smc pentest <fichero>`, `smc purple <fichero>`, `smc ai <inventario>`, `smc pmo <proyecto> [--ics eventos.ics] [--registry r.yaml]`; `smc validate` valida también `frameworks/ai-act/` y las plantillas nuevas; informe HTML y dashboard con secciones de pentest/purple, IA y PMO cuando se pasen los ficheros (`smc report ... --pentest --purple --ai --pmo`), con escape y solo `https://`. Decide y documenta si los ejercicios purple detectados cuentan como «probada» en la madurez MITRE (recomendado: sí, con fecha del ejercicio). README (mismo estilo; cifras reales; módulos nuevos), PRD, CHANGELOG 0.7.0, versión 0.7.0.
+  - No hace: no cambia catálogos de T24-T27 salvo errores (anotados).
+  - Toca: `smc/cli.py`, `smc/catalog.py`, `smc/report_html.py`, `smc/dashboard.py`, `smc/gap.py`, `smc/mitre.py`, `tests/test_cli_v07.py`, `tests/test_t08.py`, `tests/test_cli_v06.py`, `README.md`, `docs/prd/PRD-SMC-001-v1.md`, `CHANGELOG.md`, `pyproject.toml`, `smc/__init__.py`, `docs/plan/informes/T28-dev-proyecto.md`
+  - Depende: T24, T25, T26, T27
+  - Verifica: cada comando nuevo rc=0 sobre los ejemplos; XSS en un título de tarea PMO y en un hallazgo de pentest sale escapado (contraprueba); todos los comandos del README rc=0.
+  - Prod: —
+
 ## Libro
 
 ### Hechos
@@ -315,6 +363,8 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 
 - 2026-11-03 · Ola 9 revisada (APTA con reservas): emparejamiento registro por stem más largo, CSP del visor con hash, refuerzos ENS tal cual la celda del BOE, MITRE del informe etiquetado como catálogo común; ATT&CK ICS T0855/T0856 renumeradas a T1692.001/.002 · sesión principal
 
+- 2026-11-03 · v0.7: pentesting y purple team, verticales IAM/DATA/AI/OFF, RIA con fechas del Ómnibus Digital (Reglamento (UE) 2026/1744) y seguridad de agentes, PMO con horas, costes, presupuesto y eventos · David
+
 ### Atasco
 - Ola 1: 0
 - Ola 2: 0
@@ -327,3 +377,5 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 - Ola 9: 0
 - Ola 10: 0
 - Ola 11: 0
+- Ola 12: 0
+- Ola 13: 0
