@@ -24,7 +24,8 @@ Revisión de ola: 3
 
 | Grupo | Coordinador | Tareas |
 |---|---|---|
-| smc | coordinador | T01, T02, T03, T04, T05, T06, T07 |
+| smc | coordinador | T01, T02, T03, T04, T05, T06, T07, T08 |
+| smc-v05 | coordinador | T09, T10, T11, T12, T13, T14, T15, T16 |
 
 ## Ola 1
 
@@ -106,6 +107,83 @@ Revisión de ola: 3
   - Prod: —
   - Estado: hecha en 2e15979 · evidencia informes/T08-dev-proyecto.md
 
+## Ola 5 (v0.5)
+
+Contexto v0.5 (pedido de David el 2026-11-03): verticales Threat Hunting, EDR/XDR, MDM, puesto de usuario, perimetrales (firewall, SASE, ZTNA, protección on-prem por capas OSI); estado de las reglas de los dispositivos («no evaluable» con motivo si no se puede); evaluación de tecnologías y control de suscripciones; playbooks y madurez con MITRE; vulnerabilidades por protocolo con fuentes oficiales (NIST/NVD, ENISA, CISA KEV, cvedetails.com); listado de RSS; mapa de dispositivos 3D a partir de la skill teardown. Enlaces SOLO a páginas públicas (GitHub Pages) verificadas: EDR/XDR https://pedri77.github.io/edr-visual-app/ · SASE https://pedri77.github.io/sase-visual-app/ · Firewalls https://pedri77.github.io/Basic_Firewalls/ · Protección por capas OSI https://pedri77.github.io/Basicos_Proteccion_Capas_OSI/ · Modelo OSI https://pedri77.github.io/modelo_OSI/ · ICS/OT https://pedri77.github.io/ics-security-studio/ · WAF https://pedri77.github.io/wafforge/ · Correo https://pedri77.github.io/Basicos_email/. Repos públicos sin Pages (enlazar el repo): https://github.com/pedri77/kev_dash_project · https://github.com/pedri77/threat-intelligence-feeds. Nada de repos privados (repo-privado, repo-privado) enlazados. Proyectos pendientes de crear: evaluación de productos ZTNA, repositorio de vulnerabilidades por capa OSI, mapa 3D de dispositivos (se marcan `estado: pendiente`, sin URL).
+
+Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `smc/report_html.py`, `smc/dashboard.py` ni los ejemplos de `assessments/` salvo la que lo diga; la integración es T14.
+
+- [~] **T09** — Verticales ampliadas y madurez por vertical
+  - Hace: amplía `soc/verticals.yaml` con verticales nuevas: Threat Hunting, MDM, puesto de usuario, y separa el perímetro en firewall, SASE/SSE, ZTNA y protección on-prem por capas OSI (manteniendo los 12 IDs actuales; VRT-NET se conserva y se documenta su relación). Cada vertical: `id`, `nombre`, `nis2` (medidas 21.2), `controles` relacionados (IDs existentes), `criterios` de madurez 0-5 concretos, `recursos` (lista de {titulo, url} solo de la lista pública del contexto) y `estado_recursos` para los pendientes. `smc/verticals.py`: `cargar_verticales()`, `evaluar(assessment)` que lee una sección opcional `verticales:` de la evaluación ({VRT-ID: {madurez 0-5 o no_evaluable, motivo, producto, notas}}), agrega por medida NIS2 21.2 y devuelve resultado estructurado; `no_evaluable` exige `motivo` y no puntúa. Añade la sección `verticales:` a `assessments/assessment.template.yaml` y a los dos ejemplos ficticios.
+  - No hace: no toca cli/gap/report/dashboard.
+  - Toca: `soc/verticals.yaml`, `smc/verticals.py`, `tests/test_verticals.py`, `assessments/assessment.template.yaml`, `assessments/examples/`, `docs/plan/informes/T09-dev-proyecto.md`
+  - Depende: T08
+  - Verifica: todo `controles` existe en catálogos; todo `url` está en la lista pública del contexto; agregación NIS2 correcta en un caso; `no_evaluable` sin motivo da error. Contraprueba: una URL fuera de la lista pone un test en rojo.
+  - Prod: —
+  - Estado: reservada por coordinador 2026-11-03
+
+- [~] **T10** — Evaluación de tecnologías, estado de reglas y suscripciones
+  - Hace: amplía `technologies/registry.template.yaml` con, por tecnología: `vertical` (ID de vertical, validado más tarde), `evaluacion` {cobertura %, configuracion: bastionada|por_defecto|desconocida, madurez 0-5}, `reglas` {estado: revisadas|sin_revisar|no_evaluable, ultima_revision, motivo (obligatorio si no_evaluable, p. ej. «sin acceso a la consola»), n_reglas, reglas_any_any, reglas_sin_uso} y `suscripcion` {proveedor, coste_anual, moneda, renovacion, propietario (rol), unidades_contratadas, unidades_en_uso, autorrenovacion}. `smc/tech.py`: `evaluar_tecnologias(registry)`, `reglas(registry, hoy)` (reglas sin revisar más de 180 días, any-any, no evaluables con su motivo) y `suscripciones(registry, hoy, dias)` (renovaciones próximas, infrautilizadas por debajo del 70 %, sobredespliegue, coste total por proveedor) con salidas Markdown. Mantiene `expiring` y `vulns` como están.
+  - No hace: no toca cli.py; datos ficticios.
+  - Toca: `technologies/registry.template.yaml`, `technologies/README.md`, `smc/tech.py`, `tests/test_tech_v05.py`, `docs/plan/informes/T10-dev-proyecto.md`
+  - Depende: T08
+  - Verifica: tests con `hoy` inyectado; contraprueba: cambiar el umbral de 70 % cambia el resultado de un test.
+  - Prod: —
+  - Estado: reservada por coordinador 2026-11-03
+
+- [~] **T11** — Vulnerabilidades por protocolo y fuentes oficiales
+  - Hace: `vulnerabilities/protocols.yaml` con al menos 20 protocolos (SMB, RDP, SSH, Telnet, FTP, SNMP, DNS, NTP, LDAP, Kerberos, NTLM, TLS/SSL, HTTP, SMTP, IMAP/POP3, SIP, MQTT, Modbus, S7comm, DNP3, BACnet, OPC UA): capa OSI, puertos, riesgos típicos, CWE representativos, mitigaciones, controles SMC relacionados (IDs existentes), técnicas MITRE ATT&CK, y `consulta` con URLs de búsqueda en fuentes oficiales: NVD (nvd.nist.gov), ENISA EUVD (euvd.enisa.europa.eu), CISA KEV, CVE Details (www.cvedetails.com), INCIBE-CERT y CCN-CERT. No inventar CVEs concretos: solo URLs de búsqueda. `vulnerabilities/sources.yaml` con las fuentes oficiales (nombre, organismo, url, tipo, uso). Enlaces de aprendizaje a las Pages de Modelo OSI, Protección por capas OSI, ICS/OT y WAF. `smc/protocols.py`: carga, validación, `por_capa()`, `render_protocolo(id)`.
+  - No hace: no consulta la red; no toca cli.py.
+  - Toca: `vulnerabilities/protocols.yaml`, `vulnerabilities/sources.yaml`, `vulnerabilities/README.md`, `smc/protocols.py`, `tests/test_protocols.py`, `docs/plan/informes/T11-dev-proyecto.md`
+  - Depende: T08
+  - Verifica: 20 o más protocolos; todo control existe; toda URL es https y de un dominio de la lista de fuentes o de pedri77.github.io; capa OSI 1-7. Contraprueba: un dominio no permitido pone en rojo un test.
+  - Prod: —
+  - Estado: reservada por coordinador 2026-11-03
+
+- [~] **T12** — Catálogo de RSS y ecosistema de recursos
+  - Hace: `resources/rss.yaml` con feeds de fuentes oficiales y de referencia (INCIBE-CERT, CCN-CERT, ENISA, CISA, NIST/NVD, CERT-EU, NCSC UK, BSI, MITRE ATT&CK y fabricantes principales con avisos) con {id, nombre, organismo, url_feed, url_web, idioma, categoria: avisos|noticias|vulnerabilidades|normativa, vertical opcional, verificado: false}; `verificado: false` porque no hay red (lo comprueba un humano). Exporta OPML (`smc/resources.py: a_opml()`) para que lo ingiera el agregador interno (repo-privado usa feedparser con la URL; no se enlaza el repo privado). `resources/ecosistema.yaml`: proyectos públicos con sus Pages (lista del contexto), repos públicos sin Pages y pendientes (ZTNA, vulnerabilidades por capa OSI, mapa 3D) con `estado: pendiente`. `smc/resources.py` con carga, validación y render Markdown.
+  - No hace: no consulta la red; no toca cli.py.
+  - Toca: `resources/rss.yaml`, `resources/ecosistema.yaml`, `resources/README.md`, `smc/resources.py`, `tests/test_resources.py`, `docs/plan/informes/T12-dev-proyecto.md`
+  - Depende: T08
+  - Verifica: OPML válido (xml.etree parsea, un outline por feed); ninguna URL a repos privados (`repo-privado`, `repo-privado`); ids únicos. Contraprueba: añadir una URL de repo privado pone en rojo el test.
+  - Prod: —
+  - Estado: reservada por coordinador 2026-11-03
+
+- [~] **T13** — Madurez MITRE ATT&CK con playbooks
+  - Hace: amplía `soc/use-cases/catalog.yaml` para que cada caso de uso tenga técnicas ATT&CK (IDs Txxxx), `deteccion` (sin|regla|probada), `ultima_prueba`, `playbook` (ruta en `vulnerabilities/playbooks/caso-uso/`) y `vertical`. Crea los playbooks de caso de uso que falten (formato de PB-UC-001, sin datos reales). `smc/mitre.py`: madurez por técnica y por táctica (0 sin caso, 1 caso sin regla, 2 regla, 3 regla + playbook, 4 probada, 5 probada en los últimos 90 días con `hoy` inyectado), casos sin playbook, playbooks huérfanos y export de capa ATT&CK Navigator (JSON, puntuación = madurez) con `a_navigator()`. `smc/soc.py:mitre_coverage` sigue funcionando (puede delegar).
+  - No hace: no toca cli.py ni report.
+  - Toca: `soc/use-cases/catalog.yaml`, `vulnerabilities/playbooks/caso-uso/`, `smc/mitre.py`, `smc/soc.py`, `tests/test_mitre.py`, `docs/plan/informes/T13-dev-proyecto.md`
+  - Depende: T08
+  - Verifica: todo playbook referenciado existe; JSON Navigator con `techniques[].score`; tests de niveles con `hoy`. Contraprueba: borrar un playbook pone en rojo el test de enlaces.
+  - Prod: —
+  - Estado: reservada por coordinador 2026-11-03
+
+## Ola 6 (v0.5)
+
+- [ ] **T14** — Integración v0.5 en CLI, validate, informe y dashboard
+  - Hace: subcomandos `smc verticals <evaluación>`, `smc tech <registry>` (evaluación + reglas), `smc subs <registry> [--hoy --days]`, `smc protocols [ID]`, `smc rss [--opml -o]`, `smc mitre [--navigator -o capa.json] [--hoy]`; `smc validate` valida también verticales, protocolos, fuentes, RSS, ecosistema y casos de uso; informe HTML y Markdown con sección de verticales (madurez y no evaluables con motivo) y enlaces a recursos; dashboard con columna de madurez media de verticales. Escape HTML en todo lo nuevo.
+  - No hace: no cambia los catálogos de la ola 5 salvo errores que impidan validar (anotarlos).
+  - Toca: `smc/cli.py`, `smc/catalog.py`, `smc/gap.py`, `smc/report_html.py`, `smc/dashboard.py`, `tests/test_cli_v05.py`, `docs/plan/informes/T14-dev-proyecto.md`
+  - Depende: T09, T10, T11, T12, T13
+  - Verifica: cada comando nuevo rc=0 sobre los ejemplos; XSS en un `motivo` de no_evaluable sale escapado (contraprueba).
+  - Prod: —
+
+- [ ] **T15** — Mapa 3D de dispositivos: contrato de datos y adaptación de teardown
+  - Hace: `smc/mapa.py` + `smc mapa <registry> [--evaluacion] -o mapa.json`: exporta dispositivos (de `technologies/registry` y `resources/internal`) con zona de red, capa OSI, vertical, estado de reglas, vulnerabilidades abiertas del tracker y semáforo, en un JSON versionado (`schema: smc-mapa/1`). `docs/mapa-3d.md`: diseño de la adaptación de la skill teardown (origen: elvarofficial/teardown, MIT, sobre whaleyxbt/claude-motion, MIT): la «máquina» es la red del cliente, cada zona un subsistema que se abre, paneles que leen los números reales del JSON, visita automática; qué se reutiliza y qué se cambia; todo offline. `docs/adr/ADR-003-mapa-3d-desde-teardown.md`. El prototipo HTML queda como siguiente paso.
+  - No hace: no construye aún el visor 3D; no copia código de teardown al repo.
+  - Toca: `smc/mapa.py`, `smc/cli.py`, `tests/test_mapa.py`, `docs/mapa-3d.md`, `docs/adr/ADR-003-mapa-3d-desde-teardown.md`, `docs/plan/informes/T15-dev-proyecto.md`
+  - Depende: T14
+  - Verifica: el JSON del ejemplo valida contra el esquema descrito (test); sin rutas absolutas ni datos fuera del registro. Contraprueba: un dispositivo sin zona aparece en `sin_zona` y no rompe.
+  - Prod: —
+
+- [ ] **T16** — Documentación y versión 0.5.0
+  - Hace: README (mantén el estilo actual con imágenes y badges; actualiza cifras, tabla de módulos, comandos, hoja de ruta v0.5 hecha y v0.6 con lo pendiente, sección «Ecosistema» con las Pages públicas), PRD (RF nuevos), CHANGELOG 0.5.0, versión 0.5.0.
+  - No hace: no regenera imágenes.
+  - Toca: `README.md`, `docs/prd/PRD-SMC-001-v1.md`, `CHANGELOG.md`, `pyproject.toml`, `smc/__init__.py`, `docs/plan/informes/T16-dev-proyecto.md`
+  - Depende: T15
+  - Verifica: todos los comandos del README rc=0 sobre los ejemplos; badges con cifras reales (tests, controles, verticales, protocolos).
+  - Prod: —
+
 ## Libro
 
 ### Hechos
@@ -134,8 +212,12 @@ Revisión de ola: 3
 - 2026-11-03 · T08: una acción `bloqueada` o `hecha` no cubre una brecha abierta (sustituye lo registrado en T03) · sesión principal
 - 2026-11-03 · Estado no válido = sin evaluar (aplicable, 0) con aviso · sesión principal
 
+- 2026-11-03 · v0.5: enlaces solo a Pages públicas; repo-privado como consumidor del RSS sin enlazarlo; 3D desde la skill teardown con origen citado · David
+
 ### Atasco
 - Ola 1: 0
 - Ola 2: 0
 - Ola 3: 0
 - Ola 4: 0
+- Ola 5: 0
+- Ola 6: 0
