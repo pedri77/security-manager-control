@@ -240,14 +240,14 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 
 ## Ola 10 (v0.6.0)
 
-- [~] **T22** — Documentación y versión 0.6.0
+- [x] **T22** — Documentación y versión 0.6.0
   - Hace: cablea `smc visor <mapa.json> -o visor.html` en el CLI (llama a `smc.visor.generar_visor`) con test; README (mismo estilo: badges, imágenes; cifras reales; comandos `report --registry`, `visor`; hoja de ruta v0.6 hecha y lo que queda), PRD (RF nuevos), `docs/mapa-3d.md` enlazado, CHANGELOG 0.6.0, versión 0.6.0; nota de que el ENS ya está contrastado con el BOE (o cuántas medidas siguen en verificar).
   - No hace: no regenera imágenes salvo una captura nueva del visor en `docs/img/visor.png` si el informe de T20 la deja.
   - Toca: `smc/cli.py`, `tests/test_cli_v06.py`, `README.md`, `docs/prd/PRD-SMC-001-v1.md`, `CHANGELOG.md`, `pyproject.toml`, `smc/__init__.py`, `docs/img/`, `docs/plan/informes/T22-dev-proyecto.md`
   - Depende: T19, T20, T21
   - Verifica: todos los comandos del README rc=0 sobre los ejemplos; badges con cifras reales.
   - Prod: —
-  - Estado: reservada por coordinador 2026-11-03
+  - Estado: hecha en a2b7aef · evidencia informes/T22-dev-proyecto.md
 
 ## Libro
 
