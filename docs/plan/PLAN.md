@@ -358,14 +358,14 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en b743827 · evidencia informes/T33-dev-proyecto.md
 
-- [~] **T34** — Flecos de la v0.7: art. 111.2 del RIA y retest fallido en el informe
+- [x] **T34** — Flecos de la v0.7: art. 111.2 del RIA y retest fallido en el informe
   - Hace: (a) en `smc/ai_act.py`, cuando un sistema de alto riesgo tiene `en_mercado_desde` anterior a la fecha de su nivel y `cambios_significativos` no es verdadero, las obligaciones del capítulo III de ese nivel no se emiten como pendientes: salen en una lista `regimen_transitorio` con la fecha en que pasarían a aplicar (2030-08-02 si `autoridad_publica`; si no, «solo con cambios significativos»); AIA-070 sigue apareciendo como aviso; actualiza la `nota` de AIA-070. Las obligaciones que no son del capítulo III (art. 4, 5, 50, uso general) no se recortan. Contrastar el alcance con el texto del art. 111.2 en EUR-Lex (excepción a «sin red» ya aprobada para el RIA). (b) En `smc/report_html.py`, la sección de pentest muestra una tabla «Retest fallido» propia (escapada) cuando `retest_fallido` no está vacío.
   - No hace: no toca `smc/cli.py` ni otras secciones del informe.
   - Toca: `smc/ai_act.py`, `frameworks/ai-act/obligaciones.yaml`, `smc/report_html.py`, `tests/test_t34.py`, `docs/plan/informes/T34-dev-proyecto.md`
   - Depende: T29
   - Verifica: sistema Anexo III en mercado desde 2026-01-01 sin cambios: sin obligaciones de capítulo III pendientes y con régimen transitorio; con `cambios_significativos: true`: vuelven todas (contraprueba); con `autoridad_publica: true` y `hoy` 2030-08-03: vuelven. Informe HTML con un hallazgo de retest fallido muestra la tabla y escapa `<script>`.
   - Prod: —
-  - Estado: reservada por coordinador 2026-11-03
+  - Estado: hecha en 4b9a8b9 · evidencia informes/T34-dev-proyecto.md
 
 ## Ola 16 (v0.8.0)
 
@@ -441,6 +441,8 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 
 - 2026-11-03 · v0.8: CI y versiones, comparación entre evaluaciones, salida para auditor (CSV, XLSX con stdlib, HTML imprimible), evidencias con caducidad y huella, flecos v0.7 (art. 111.2 recorta capítulo III; retest fallido en HTML). Fuera: importadores, DORA completo y contraste CCN-STIC (v0.9) · David («si, prepara la v0.8»)
 - 2026-11-03 · Formato de evidencia (T32, T33): `str` o `{ref: str, fecha: AAAA-MM-DD, caduca: AAAA-MM-DD | vigencia_dias: int, sha256: 64 hex opcional}`; si hay `vigencia_dias`, caduca = fecha + días. Evidencia caducada avisa y se lista, no cambia la puntuación · sesión principal
+
+- 2026-11-03 · Ola 15 fusionada (576 tests). Notas para T35: (1) `render_ia` del HTML debe mostrar `regimen_transitorio` (T34); (2) aviso de evidencia caducada va en el Markdown de gap, no en `Analisis.warnings` (T33); (3) el CSV de `smc soa` lleva solo aplicabilidad, las evidencias van en XLSX (T32); (4) el art. 111.2 habla de «el presente Reglamento»: el recorte se limita al capítulo III por prudencia (arts. 4, 5, 50 y 72-73 se siguen emitiendo); revisar con asesoría jurídica · sesión principal
 
 ### Atasco
 - Ola 1: 0
