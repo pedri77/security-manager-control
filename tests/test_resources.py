@@ -8,10 +8,16 @@ def test_datos_validos():
     assert R.validar() == []
 
 
-def test_ids_unicos_y_verificado_false():
+def test_ids_unicos_y_verificado_coherente():
     rss = R.cargar_rss()
     assert len({f["id"] for f in rss}) == len(rss) >= 15
-    assert all(f["verificado"] is False for f in rss)
+    # verificado: true solo si hay url_feed (comprobada con red el 2026-11-03);
+    # sin url_feed, verificado false y una nota con la alternativa.
+    for f in rss:
+        if f["verificado"]:
+            assert f.get("url_feed"), f["id"]
+        if not f.get("url_feed"):
+            assert f["verificado"] is False and f.get("nota"), f["id"]
 
 
 def test_opml_un_outline_por_feed_con_url():
