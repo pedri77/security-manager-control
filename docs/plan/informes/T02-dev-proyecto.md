@@ -19,3 +19,8 @@ Contraprueba: test que copia el CSV sin la fila NIS2-21.2.c y comprueba que `nis
 
 ## Queda
 Integración en gap/CLI (T04). Ningún ISO del CSV se valida contra catálogo (no existe catálogo ISO).
+
+## Verificación del coordinador (2026-11-03)
+- Superficie dev-proyecto: OK; gitleaks sin hallazgos; solo ficheros del Toca.
+- Tests en worktree: verdes; en main tras fusionar: ver Libro (38 al final).
+- Contraprueba: borrar fila NIS2-21.2.c del CSV -> test_todo_nis2_tiene_fila rojo (1 failed, 19 passed). Restaurado, diff limpio.

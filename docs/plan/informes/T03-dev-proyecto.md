@@ -19,3 +19,8 @@ Cambiar `<` por `<=` en `vencidas` -> `test_fecha_igual_a_hoy_no_vence` en rojo 
 
 ## Queda
 Integración en informe y CLI (`smc plan`) en T04. PLAN.md sin marcar.
+
+## Verificación del coordinador (2026-11-03)
+- Superficie dev-proyecto: OK; gitleaks sin hallazgos; solo ficheros del Toca.
+- Tests en worktree: verdes; en main tras fusionar: ver Libro (38 al final).
+- Contraprueba: '<' por '<=' en vencidas -> test_fecha_igual_a_hoy_no_vence rojo (1 failed, 19 passed). Restaurado, diff limpio.

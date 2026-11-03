@@ -22,3 +22,8 @@ Sin red ni copia del Anexo II/CCN-STIC en el repo, los valores se rellenaron **d
 ## Decisiones / queda
 - Ficheros fuera de «Toca»: ninguno. `gap.py` y `cli.py` intactos (T04 integra).
 - Pendiente: revisión humana de las 39 medidas `verificar` contra el Anexo II / CCN-STIC 804/808; después, quitar el TODO.
+
+## Verificación del coordinador (2026-11-03)
+- Superficie dev-proyecto: OK; gitleaks sin hallazgos; solo ficheros del Toca.
+- Tests en worktree: verdes; en main tras fusionar: ver Libro (38 al final).
+- Contraprueba: invertir CATEGORIAS en smc/ens.py -> 5 failed, 17 passed. Restaurado, diff limpio.
