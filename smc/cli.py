@@ -7,7 +7,15 @@ from pathlib import Path
 
 from . import __version__
 from .catalog import load_all, validate
-from .gap import run
+from .gap import run, run_plan
+
+
+def _fecha(v: str):
+    from datetime import date
+    try:
+        return date.fromisoformat(v)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"fecha no válida '{v}' (AAAA-MM-DD)")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -20,6 +28,10 @@ def main(argv: list[str] | None = None) -> int:
     gap = sub.add_parser("gap", help="Genera el informe de brechas de una evaluación")
     gap.add_argument("assessment", type=Path)
     gap.add_argument("-o", "--output", type=Path, help="Fichero Markdown de salida")
+    gap.add_argument("--hoy", type=_fecha, help="Fecha de referencia AAAA-MM-DD (por defecto, hoy)")
+    pl = sub.add_parser("plan", help="Plan de acción: acciones, vencidas y brechas sin acción")
+    pl.add_argument("assessment", type=Path)
+    pl.add_argument("--hoy", type=_fecha, help="Fecha de referencia AAAA-MM-DD (por defecto, hoy)")
 
     soc = sub.add_parser("soc", help="Métricas del SOC (MTTD/MTTA/MTTC/MTTR, SLA) desde CSV de incidentes")
     soc.add_argument("incidents", type=Path)
@@ -70,8 +82,12 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{fw:12} {len(controls):3} controles")
         return 0
 
+    if args.cmd == "plan":
+        print(run_plan(args.assessment, args.hoy))
+        return 0
+
     if args.cmd == "gap":
-        report = run(args.assessment)
+        report = run(args.assessment, args.hoy)
         if args.output:
             args.output.write_text(report, encoding="utf-8")
             print(f"Informe escrito en {args.output}")
