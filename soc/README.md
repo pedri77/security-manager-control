@@ -8,7 +8,7 @@ Evalúa el rendimiento general del SOC (propio o externalizado) con datos, no co
 |---|---|
 | `sla.yaml` | SLAs por severidad (ack, contención, resolución) y por tier N1/N2/N3 |
 | `metrics.yaml` | Catálogo de KPIs del SOC con fórmula, objetivo y umbral |
-| `verticals.yaml` | Verticales de seguridad con su clasificación NIS2 y criterios de madurez |
+| `verticals.yaml` | 19 verticales (v2) con su clasificación NIS2, criterios de madurez y recursos públicos; VRT-NET es paraguas de FW, SASE, ZTNA y OSI (no puntúa si alguna de ellas está evaluada) |
 | `use-cases/catalog.yaml` | Casos de uso de detección mapeados a MITRE ATT&CK, fuentes y playbook |
 | `incidents.template.csv` | Formato de exportación de incidentes para calcular métricas |
 
@@ -16,7 +16,9 @@ Evalúa el rendimiento general del SOC (propio o externalizado) con datos, no co
 
 ```bash
 smc soc soc/incidents.template.csv      # MTTD, MTTA, MTTC, MTTR, cumplimiento de SLA por severidad
-smc mitre                               # cobertura ATT&CK de los casos de uso (técnicas y tácticas)
+smc mitre                               # cobertura y madurez ATT&CK de los casos de uso (técnicas y tácticas)
+smc mitre --navigator -o capa.json      # capa para ATT&CK Navigator
+smc verticals <evaluación.yaml>         # madurez 0-5 por vertical y por medida NIS2
 ```
 
 ## Métricas principales
