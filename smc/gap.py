@@ -7,6 +7,7 @@ from pathlib import Path
 import yaml
 
 from .catalog import Control, load_all
+from . import evidencias as _evid
 
 SCORES = {"implementado": 1.0, "parcial": 0.5, "no_implementado": 0.0}
 VALID_STATES = set(SCORES) | {"no_aplica"}
@@ -52,6 +53,7 @@ class FrameworkResult:
     sin_evidencia: list[Control]
     no_aplican: list[Control] = field(default_factory=list)       # ENS: no aplican a la categoría
     sin_evaluar_detalle: list[SinEvaluar] = field(default_factory=list)  # misma lista que sin_evaluar, con prioridad
+    evidencia_caducada: list[Control] = field(default_factory=list)  # implementados con todas sus evidencias caducadas; no puntúa
 
 
 @dataclass
@@ -130,7 +132,7 @@ def analyse(assessment: dict, hoy: date | None = None) -> Analisis:
     results = []
     for fw in scope:
         controls = catalogs[fw]
-        sin_evaluar, brechas, sin_evidencia, no_aplican, detalle = [], [], [], [], []
+        sin_evaluar, brechas, sin_evidencia, no_aplican, detalle, caducadas = [], [], [], [], [], []
         score_sum, aplicables = 0.0, 0
         for c in controls:
             if fw == "ENS" and not _ens.aplica(c, categoria):
@@ -160,11 +162,13 @@ def analyse(assessment: dict, hoy: date | None = None) -> Analisis:
                 brechas.append(Brecha(c, estado, ev.get("notas", "") or "", p, n, ref))
             elif not ev.get("evidencias"):
                 sin_evidencia.append(c)
+            elif _evid.todas_caducadas(ev.get("evidencias"), hoy):
+                caducadas.append(c)
         puntuacion = round(100 * score_sum / aplicables, 1) if aplicables else 100.0
         brechas.sort(key=lambda b: (-b.puntuacion, b.control.id))
         detalle.sort(key=lambda d: (-d.puntuacion, d.control.id))
         results.append(FrameworkResult(fw, len(controls), aplicables, puntuacion, sin_evaluar, brechas,
-                                       sin_evidencia, no_aplican, detalle))
+                                       sin_evidencia, no_aplican, detalle, caducadas))
 
     pa = assessment.get("plan_accion")
     if pa not in (None, []) and not isinstance(pa, list):
@@ -343,6 +347,11 @@ def render_markdown(an: Analisis | dict, results=None, warnings=None, registry=N
         if r.sin_evidencia:
             out += ["", "### Implementados sin evidencia (revisar)", ""]
             out += [f"- {c.id} — {c.titulo}" for c in r.sin_evidencia]
+        if r.evidencia_caducada:
+            out += ["", f"### Evidencia caducada ({len(r.evidencia_caducada)})", "",
+                    "> **Aviso:** todas las evidencias de estos controles han caducado; renovarlas. "
+                    "No afecta a la puntuación de cumplimiento.", ""]
+            out += [f"- {c.id} — {c.titulo}" for c in r.evidencia_caducada]
         if r.sin_evaluar_detalle:
             out += ["", f"### Sin evaluar ({len(r.sin_evaluar)})", ""]
             for d in r.sin_evaluar_detalle:
