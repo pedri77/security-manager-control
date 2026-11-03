@@ -220,14 +220,14 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en 3b26090 · evidencia informes/T19-dev-proyecto.md
 
-- [~] **T20** — Visor 3D offline del mapa de dispositivos
+- [x] **T20** — Visor 3D offline del mapa de dispositivos
   - Hace: `python -m smc.visor <mapa.json> -o visor.html` (función `generar_visor(mapa: dict) -> str`; el subcomando `smc visor` lo cablea T22) genera una sola página HTML autocontenida que lee SOLO el JSON `smc-mapa/1` embebido (sin fetch, sin CDN, sin red). Patrón de teardown (ADR-003): la red es la máquina; cada zona es un subsistema (plataforma/anillo) con un botón que la abre y enfoca la cámara; dispositivos como piezas coloreadas por semáforo (verde, ámbar, rojo, gris; gris nunca se pinta verde); `sin_zona` en un área aparte; panel lateral que lee los números del JSON (dispositivos, reglas no evaluables con motivo, vulns fuera de SLA, KEV); vistas de cámara; visita automática que cede el control al primer gesto; respeta `prefers-reduced-motion`; alternativa en texto (tabla accesible con la misma información, ADR-003). Librería: three.js (MIT) incrustada en el HTML desde una copia vendorizada `smc/assets/three.module.min.js` minificada o el `three.module.js` de 0.186 con su `LICENSE` en `smc/assets/THREE-LICENSE`; origen y versión anotados. No copia código de la skill teardown (solo el patrón). ADR-004 con la decisión de vendorizar three.js. Escape de todos los textos del JSON al insertarlos en el DOM (textContent, nunca innerHTML con datos); el JSON se inserta en `<script type="application/json">` con `<` escapado como `<`.
   - No hace: no cambia el esquema `smc-mapa/1` ni `smc/mapa.py`; no toca `smc/cli.py`; no graba vídeo.
   - Toca: `smc/visor.py`, `smc/assets/`, `pyproject.toml` (package-data de assets), `tests/test_visor.py`, `docs/mapa-3d.md`, `docs/adr/ADR-004-three-js-vendorizado.md`, `docs/plan/informes/T20-dev-proyecto.md`
   - Depende: T18
   - Verifica: el HTML del ejemplo no contiene `http://` ni `https://` cargados como script/fetch (test); abre en Chrome headless sin errores de consola y dibuja (captura en el informe, Playwright channel chrome); contraprueba: un nombre de dispositivo `</script><img onerror>` no rompe ni ejecuta.
   - Prod: —
-  - Estado: reservada por coordinador 2026-11-03
+  - Estado: hecha en 6fc75da · evidencia informes/T20-dev-proyecto.md
 
 - [x] **T21** — Contrastar las medidas ENS con el Anexo II del RD 311/2022 (BOE)
   - Hace: contrasta las 73 medidas de `frameworks/ens/controls.yaml` con el texto consolidado del BOE (BOE-A-2022-7191, Anexo II): id, grupo, título, categoría mínima (BASICA/MEDIA/ALTA o aplica por dimensión) y refuerzos por categoría. Corrige lo que no coincida y quita `verificar: true` solo de lo contrastado; deja en `verificar` (con nota) lo que dependa de dimensiones o de guías CCN-STIC no consultadas. Fuente citada con URL del BOE en la cabecera. Actualiza los mapeos que dependan de ids corregidos y los tests de cifras.
