@@ -449,14 +449,24 @@ def render_ia(res, hallazgos, h: int = 2) -> str:
     else:
         out.append("<p>El inventario no tiene sistemas.</p>")
     for s in res.sistemas:
-        if not s.obligaciones:
+        transitorio = getattr(s, "regimen_transitorio", None) or []
+        if not s.obligaciones and not transitorio:
             continue
         out.append(f"<h{h + 1}>{_e(s.id)} {_e(s.nombre)}</h{h + 1}>")
-        out.append(_tabla(["Obligación", "Artículo", "Rol", "Estado", "Cumplimiento", "Nota"],
-                          [[_e(f"{o.id} {o.titulo}"), _e(o.articulo), _e(", ".join(o.roles)),
-                            _e("vigente" if o.estado == ai_act.VIGENTE else f"aplicable desde {o.aplica_desde}"),
-                            f'<span class="venc">{_e(o.cumplimiento)}</span>' if o.cumplimiento == ai_act.PENDIENTE else _e(o.cumplimiento),
-                            ('<span class="venc">verificar</span> ' if o.verificar else "") + _e(o.nota)] for o in s.obligaciones]))
+        if s.obligaciones:
+            out.append(_tabla(["Obligación", "Artículo", "Rol", "Estado", "Cumplimiento", "Nota"],
+                              [[_e(f"{o.id} {o.titulo}"), _e(o.articulo), _e(", ".join(o.roles)),
+                                _e("vigente" if o.estado == ai_act.VIGENTE else f"aplicable desde {o.aplica_desde}"),
+                                f'<span class="venc">{_e(o.cumplimiento)}</span>' if o.cumplimiento == ai_act.PENDIENTE else _e(o.cumplimiento),
+                                ('<span class="venc">verificar</span> ' if o.verificar else "") + _e(o.nota)] for o in s.obligaciones]))
+        if transitorio:
+            out.append(f"<h{h + 2}>Régimen transitorio (art. 111.2 RIA)</h{h + 2}>")
+            out.append('<p class="nota">Obligaciones del capítulo III que no se emiten como pendientes porque el sistema estaba '
+                       "en el mercado antes de su fecha de aplicación y no ha tenido cambios significativos de diseño.</p>")
+            out.append(_tabla(["Obligación", "Artículo", "Rol", "Pasaría a aplicar", "Condición"],
+                              [[_e(f"{t.id} {t.titulo}"), _e(t.articulo), _e(", ".join(t.roles)),
+                                _e(t.aplica_desde.isoformat() if t.aplica_desde else "solo con cambios significativos"),
+                                _e(t.condicion)] for t in transitorio]))
     if res.no_clasificados:
         out.append(f"<h{h + 1}>Sistemas no clasificados</h{h + 1}>"
                    + _lista([f"{_e(n.get('id'))} {_e(n.get('nombre'))}: {_e(n.get('error'))}" for n in res.no_clasificados]))
@@ -470,6 +480,32 @@ def render_ia(res, hallazgos, h: int = 2) -> str:
             out.append("<p>Sin hallazgos.</p>")
     out.append(f"<h{h + 1}>Fuentes</h{h + 1}>" + _lista([_enlace(t, u) for t, u in ai_act.FUENTES]))
     out.append(_avisos(res.warnings + res.errores))
+    return "\n".join(x for x in out if x)
+
+
+def render_evolucion(comp, h: int = 2) -> str:
+    """Sección «Evolución» (smc.compare.Comparacion). Todo escapado."""
+    def n(x, dec=1, signo=False):
+        return "—" if x is None else (f"{x:+.{dec}f}" if signo else f"{x:.{dec}f}")
+
+    def ids(items):
+        return ", ".join(_e(c.id) for c in items) or "ninguno"
+    out = [f"<h{h}>Evolución respecto a la evaluación anterior</h{h}>",
+           f"<p>Anterior: {_e(comp.cliente_antes or 'sin nombre')} ({_e(comp.fecha_antes or 'sin fecha')}). "
+           f"Actual: {_e(comp.cliente_despues or 'sin nombre')} ({_e(comp.fecha_despues or 'sin fecha')}).</p>"]
+    out.append(_avisos(list(comp.avisos)))
+    out.append(_tabla(["Marco", "Antes %", "Después %", "Delta"],
+                      [[_e(m.framework), n(m.antes), n(m.despues), n(m.delta, 1, True) if m.comparable else "no comparable"]
+                       for m in comp.marcos]))
+    out.append(_tabla(["Controles", "Nº", "IDs"],
+                      [[t, str(len(l)), ids(l)] for t, l in (("Cerrados", comp.cerrados), ("Mejoran", comp.mejoran),
+                                                             ("Empeoran", comp.empeoran), ("Nuevas brechas", comp.nuevas_brechas))]
+                      + [["Sin cambio", str(len(comp.sin_cambio)), "—"]]))
+    out.append(f"<p>Brechas P1: antes {len(comp.p1_antes)} ({_e(', '.join(comp.p1_antes) or 'ninguna')}), "
+               f"después {len(comp.p1_despues)} ({_e(', '.join(comp.p1_despues) or 'ninguna')}).</p>")
+    out.append(f"<p>Madurez media de verticales: {n(comp.madurez_antes, 2)} → {n(comp.madurez_despues, 2)} "
+               f"({n(comp.madurez_delta, 2, True)}).</p>")
+    out.append(f"<p>Acciones del plan cerradas: {_e(', '.join(comp.acciones_cerradas) or 'ninguna')}.</p>")
     return "\n".join(x for x in out if x)
 
 
@@ -542,6 +578,8 @@ def render_body(an: Analisis, nivel: int = 2, registry=None, mitre: dict | None 
     partes += [_marco(an, r, h + 1) for r in an.results]
     if an.verticales is not None:
         partes.append(_verticales(an, h))
+    if "evolucion" in extras:
+        partes.append(render_evolucion(extras["evolucion"], h))
     if registry is not None:
         reg = cargar_registry(registry)
         partes += [_tecnologias(reg, h), _reglas(reg, an.hoy, h), _suscripciones(reg, an.hoy, h)]
@@ -580,11 +618,16 @@ def render_html(an: Analisis, registry=None, mitre: dict | None = None, extras: 
             f'<body>\n<main class="smc">\n{_cabecera(an)}\n{render_body(an, 2, registry, mitre, extras)}\n</main>\n</body>\n</html>\n')
 
 
-def run_html(path: Path, hoy: date | None = None, registry=None, pentest=None, purple=None, ai=None, pmo=None) -> str:
+def run_html(path: Path, hoy: date | None = None, registry=None, pentest=None, purple=None, ai=None, pmo=None,
+             anterior=None) -> str:
     if registry is not None:
         registry = cargar_registry(registry)   # falla antes de analizar si el registro no vale
     datos = _load(path)
     an = analyse(datos, hoy)
     extras = calcular_extras(an.hoy, pentest, purple, ai, pmo, datos, registry) if any(
         x is not None for x in (pentest, purple, ai, pmo)) else None
+    if anterior is not None:
+        from . import compare
+        extras = dict(extras or {})
+        extras["evolucion"] = compare.comparar(_load(anterior), datos, an.hoy)
     return render_html(an, registry, None, extras)

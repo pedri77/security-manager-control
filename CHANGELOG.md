@@ -2,6 +2,17 @@
 
 Formato basado en Keep a Changelog. Versionado semántico.
 
+## 0.8.0 (2026-11-03)
+
+Ola 14-16: seguimiento entre evaluaciones, salida para auditor, evidencias y CI. No cambia los IDs de los catálogos.
+
+- `smc compare <anterior> <actual> [--hoy] [-o]`: evolución por marco, controles cerrados, que mejoran, que empeoran y nuevas brechas, P1, madurez de verticales y acciones cerradas (`smc.compare`). Segundo ejemplo ficticio en `assessments/examples/historico/`.
+- `smc report --anterior <evaluación>`: sección «Evolución» en el informe HTML.
+- `smc soa <evaluación> --formato csv|xlsx|html -o <fichero>`: declaración de aplicabilidad y registro de evidencias para el auditor (`smc.soa`), sin dependencias nuevas y sin inyección de fórmulas.
+- `smc evidencias <evaluación> [--base <dir>] [--hoy]`: evidencias con fecha, caducidad y huella sha256 (`smc.evidencias`). Una evidencia caducada avisa en el informe de brechas y en el dashboard (columna nueva) y no cambia la puntuación.
+- RIA: régimen transitorio del art. 111.2 (obligaciones del capítulo III de sistemas ya en el mercado sin cambios significativos no se emiten como pendientes) y su tabla en el informe HTML de IA. El informe de pentest muestra la tabla «Retest fallido».
+- CI en GitHub Actions (`.github/workflows/tests.yml`) y política de versiones (`docs/release.md`); `tests/test_version.py` comprueba que versión, módulo y CHANGELOG coinciden.
+
 ## 0.7.1 (2026-11-03)
 
 Endurecimiento de v0.7 tras la revisión de las olas 12-13 (T29). Sin funciones nuevas.

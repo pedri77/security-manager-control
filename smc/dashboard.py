@@ -64,6 +64,7 @@ class Fila:
     reglas_no_eval: int | None = None
     any_any: int | None = None
     subs_vencen: int | None = None
+    evid_caducadas: int = 0           # controles implementados con toda la evidencia caducada (v0.8)
     extras: dict | None = None        # secciones v0.7 (pentest, purple, ia, pmo) ya calculadas
 
 
@@ -172,7 +173,8 @@ def recopilar(directorio: Path, hoy: date | None = None) -> Resultado:
         p1 = sum(1 for r in an.results for b in r.brechas if b.nivel == "P1")
         res.filas.append(Fila(slug, f.name, an, cumpl, p1, len(an.vencidas), len(an.p1_sin_accion),
                               semaforo(media, p1, len(an.p1_sin_accion), len(an.vencidas)), media,
-                              an.verticales.madurez_media if an.verticales is not None else None))
+                              an.verticales.madurez_media if an.verticales is not None else None,
+                              evid_caducadas=sum(len(r.evidencia_caducada) for r in an.results)))
         if reg is not None:
             fila = res.filas[-1]
             fila.registry = reg
@@ -207,7 +209,7 @@ def render_index(res: Resultado, hoy: date) -> str:
     marcos = sorted({m for f in res.filas for m in f.cumplimiento}, key=lambda m: ("NIS2", "ENS", "TRANSVERSAL", "RED").index(m)
                     if m in ("NIS2", "ENS", "TRANSVERSAL", "RED") else 99)
     cab = ["Cliente", "Sector", "Entidad NIS2", "Categoría ENS"] + [f"{m} %" for m in marcos] + \
-          ["Madurez verticales", "Reglas no evaluables", "Reglas any-any", "Suscripciones que vencen", "Brechas P1", "Acciones vencidas", "Fecha de evaluación", "Semáforo"]
+          ["Madurez verticales", "Reglas no evaluables", "Reglas any-any", "Suscripciones que vencen", "Evidencia caducada", "Brechas P1", "Acciones vencidas", "Fecha de evaluación", "Semáforo"]
     h = "".join(f"<th>{_e(c)}</th>" for c in cab)
     filas = []
     for f in res.filas:
@@ -219,7 +221,8 @@ def render_index(res: Resultado, hoy: date) -> str:
         celdas += [("—" if f.vert_media is None else f"{_e(f.vert_media)} / 5"),
                    "—" if f.reglas_no_eval is None else _e(f.reglas_no_eval),
                    "—" if f.any_any is None else (f'<span class="venc">{_e(f.any_any)}</span>' if f.any_any else "0"),
-                   "—" if f.subs_vencen is None else _e(f.subs_vencen), _e(f.p1), f'<span class="venc">{_e(f.vencidas)}</span>' if f.vencidas else "0",
+                   "—" if f.subs_vencen is None else _e(f.subs_vencen),
+                   f'<span class="venc">{_e(f.evid_caducadas)}</span>' if f.evid_caducadas else "0", _e(f.p1), f'<span class="venc">{_e(f.vencidas)}</span>' if f.vencidas else "0",
                    _e(c.get("fecha", "—")),
                    f'<span class="sem {f.semaforo}">{SEMAFORO_TXT[f.semaforo]}</span>']
         filas.append("<tr>" + "".join(f"<td>{x}</td>" for x in celdas) + "</tr>")
