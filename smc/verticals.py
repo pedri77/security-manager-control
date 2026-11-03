@@ -47,6 +47,7 @@ class Vertical:
     recursos: list[dict] = field(default_factory=list)          # [{titulo, url}]
     estado_recursos: list[dict] = field(default_factory=list)   # [{proyecto, estado: pendiente}]
     agrupa: list[str] = field(default_factory=list)             # IDs de subverticales (solo VRT-NET)
+    niveles: dict[int, str] = field(default_factory=dict)       # baremo: descriptor comprobable por nivel 0-5
 
 
 @dataclass
@@ -59,6 +60,8 @@ class ResultadoVertical:
     motivo: str = ""
     producto: str = ""
     notas: str = ""
+    puntua: bool = True            # False: evaluada pero fuera de la media (paraguas con subverticales evaluadas)
+    detallada_en: list[str] = field(default_factory=list)   # IDs de las subverticales (si no puntúa)
 
 
 @dataclass
@@ -91,6 +94,7 @@ def cargar_verticales(path: Path | None = None) -> list[Vertical]:
             recursos=[dict(r) for r in raw.get("recursos") or []],
             estado_recursos=[dict(r) for r in raw.get("estado_recursos") or []],
             agrupa=list(raw.get("agrupa") or []),
+            niveles={(int(k) if str(k).isdigit() else -1): str(x) for k, x in (raw.get("niveles") or {}).items()},
         ))
     return out
 
@@ -108,6 +112,10 @@ def validar_catalogo(verticales: list[Vertical] | None = None) -> list[str]:
             errores.append(f"{v.id}: ID de vertical duplicado")
         if not v.criterios:
             errores.append(f"{v.id}: sin criterios")
+        if sorted(v.niveles) != list(range(MADUREZ_MIN, MADUREZ_MAX + 1)):
+            errores.append(f"{v.id}: el baremo debe tener 6 niveles (0-5), tiene {sorted(v.niveles)}")
+        elif any(not d.strip() for d in v.niveles.values()):
+            errores.append(f"{v.id}: hay niveles del baremo sin descriptor")
         for m in v.nis2:
             if m not in nis2:
                 errores.append(f"{v.id}: medida NIS2 inexistente {m}")
@@ -193,6 +201,11 @@ def evaluar(assessment: dict, estricto: bool = True, verticales: list[Vertical] 
     for med in medidas.values():
         if med.verticales:
             med.madurez = round(sum(por_id[i].madurez for i in med.verticales) / len(med.verticales), 2)
+    for v in verticales:
+        if v.id in excluidas:
+            r = por_id[v.id]
+            r.puntua = False
+            r.detallada_en = [h for h in v.agrupa if h in por_id]
     puntuan = [r for r in res if r.estado == "evaluada" and r.id not in excluidas]
     media = round(sum(r.madurez for r in puntuan) / len(puntuan), 2) if puntuan else None
     return ResultadoVerticales(

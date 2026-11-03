@@ -3,7 +3,10 @@
 Niveles por caso de uso:
   0 sin caso | 1 caso sin regla | 2 regla (o probada sin playbook) |
   3 regla + playbook existente | 4 probada | 5 probada en los últimos 90 días.
-Por técnica y por táctica se toma el máximo de sus casos (retirados excluidos).
+Por técnica se toma el máximo de sus casos (retirados excluidos).
+Por táctica se toma el MÍNIMO de sus casos activos (`estado: activo`): el máximo ocultaba huecos.
+Los casos no activos (en_desarrollo, propuesto) no cuentan para la táctica y se devuelven aparte
+en `no_activos`; una táctica sin casos activos no aparece en `tacticas`.
 """
 from __future__ import annotations
 
@@ -52,18 +55,24 @@ def nivel_caso(u: dict, hoy: date, root: Path = ROOT) -> int:
 
 
 def madurez(uc_path: Path = UC_FILE, hoy: date | None = None, root: Path = ROOT) -> dict:
-    """{'tecnicas': {id: nivel}, 'tacticas': {nombre: nivel}, 'casos': {uc: nivel}}"""
+    """{'tecnicas': {id: nivel}, 'tacticas': {nombre: nivel (mínimo de activos)},
+    'casos': {uc: nivel}, 'no_activos': {uc: {'nivel', 'estado', 'tactica'}}}"""
     hoy = hoy or date.today()
     tec: dict[str, int] = {}
     tac: dict[str, int] = {}
     casos: dict[str, int] = {}
+    no_activos: dict[str, dict] = {}
     for u in cargar(uc_path):
         n = nivel_caso(u, hoy, root)
         casos[u["id"]] = n
         for t in u.get("mitre", []):
             tec[t] = max(tec.get(t, 0), n)
-        tac[u["tactica"]] = max(tac.get(u["tactica"], 0), n)
-    return {"tecnicas": dict(sorted(tec.items())), "tacticas": dict(sorted(tac.items())), "casos": casos}
+        if u.get("estado") == "activo":
+            tac[u["tactica"]] = min(tac.get(u["tactica"], n), n)
+        else:
+            no_activos[u["id"]] = {"nivel": n, "estado": u.get("estado"), "tactica": u["tactica"]}
+    return {"tecnicas": dict(sorted(tec.items())), "tacticas": dict(sorted(tac.items())), "casos": casos,
+            "no_activos": no_activos}
 
 
 def sin_playbook(uc_path: Path = UC_FILE, root: Path = ROOT) -> list[str]:

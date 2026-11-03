@@ -13,7 +13,7 @@ from datetime import date
 from html import escape
 from pathlib import Path
 
-from .gap import Analisis, analyse, _load, url_https
+from .gap import Analisis, analyse, _load, estado_vertical, url_https
 from .plan import Accion
 
 CSS = """
@@ -185,11 +185,11 @@ def _verticales(an: Analisis, h: int) -> str:
     out = [f"<h{h}>Verticales</h{h}>", f"<p>Madurez media de las verticales evaluadas: <strong>{_e(media)}</strong></p>"]
     filas = []
     for r in res.verticales:
-        if r.madurez is None:
+        if r.madurez is None or not r.puntua:
             mad, barra = "—", ""
         else:
             mad, barra = _e(r.madurez), _barra(r.madurez * 20)
-        filas.append([_e(r.id), _e(r.nombre), _e(r.estado), mad, barra, _e(r.producto or "—")])
+        filas.append([_e(r.id), _e(r.nombre), _e(estado_vertical(r)), mad, barra, _e(r.producto or "—")])
     out.append(_tabla(["ID", "Vertical", "Estado", "Madurez (0-5)", "", "Producto"], filas))
     if res.no_evaluables:
         out.append(f"<h{h + 1}>No evaluables ({len(res.no_evaluables)})</h{h + 1}>")

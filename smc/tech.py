@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import csv
+import unicodedata
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -16,6 +17,30 @@ def _d(v) -> date | None:
     if not v:
         return None
     return v if isinstance(v, date) else date.fromisoformat(str(v))
+
+
+def normalizar_severidad(valor) -> str:
+    """Minúsculas, sin tildes ni espacios sobrantes: «Crítica » -> «critica»."""
+    t = unicodedata.normalize("NFD", str(valor or "").strip().lower())
+    return "".join(c for c in t if unicodedata.category(c) != "Mn")
+
+
+def severidad_efectiva(severidad, kev, sla: dict) -> tuple[str, list[str]]:
+    """Severidad a efectos de SLA y de semáforo (política `policy.yaml`).
+
+    - Se normaliza (minúsculas, sin tildes).
+    - KEV o explotación activa (`priorizacion.kev_o_explotacion_activa`) = crítica.
+    - Una severidad fuera de la política cuenta como crítica, con aviso (nunca "sin SLA" = nunca vence).
+    Devuelve (severidad, avisos)."""
+    sev = normalizar_severidad(severidad)
+    avisos = []
+    if sev not in sla:
+        avisos.append(f"severidad '{severidad}' sin SLA definido: se trata como crítica")
+        sev = "critica"
+    if str(kev).strip().lower() == "true" and sev != "critica":
+        avisos.append(f"KEV con severidad '{sev}': se trata como crítica (policy.yaml)")
+        sev = "critica"
+    return sev, avisos
 
 
 def expiring(registry: Path, days: int = 90, today: date | None = None) -> list[tuple[date, str, str, str]]:
@@ -60,9 +85,10 @@ def vulns(tracker: Path, today: date | None = None) -> str:
     out = ["# Vulnerabilidades", "", f"Total: {len(rows)} · Abiertas: {len(abiertas)}", "",
            "| CVE | Tecnología | Sev. | KEV | Expuesta | Días abierta | SLA | Estado |", "|---|---|---|---|---|---|---|---|"]
     vencidas = 0
-    for r in sorted(abiertas, key=lambda r: list(sla).index(r["severidad"]) if r["severidad"] in sla else 99):
+    efectivas = {id(r): severidad_efectiva(r["severidad"], r["kev"], sla)[0] for r in abiertas}
+    for r in sorted(abiertas, key=lambda r: list(sla).index(efectivas[id(r)])):
         dias = (today - date.fromisoformat(r["detectado"])).days
-        limite = sla.get(r["severidad"])
+        limite = sla.get(efectivas[id(r)])
         estado_sla = "VENCIDO" if limite is not None and dias > limite else "ok"
         vencidas += estado_sla == "VENCIDO"
         out.append(f"| {r['cve']} | {r['tecnologia_id']} | {r['severidad']} | {r['kev']} | {r['expuesto_internet']} | {dias} | {estado_sla} ({limite} d) | {r['estado']} |")
@@ -87,10 +113,21 @@ def _tecnologias(registry) -> list[dict]:
 
 
 def _num(v, default=0.0) -> float:
+    if isinstance(v, bool):
+        return default
     try:
         return float(v)
     except (TypeError, ValueError):
         return default
+
+
+def _numerico(v) -> bool:
+    if isinstance(v, bool):
+        return False
+    try:
+        return float(v) == float(v)      # descarta NaN
+    except (TypeError, ValueError):
+        return False
 
 
 def evaluar_tecnologias(registry) -> list[dict]:
@@ -132,12 +169,14 @@ def render_evaluacion(filas: list[dict]) -> str:
 def reglas(registry, hoy: date | None = None, dias: int = UMBRAL_REGLAS_DIAS) -> dict:
     """Estado de las reglas de los dispositivos.
 
-    Devuelve {'revisadas', 'sin_revisar', 'no_evaluables', 'avisos'}; cada elemento es un dict.
+    Devuelve {'revisadas', 'sin_revisar', 'no_evaluables', 'any_any', 'avisos'}; cada elemento es un dict.
+    `any_any` lista todo dispositivo con reglas any-any > 0 con independencia de su estado
+    (revisadas, sin_revisar o no_evaluable): una revisión reciente no lo hace aceptable.
     Una tecnología cuenta como `sin_revisar` si su estado lo es, o si estando `revisadas`
     la última revisión supera `dias`. Las `no_evaluable` se listan siempre con su motivo;
     sin motivo se marca en `avisos` (dato inválido). Tecnologías sin bloque `reglas` se ignoran."""
     hoy = hoy or date.today()
-    res = {"revisadas": [], "sin_revisar": [], "no_evaluables": [], "avisos": []}
+    res = {"revisadas": [], "sin_revisar": [], "no_evaluables": [], "any_any": [], "avisos": []}
     for t in _tecnologias(registry):
         r = t.get("reglas")
         if not isinstance(r, dict):
@@ -145,6 +184,10 @@ def reglas(registry, hoy: date | None = None, dias: int = UMBRAL_REGLAS_DIAS) ->
         estado = r.get("estado")
         base = {"id": t.get("id"), "nombre": t.get("nombre"), "n_reglas": r.get("n_reglas"),
                 "reglas_any_any": int(_num(r.get("reglas_any_any"))), "reglas_sin_uso": int(_num(r.get("reglas_sin_uso")))}
+        if base["reglas_any_any"] > 0:
+            res["any_any"].append({"id": base["id"], "nombre": base["nombre"],
+                                   "reglas_any_any": base["reglas_any_any"],
+                                   "estado": estado if estado in ESTADOS_REGLAS else "sin_revisar"})
         if estado not in ESTADOS_REGLAS:
             res["avisos"].append(f"{t.get('id')}: estado de reglas '{estado}' no válido (se trata como sin_revisar)")
             estado = "sin_revisar"
@@ -171,6 +214,11 @@ def reglas(registry, hoy: date | None = None, dias: int = UMBRAL_REGLAS_DIAS) ->
 def render_reglas(res: dict, hoy: date | None = None, dias: int = UMBRAL_REGLAS_DIAS) -> str:
     hoy = hoy or date.today()
     out = [f"# Estado de las reglas de los dispositivos ({hoy})", "", f"Umbral de revisión: {dias} días.", ""]
+    if res.get("any_any"):
+        out += ["## ATENCIÓN: reglas any-any (con independencia de la revisión)", "",
+                "| Dispositivo | Reglas any-any | Estado de las reglas |", "|---|---|---|"]
+        out += [f"| {f['id']} {f['nombre']} | **{f['reglas_any_any']}** | {f['estado']} |" for f in res["any_any"]]
+        out.append("")
     out += ["## Sin revisar o revisión caducada", "",
             "| Dispositivo | Última revisión | Días | Reglas | any-any | Sin uso |", "|---|---|---|---|---|---|"]
     for f in res["sin_revisar"]:
@@ -206,6 +254,9 @@ def suscripciones(registry, hoy: date | None = None, dias: int = 90, umbral: flo
         tid, nombre = t.get("id"), t.get("nombre")
         prov, mon = s.get("proveedor") or "—", s.get("moneda") or "EUR"
         coste = _num(s.get("coste_anual"))
+        bruto = s.get("coste_anual")
+        if bruto is not None and not _numerico(bruto):
+            res["avisos"].append(f"{tid}: coste_anual '{bruto}' no es numérico, se suma como 0")
         clave = (prov, mon)
         res["coste_por_proveedor"][clave] = res["coste_por_proveedor"].get(clave, 0.0) + coste
         try:
