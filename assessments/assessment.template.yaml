@@ -27,3 +27,9 @@ plan_accion:
     responsable: "RSI"
     fecha_objetivo: "YYYY-MM-DD"
     estado: pendiente
+
+# Madurez por vertical (T09, opcional). IDs en soc/verticals.yaml. madurez: entero 0-5 o no_evaluable.
+# no_evaluable exige `motivo` y no puntúa. Sin sección = todo sin evaluar.
+verticales:
+  VRT-EDR: {madurez: 0, producto: "", notas: ""}
+  VRT-MDM: {madurez: no_evaluable, motivo: "<por qué no se puede evaluar>"}
