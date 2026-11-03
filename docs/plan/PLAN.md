@@ -115,6 +115,9 @@ Revisión de ola: 3
 - 2026-11-03 · T03: `plan_accion` en plantilla y ejemplo; `smc/plan.py`. Vence = no hecha y fecha < hoy (estricto). 20 tests. Main tras fusionar T01-T03: 38 tests verdes.
 - 2026-11-03 · T04: `analyse(assessment, hoy=None) -> Analisis`, `smc plan`, `--hoy`. ENS MEDIA del ejemplo: 73 = 68 aplicables + 4 no aplican + 1 evaluada no_aplica. 48 tests; contraprueba (quitar filtro ENS) = 2 en rojo.
 
+- 2026-11-03 · T08: 78 tests; medidas ENS con `verificar: true` = 39 (37 iniciales + op.cont.2 y op.cont.3); la cifra «39» de T01 venía de un grep que contaba comentarios.
+- 2026-11-03 · Pendiente humano: contrastar con el BOE el Anexo II (op.cont.2/3, mp.si.2, numeración mp.info y op.exp.10/11) y quitar `verificar`.
+
 ### Supuestos
 - La tabla del Anexo II del RD 311/2022 se puede reconstruir con fiabilidad suficiente; lo dudoso va con `verificar: true`.
 
@@ -126,6 +129,10 @@ Revisión de ola: 3
 - 2026-11-03 · Brief de T04: tener en cuenta las 39 medidas `verificar` y que `render_plan_md(plan, hoy, brechas)` recibe `hoy` inyectado · coordinador
 - 2026-11-03 · API de T04 que deben seguir T05/T06: `from smc.gap import analyse, Analisis, FrameworkResult, Brecha, SinEvaluar`; `analyse(assessment, hoy=None) -> Analisis` (dataclass desempaquetable como tupla `cliente, results, warnings`; campos extra: hoy, categoria_ens, plan, vencidas, p1_sin_accion, brechas_sin_accion). No reimplementar el análisis: consumir `Analisis`; `render_markdown(analisis)`; `hoy` siempre inyectado · T04
 - 2026-11-03 · Aviso para T05/T06: «sin evaluar» sigue pesando 0.75 (no reajustado), así que una evaluación casi vacía llena de P1/P2 en sin evaluar (62 ENS en el ejemplo); presentarlo como esperado y separado de las brechas evaluadas (`p1_sin_accion` solo cuenta evaluadas) · T04
+
+- 2026-11-03 · T08: prioridad 50·estado + 30·criticidad + 10·entidad + 10·cobertura, P1 >= 75, P2 >= 40 (sustituye la fórmula de T02) · revisor-ola + sesión principal
+- 2026-11-03 · T08: una acción `bloqueada` o `hecha` no cubre una brecha abierta (sustituye lo registrado en T03) · sesión principal
+- 2026-11-03 · Estado no válido = sin evaluar (aplicable, 0) con aviso · sesión principal
 
 ### Atasco
 - Ola 1: 0
