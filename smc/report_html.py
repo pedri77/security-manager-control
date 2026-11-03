@@ -13,7 +13,7 @@ from datetime import date
 from html import escape
 from pathlib import Path
 
-from .gap import Analisis, analyse, _load
+from .gap import Analisis, analyse, _load, url_https
 from .plan import Accion
 
 CSS = """
@@ -170,11 +170,52 @@ def _plan(an: Analisis, h: int) -> str:
     return "\n".join(out)
 
 
+def _enlace(titulo, url) -> str:
+    """Enlace solo con https://; si no, texto escapado sin href."""
+    if url_https(url):
+        return f'<a href="{_e(url)}" rel="noopener noreferrer">{_e(titulo)}</a>'
+    return _e(titulo)
+
+
+def _verticales(an: Analisis, h: int) -> str:
+    from .verticals import cargar_verticales
+    res = an.verticales
+    cat = {v.id: v for v in cargar_verticales()}
+    media = "—" if res.madurez_media is None else f"{res.madurez_media} / 5"
+    out = [f"<h{h}>Verticales</h{h}>", f"<p>Madurez media de las verticales evaluadas: <strong>{_e(media)}</strong></p>"]
+    filas = []
+    for r in res.verticales:
+        if r.madurez is None:
+            mad, barra = "—", ""
+        else:
+            mad, barra = _e(r.madurez), _barra(r.madurez * 20)
+        filas.append([_e(r.id), _e(r.nombre), _e(r.estado), mad, barra, _e(r.producto or "—")])
+    out.append(_tabla(["ID", "Vertical", "Estado", "Madurez (0-5)", "", "Producto"], filas))
+    if res.no_evaluables:
+        out.append(f"<h{h + 1}>No evaluables ({len(res.no_evaluables)})</h{h + 1}>")
+        out.append("<ul>" + "".join(f"<li><strong>{_e(r.id)}</strong> {_e(r.nombre)}: {_e(r.motivo)}</li>"
+                                    for r in res.no_evaluables) + "</ul>")
+    items = []
+    for r in res.verticales:
+        v = cat.get(r.id)
+        if not v or r.estado == "sin_evaluar":
+            continue
+        for x in v.recursos:
+            items.append(f"<li>{_e(r.id)}: {_enlace(x.get('titulo', ''), x.get('url'))}</li>")
+        for e in v.estado_recursos:
+            items.append(f"<li>{_e(r.id)}: {_e(e.get('proyecto', ''))} (pendiente)</li>")
+    if items:
+        out.append(f"<h{h + 1}>Recursos públicos</h{h + 1}><ul>" + "".join(items) + "</ul>")
+    return "\n".join(out)
+
+
 def render_body(an: Analisis, nivel: int = 2) -> str:
     """Secciones del informe sin cabecera ni <html>. `nivel` = nivel del primer encabezado (h2 por defecto)."""
     h = max(1, min(nivel, 4))
     partes = [_resumen(an, h), f"<h{h}>Detalle por marco</h{h}>"]
     partes += [_marco(an, r, h + 1) for r in an.results]
+    if an.verticales is not None:
+        partes.append(_verticales(an, h))
     partes.append(_plan(an, h))
     if an.warnings:
         partes.append(f"<h{h}>Avisos</h{h}><div class=\"aviso\"><ul>"

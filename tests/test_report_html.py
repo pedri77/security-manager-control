@@ -44,7 +44,9 @@ def test_autocontenido(doc):
                     s.mal.append((tag, v))
     p = P(); p.feed(doc)
     assert not p.mal and not ({"script", "link", "img", "iframe"} & p.tags)
-    assert not re.search(r"https?://|@import|url\(", doc)
+    # v0.5: los únicos https:// admitidos son enlaces <a href> a recursos públicos (no cargan nada)
+    sin_enlaces = re.sub(r'<a href="https://[^"]*"', "", doc)
+    assert not re.search(r"https?://|@import|url\(", sin_enlaces)
 
 
 def test_xss_escapado(ass):

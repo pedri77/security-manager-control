@@ -67,6 +67,7 @@ class Analisis:
     p1_sin_accion: list[str]           # IDs de brechas P1 que ninguna acción abierta cubre
     brechas_sin_accion: list[str]      # IDs de todas las brechas sin acción
     ens_verificar: list[str] = field(default_factory=list)   # IDs de medidas ENS con `verificar: true` (si ENS en alcance)
+    verticales: object = None   # smc.verticals.ResultadoVerticales si la evaluación trae `verticales:`; si no, None
 
     def __iter__(self):
         return iter((self.cliente, self.results, self.warnings))
@@ -172,8 +173,43 @@ def analyse(assessment: dict, hoy: date | None = None) -> Analisis:
     p1 = [b.control.id for b in todas if b.nivel == "P1" and b.control.id in set(sin_accion)]
     p1.sort(key=lambda i: next(-b.puntuacion for b in todas if b.control.id == i))
     verificar = [c.id for c in catalogs["ENS"] if c.extra.get("verificar")] if "ENS" in scope else []
+    vert = None
+    if assessment.get("verticales") is not None:
+        from . import verticals as _vert
+        vert = _vert.evaluar(assessment, estricto=False)
+        warnings += [f"verticales: {w}" for w in vert.warnings] + [f"verticales: {e}" for e in vert.errores]
     return Analisis(cliente, results, warnings, hoy, categoria, plan, _plan.vencidas(plan, hoy), p1, sin_accion,
-                    verificar)
+                    verificar, vert)
+
+
+def url_https(url) -> bool:
+    """Solo se enlazan URLs https:// (nada de javascript:, data:, http:)."""
+    return isinstance(url, str) and url.startswith("https://") and not any(c.isspace() or c in '<>"' for c in url)
+
+
+def render_verticales_md(res, catalogo=None) -> str:
+    """Sección Markdown de verticales: madurez, no evaluables con su motivo y recursos públicos."""
+    from .verticals import cargar_verticales
+    catalogo = {v.id: v for v in (catalogo if catalogo is not None else cargar_verticales())}
+    media = "—" if res.madurez_media is None else f"{res.madurez_media} / 5"
+    out = ["## Verticales", "", f"Madurez media de las verticales evaluadas: {media}", "",
+           "| Vertical | Estado | Madurez (0-5) | Producto |", "|---|---|---|---|"]
+    for r in res.verticales:
+        mad = "—" if r.madurez is None else str(r.madurez)
+        out.append(f"| {r.id} {r.nombre} | {r.estado} | {mad} | {r.producto or '—'} |")
+    if res.no_evaluables:
+        out += ["", "### No evaluables", ""]
+        out += [f"- {r.id} {r.nombre}: {r.motivo}" for r in res.no_evaluables]
+    enlaces = []
+    for r in res.verticales:
+        v = catalogo.get(r.id)
+        if v and r.estado != "sin_evaluar":
+            enlaces += [f"- {r.id}: [{x['titulo']}]({x['url']})" for x in v.recursos if url_https(x.get("url"))]
+    if enlaces:
+        out += ["", "### Recursos públicos", ""] + enlaces
+    if res.warnings or res.errores:
+        out += ["", "### Avisos de verticales", ""] + [f"- {w}" for w in res.warnings + res.errores]
+    return "\n".join(out) + "\n"
 
 
 def _plan_section(an: Analisis) -> str:
@@ -233,6 +269,8 @@ def render_markdown(an: Analisis | dict, results=None, warnings=None) -> str:
             out += ["", f"### No aplican a la categoría {an.categoria_ens} ({len(r.no_aplican)})", ""]
             out += [f"- {c.id}{_marca(c)} — {c.titulo} (mínima {c.extra.get('categoria_minima', '—')})"
                     for c in r.no_aplican]
+    if an.verticales is not None:
+        out += ["", render_verticales_md(an.verticales).rstrip("\n")]
     out += ["", _plan_section(an).rstrip("\n")]
     if warnings:
         out += ["", "## Avisos", ""] + [f"- {w}" for w in warnings]
