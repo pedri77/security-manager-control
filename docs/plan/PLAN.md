@@ -211,14 +211,14 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 
 ## Ola 9 (v0.6)
 
-- [~] **T19** — Tecnologías, reglas, suscripciones y MITRE en el informe HTML y el dashboard
+- [x] **T19** — Tecnologías, reglas, suscripciones y MITRE en el informe HTML y el dashboard
   - Hace: `smc report` acepta opcionalmente `--registry <registry.yaml>` y `--hoy`; con registry añade al HTML (y al Markdown) secciones de tecnologías evaluadas, estado de reglas (revisadas, sin revisar, no evaluables con motivo, lista `any_any` destacada) y suscripciones (vencen en 90 días, uso bajo umbral, coste anual total). Siempre añade la sección de madurez MITRE (por táctica y casos sin playbook) desde `smc.mitre`. El dashboard estático (`smc dashboard`) añade, si en el directorio hay registros (`kind`/forma de registry), columnas de reglas no evaluables, any-any y suscripciones que vencen, y una página de madurez MITRE común. Reutiliza `smc.tech` y `smc.mitre`: no reimplementa cálculos. Escape HTML en todo, solo enlaces `https://`.
   - No hace: no cambia catálogos ni el cálculo de prioridad; no toca `smc/mapa.py`.
   - Toca: `smc/report_html.py`, `smc/dashboard.py`, `smc/gap.py` (solo render Markdown si hace falta), `smc/cli.py` (solo flags de `report`/`dashboard`), `tests/test_report_v06.py`, `docs/plan/informes/T19-dev-proyecto.md`
   - Depende: T18
   - Verifica: `smc report` sobre los ejemplos con y sin `--registry` rc=0; el HTML contiene las 4 secciones; contraprueba: un `motivo` con `<script>` en reglas no evaluables sale escapado; un `coste_anual` no numérico no rompe.
   - Prod: —
-  - Estado: reservada por coordinador 2026-11-03
+  - Estado: hecha en 3b26090 · evidencia informes/T19-dev-proyecto.md
 
 - [~] **T20** — Visor 3D offline del mapa de dispositivos
   - Hace: `python -m smc.visor <mapa.json> -o visor.html` (función `generar_visor(mapa: dict) -> str`; el subcomando `smc visor` lo cablea T22) genera una sola página HTML autocontenida que lee SOLO el JSON `smc-mapa/1` embebido (sin fetch, sin CDN, sin red). Patrón de teardown (ADR-003): la red es la máquina; cada zona es un subsistema (plataforma/anillo) con un botón que la abre y enfoca la cámara; dispositivos como piezas coloreadas por semáforo (verde, ámbar, rojo, gris; gris nunca se pinta verde); `sin_zona` en un área aparte; panel lateral que lee los números del JSON (dispositivos, reglas no evaluables con motivo, vulns fuera de SLA, KEV); vistas de cámara; visita automática que cede el control al primer gesto; respeta `prefers-reduced-motion`; alternativa en texto (tabla accesible con la misma información, ADR-003). Librería: three.js (MIT) incrustada en el HTML desde una copia vendorizada `smc/assets/three.module.min.js` minificada o el `three.module.js` de 0.186 con su `LICENSE` en `smc/assets/THREE-LICENSE`; origen y versión anotados. No copia código de la skill teardown (solo el patrón). ADR-004 con la decisión de vendorizar three.js. Escape de todos los textos del JSON al insertarlos en el DOM (textContent, nunca innerHTML con datos); el JSON se inserta en `<script type="application/json">` con `<` escapado como `<`.
