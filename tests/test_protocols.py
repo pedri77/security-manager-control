@@ -8,7 +8,7 @@ from smc import protocols
 
 EXIGIDOS = {"SMB", "RDP", "SSH", "TELNET", "FTP", "SNMP", "DNS", "NTP", "LDAP", "KERBEROS", "NTLM", "TLS", "HTTP",
             "SMTP", "IMAP_POP3", "SIP", "MQTT", "MODBUS", "S7COMM", "DNP3", "BACNET", "OPCUA"}
-PRIVADOS = ("repo-privado", "repo-privado")
+from smc.resources import urls_no_publicas
 
 
 @pytest.fixture
@@ -64,7 +64,7 @@ def test_sin_cves_concretos_ni_repos_privados():
     texto = protocols.PROTOCOLS_FILE.read_text(encoding="utf-8")
     import re
     assert not re.search(r"CVE-\d{4}-\d{3,}", texto)
-    assert not any(x in texto for x in PRIVADOS)
+    assert urls_no_publicas(texto) == []
 
 
 def test_contraprueba_dominio_no_permitido(data):

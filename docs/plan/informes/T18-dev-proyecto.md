@@ -12,7 +12,7 @@ Rama `t18` desde main 90ed848.
 ## Verifica
 - `uv run --no-project --with pytest --with pyyaml python -m pytest -q` -> 222 passed (214 + 8).
 - `smc validate` -> «Catálogos OK». `smc verticals` sobre el ejemplo de energía muestra VRT-GRC evaluada (4); `test_ejemplos_y_plantilla_incluyen_grc_y_agregan_a_nis2_20` comprueba que agrega a NIS2-20.1 y 21.2.a en ambos ejemplos.
-- `git grep` de `repo-privado|repo-privado` fuera de `tests/`: sigue habiendo coincidencias en `smc/resources.py` (lista PROHIBIDOS, es la guarda que impide enlazarlos) y en `docs/plan/PLAN.md` (fuera de Toca). Los informes T09/T12 quedan limpios.
+- `git grep` de los nombres de los repos privados fuera de `tests/`: sigue habiendo coincidencias en `smc/resources.py` (la guarda; después la sesión principal la cambió a lista blanca REPOS_PUBLICOS) y en `docs/plan/PLAN.md` (fuera de Toca). Los informes T09/T12 quedan limpios.
 
 ## Contraprueba (ejecutada)
 Cambiar `ENS-op.pl.1` por `ENS-op.pl.99` en VRT-GRC: 10 failed (test_catalogo_valido, test_todo_controles_existe_en_catalogos, etc.); restaurado, 222 passed. Además `test_contraprueba_control_inexistente_en_grc_falla`, `..._medida_nis2_inexistente...` y `test_contraprueba_sin_grc_no_hay_agregacion_en_20`.

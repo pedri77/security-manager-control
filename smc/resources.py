@@ -22,8 +22,21 @@ ECO_FILE = ROOT / "resources" / "ecosistema.yaml"
 CATEGORIAS = ("avisos", "noticias", "vulnerabilidades", "normativa")
 ESTADOS_ECO = ("publicado", "pendiente")
 TIPOS_ECO = ("pages", "repo", "pendiente")
-# Nunca enlazar estos repos privados (ni en feeds ni en ecosistema).
-PROHIBIDOS = ("repo-privado", "repo-privado")
+# Lista blanca de repos públicos de pedri77 que se pueden enlazar (GitHub o GitHub Pages).
+# Cualquier otro github.com/pedri77/<repo> o pedri77.github.io/<repo> se trata como privado o no listado.
+# Es lista blanca a propósito: así el repo público no nombra los repos privados.
+REPOS_PUBLICOS = (
+    "security-manager-control", "smc-cinematica", "edr-visual-app", "sase-visual-app", "Basic_Firewalls",
+    "Basicos_Proteccion_Capas_OSI", "modelo_OSI", "ics-security-studio", "wafforge", "Basicos_email",
+    "kev_dash_project", "threat-intelligence-feeds",
+)
+_RE_PEDRI = re.compile(r"https://(?:www\.)?(?:github\.com/pedri77|pedri77\.github\.io)/([^/\s\"'#?)]+)", re.I)
+
+
+def urls_no_publicas(texto: str) -> list[str]:
+    """Repos de pedri77 enlazados en `texto` que no están en REPOS_PUBLICOS."""
+    publicos = {r.lower() for r in REPOS_PUBLICOS}
+    return sorted({m.group(1) for m in _RE_PEDRI.finditer(texto or "") if m.group(1).lower() not in publicos})
 
 
 def _load(path: Path, clave: str) -> list[dict]:
@@ -44,8 +57,7 @@ def _url_errores(etiqueta: str, url) -> list[str]:
         return []
     if not isinstance(url, str) or not re.match(r"^https://[^\s]+$", url):
         return [f"{etiqueta}: URL no https válida {url!r}"]
-    low = url.lower()
-    return [f"{etiqueta}: enlace a repo privado ({p})" for p in PROHIBIDOS if p in low]
+    return [f"{etiqueta}: enlace a repo privado o no listado ({p})" for p in urls_no_publicas(url)]
 
 
 def validar(rss: list[dict] | None = None, eco: list[dict] | None = None) -> list[str]:
