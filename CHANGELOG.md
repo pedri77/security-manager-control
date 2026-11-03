@@ -2,6 +2,14 @@
 
 Formato basado en Keep a Changelog. Versionado semántico.
 
+## 0.6.0 (2026-11-03)
+
+- `smc visor <mapa.json> -o visor.html`: visor 3D offline y autocontenido del mapa `smc-mapa/1` (three.js 0.186.1 vendorizado, MIT, ADR-004; patrón de teardown, ADR-003). Sin red, CSP estricta, texto del JSON siempre como texto, tabla accesible, `prefers-reduced-motion`. Captura en `docs/img/visor.png`. JSON inválido: rc 2.
+- `smc report --registry <registro.yaml>`: secciones de tecnologías evaluadas, estado de reglas (any-any destacado), suscripciones y madurez MITRE ATT&CK. El Markdown de `smc gap` incluye siempre la madurez MITRE.
+- `smc dashboard`: detecta registros de tecnologías por su forma, columnas de reglas y suscripciones, y página común `mitre.html`.
+- ENS contrastado con el Anexo II del RD 311/2022 (BOE-A-2022-7191): 45 de 73 medidas confirmadas; 28 siguen en `verificar` por depender de las dimensiones C/I/T/A/D (antes 39). Los tests de cifras pasan a 28.
+- README, PRD (RF-27 a RF-31) y hoja de ruta actualizados; v0.7 con lo pendiente.
+
 ## 0.5.2 (2026-11-03)
 
 - Vertical `VRT-GRC` (gobierno, riesgo y cumplimiento): 20 verticales. Cubre NIS2 art. 20 (dirección y su formación) y 21.2.a/21.2.f, con controles ENS-org.*, ENS-op.pl.1, NIS2, TRV de gobierno y RGPD, criterios y baremo 0-5 comprobable. Sin recursos públicos. Añadida a la plantilla y a los dos ejemplos ficticios.
