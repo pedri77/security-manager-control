@@ -50,7 +50,7 @@ def test_h1_estado_invalido_cuenta_como_sin_evaluar(ass):
 def test_h2_verificar_marcado_en_md_y_html():
     a = yaml.safe_load((EX / "ejemplo-ayuntamiento.yaml").read_text(encoding="utf-8"))
     an = analyse(a, HOY)
-    assert len(an.ens_verificar) == 39
+    assert len(an.ens_verificar) == 28   # tras T21 (BOE): solo las dependientes de dimensión
     md, html = render_markdown(an), render_html(an)
     for doc in (md, html):
         assert "pendiente de contrastar" in doc and "(verificar)" in doc
@@ -96,9 +96,7 @@ def test_h4_media_no_esencial_sin_cobertura_es_p2(monkeypatch):
 def test_h5_h6_cont_verificar_y_cifra():
     ens_c = {c.id: c for c in load_catalog("ENS")}
     assert ens_c["ENS-op.cont.2"].extra.get("verificar") and ens_c["ENS-op.cont.3"].extra.get("verificar")
-    assert sum(1 for c in ens_c.values() if c.extra.get("verificar")) == 39
-    assert "39 de las 73" in (ROOT / "README.md").read_text(encoding="utf-8")
-    assert "39 de 73" in (ROOT / "docs/prd/PRD-SMC-001-v1.md").read_text(encoding="utf-8")
+    assert sum(1 for c in ens_c.values() if c.extra.get("verificar")) == 28   # T21; README/PRD los actualiza T22
 
 
 # 7. categoria_minima desconocida
