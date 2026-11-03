@@ -1,0 +1,35 @@
+# Ejemplo FICTICIO (ADR-001): ejercicios inventados sobre los casos de uso del catálogo.
+version: v1
+ejercicios:
+  - id: PP-001
+    fecha: "2026-09-15"
+    tecnica: T1110.003
+    caso_uso: UC-001
+    resultado: detectado
+    tiempo_deteccion_min: 12
+    mejora:
+      descripcion: Afinar el umbral de la alerta de password spraying
+      estado: hecha
+  - id: PP-002
+    fecha: "2026-09-15"
+    tecnica: T1566.001
+    caso_uso: UC-002
+    resultado: parcial
+    tiempo_deteccion_min: 95
+    mejora:
+      descripcion: Añadir detección de adjuntos con macros en la pasarela de correo
+      estado: en_curso
+  - id: PP-003
+    fecha: "2026-09-16"
+    tecnica: T1003.001
+    caso_uso: UC-004
+    resultado: no_detectado
+    mejora:
+      descripcion: Activar la regla de acceso a LSASS en el EDR
+      estado: abierta
+  - id: PP-004
+    fecha: "2025-08-20"
+    tecnica: T1190
+    caso_uso: UC-007
+    resultado: detectado
+    tiempo_deteccion_min: 30
