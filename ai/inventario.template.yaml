@@ -1,0 +1,84 @@
+# Inventario de sistemas de IA: copiar a assessments/<cliente>/ia.yaml (fuera del repositorio, ADR-001).
+# Todo lo que aparece aquí es FICTICIO.
+#
+# nivel_riesgo: prohibido | alto_riesgo_anexo_iii | alto_riesgo_anexo_i | transparencia | uso_general
+#               | uso_general_riesgo_sistemico | minimo   (ver frameworks/ai-act/obligaciones.yaml)
+# rol (uno o lista): proveedor | responsable_despliegue | importador | distribuidor
+# supuestos (opcional): interaccion | contenido_sintetico | emociones_biometria | ultrasuplantacion
+#   | contenido_intimo_no_consentido | ambito_art27 | organismo_publico | lugar_de_trabajo | proveedor_tercer_pais
+# en_mercado_desde (opcional): primera introducción en el mercado o puesta en servicio (activa periodos transitorios).
+# Evidencias (true/false o mapa con `existe: true|false`): supervision_humana, registro, alfabetizacion,
+#   evaluacion_impacto, informa_usuarios, marcado_contenido, documentacion_tecnica, gestion_riesgos,
+#   pruebas_seguridad, registro_ue, informacion_trabajadores, retirado. Ausente = pendiente.
+#
+# agentes: sistemas con herramientas. Cada herramienta: nombre, permisos (lectura | escritura | ejecucion | red
+#   | borrado | pagos | administracion | envio), limite_llamadas (por sesión; 0 o ausente = sin límite),
+#   requiere_aprobacion (aprobación humana antes de ejecutar).
+#   Del agente: supervision_humana, registro, permisos_minimos, entrada_no_confiable (procesa correo, web,
+#   documentos o RAG de terceros), mitigacion_prompt_injection (lista de medidas; vacía = sin mitigación).
+version: v1
+organizacion: "Organización Ficticia, S.A."
+sistemas:
+  - id: IA-001
+    nombre: Cribado de candidaturas
+    finalidad: Ordenar candidaturas para procesos de selección (Anexo III, punto 4)
+    rol: responsable_despliegue
+    nivel_riesgo: alto_riesgo_anexo_iii
+    supuestos: [lugar_de_trabajo]
+    en_mercado_desde: 2026-03-01
+    datos_personales: true
+    proveedor_modelo: "<proveedor ficticio>"
+    modelo: "<modelo>"
+    supervision_humana: {existe: true, responsable: "Responsable de selección", descripcion: "Revisa toda propuesta de descarte"}
+    registro: {existe: true, conservacion_dias: 180}
+    alfabetizacion: true
+    informacion_trabajadores: false
+
+  - id: IA-002
+    nombre: Asistente de atención al ciudadano
+    finalidad: Responder consultas frecuentes en la sede electrónica
+    rol: responsable_despliegue
+    nivel_riesgo: transparencia
+    supuestos: [interaccion]
+    en_mercado_desde: 2026-05-15
+    datos_personales: true
+    proveedor_modelo: "<proveedor ficticio>"
+    modelo: "<modelo>"
+    alfabetizacion: true
+    informa_usuarios: true
+    registro: true
+    agentes:
+      - id: AG-001
+        nombre: Agente de citas
+        herramientas:
+          - {nombre: consultar_agenda, permisos: [lectura], limite_llamadas: 20, requiere_aprobacion: false}
+          - {nombre: reservar_cita, permisos: [escritura], limite_llamadas: 3, requiere_aprobacion: true}
+        permisos_minimos: true
+        supervision_humana: true
+        registro: true
+        entrada_no_confiable: true
+        mitigacion_prompt_injection: ["Separación de instrucciones y datos", "Validación de salida antes de reservar"]
+
+  - id: IA-003
+    nombre: Generador de borradores de comunicación
+    finalidad: Redactar borradores de notas internas
+    rol: [proveedor, responsable_despliegue]
+    nivel_riesgo: minimo
+    supuestos: [contenido_sintetico]
+    en_mercado_desde: 2026-01-10
+    datos_personales: false
+    proveedor_modelo: "<proveedor ficticio>"
+    modelo: "<modelo>"
+    alfabetizacion: false
+    marcado_contenido: false
+    agentes:
+      - id: AG-002
+        nombre: Agente de correo
+        herramientas:
+          - {nombre: leer_buzon, permisos: [lectura], limite_llamadas: 0, requiere_aprobacion: false}
+          - {nombre: enviar_correo, permisos: [envio, red], requiere_aprobacion: false}
+        permisos_minimos: false
+        supervision_humana: false
+        registro: false
+        entrada_no_confiable: true
+        mitigacion_prompt_injection: []
