@@ -2,6 +2,19 @@
 
 Formato basado en Keep a Changelog. Versionado semántico.
 
+## 0.4.1 (2026-11-03)
+
+Endurecimiento tras la revisión de la ola 3.
+
+- Un estado no válido cuenta como «sin evaluar» (aplicable, puntúa 0) con aviso; antes sacaba el control del denominador.
+- Las medidas ENS con `verificar: true` se señalan en los informes Markdown/HTML («aplicabilidad pendiente de contrastar») y el resumen lleva un aviso. `op.cont.2` y `op.cont.3` pasan a `verificar: true`. Recuento real con PyYAML: 39 de 73 (el 39 anterior salía de un grep que contaba comentarios; sin estas dos eran 37).
+- Prioridad recalibrada: `50*estado + 30*criticidad + 10*entidad + 10*cobertura`, P1 >= 75. Un no_implementado de criticidad media en entidad importante o no obligada sin cobertura multinorma es P2; de criticidad alta en entidad esencial, P1.
+- Una acción `bloqueada` ya no cubre una brecha a efectos de «sin acción» y «P1 sin acción».
+- `categoria_minima` desconocida se trata como BASICA; `smc validate` la rechaza.
+- Entradas mal formadas (`plan_accion` de texto, evaluación de texto, `cliente: null`) dan aviso en lugar de `AttributeError`.
+- El dashboard ignora `*.template.yaml`; la cabecera muestra la categoría ENS también con `proveedor_sector_publico`.
+- `.gitignore` ignora `*.html` y `dashboard/`.
+
 ## 0.4.0 (2026-11-03)
 
 - Dashboard estático multicliente: `smc dashboard <directorio> -o <salida>` con índice, semáforo y un HTML por cliente (ADR-002).

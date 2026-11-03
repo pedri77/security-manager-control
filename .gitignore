@@ -16,3 +16,7 @@ dist/
 
 # Enjambre
 .PLAN.md.lock
+
+# Salidas generadas (informes HTML y dashboard) con datos de cliente: nunca versionar (ADR-001)
+*.html
+dashboard/

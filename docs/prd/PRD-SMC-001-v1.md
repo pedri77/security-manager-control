@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Borrador. Roadmap v0.1 a v0.4 implementado (v0.4.0); v0.5 pendiente |
+| Estado | Borrador. Roadmap v0.1 a v0.4 implementado (v0.4.1); v0.5 pendiente |
 | Versión | v1 |
 | Fecha | 2026-11-02 |
 | Autor | David Moya García |
@@ -79,6 +79,6 @@ Nota: el dashboard de v0.4 se resolvió como sitio estático generado en local, 
 ## 8. Riesgos y supuestos
 
 - La ley española de transposición de NIS2 sigue en tramitación (nov. 2026): revisar catálogo al publicarse en el BOE.
-- La aplicabilidad exacta por categoría ENS debe validarse contra el Anexo II y guías CCN-STIC. Estado a v0.4.0: 39 de 73 medidas con `verificar: true` y posible discrepancia de ID entre `op.exp.10` y `op.exp.11`.
+- La aplicabilidad exacta por categoría ENS debe validarse contra el Anexo II y guías CCN-STIC. Estado a v0.4.1: 39 de 73 medidas con `verificar: true` (recuento con PyYAML) y posible discrepancia de ID entre `op.exp.10` y `op.exp.11`.
 - Las criticidades NIS2 son un juicio inicial sin fuente normativa.
 - «Sin evaluar» pesa 0.75 en la prioridad y puntúa como no cumplido: las evaluaciones incompletas salen en rojo en el dashboard.

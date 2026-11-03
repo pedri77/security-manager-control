@@ -16,6 +16,7 @@ CATALOG_FILES = {
 }
 
 REQUIRED_FIELDS = ("id", "titulo")
+CATEGORIAS_ENS = ("BASICA", "MEDIA", "ALTA")   # igual que smc.ens.CATEGORIAS (un test lo comprueba)
 
 
 @dataclass
@@ -58,6 +59,13 @@ def validate() -> list[str]:
                 if not raw.get(f):
                     errors.append(f"{fw}[{i}]: falta '{f}'")
             cid = raw.get("id")
+            if fw == "ENS":
+                minima = raw.get("categoria_minima")
+                if minima is not None and minima not in CATEGORIAS_ENS:
+                    errors.append(f"{cid}: categoria_minima no válida '{minima}' (BASICA, MEDIA o ALTA)")
+                for cat in (raw.get("refuerzos_por_categoria") or {}):
+                    if cat not in CATEGORIAS_ENS:
+                        errors.append(f"{cid}: refuerzos_por_categoria con categoría no válida '{cat}'")
             if cid in seen:
                 errors.append(f"{fw}: ID duplicado {cid}")
             seen.add(cid)

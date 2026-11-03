@@ -5,7 +5,8 @@ import warnings
 
 # Orden creciente de exigencia. No reordenar: la comparación usa el índice.
 CATEGORIAS = ("BASICA", "MEDIA", "ALTA")
-DEFECTO = "ALTA"
+DEFECTO = "ALTA"        # categoría del cliente vacía/desconocida (conservador: exige más)
+MINIMA_DEFECTO = "BASICA"   # categoria_minima de la medida desconocida (conservador: aplica en todas)
 
 
 def _extra(control) -> dict:
@@ -26,7 +27,7 @@ def aplica(control, categoria: str | None) -> bool:
     cat = normalizar(categoria)
     minima = _extra(control).get("categoria_minima") or "BASICA"
     if minima not in CATEGORIAS:
-        minima = DEFECTO
+        minima = MINIMA_DEFECTO
     return CATEGORIAS.index(cat) >= CATEGORIAS.index(minima)
 
 

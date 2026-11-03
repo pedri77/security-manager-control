@@ -82,6 +82,8 @@ def recopilar(directorio: Path, hoy: date | None = None) -> Resultado:
     res = Resultado()
     usados: set[str] = set()
     for f in sorted(Path(directorio).glob("*.yaml")):
+        if f.name.endswith(".template.yaml"):   # plantillas: no son clientes
+            continue
         try:
             datos = yaml.safe_load(f.read_text(encoding="utf-8"))
         except (yaml.YAMLError, UnicodeDecodeError, OSError) as exc:

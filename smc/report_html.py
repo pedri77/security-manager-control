@@ -69,6 +69,10 @@ def _tabla(cab: list[str], filas: list[list[str]]) -> str:
     return f"<table><thead><tr>{h}</tr></thead><tbody>{b}</tbody></table>"
 
 
+def _m(c) -> str:
+    return ' <span class="venc">(verificar)</span>' if c.extra.get("verificar") else ""
+
+
 def _fecha(d: date | None) -> str:
     return d.isoformat() if d else "—"
 
@@ -78,6 +82,10 @@ def _resumen(an: Analisis, h: int) -> str:
     filas = [[_e(r.framework), f"{_e(r.puntuacion)} %", _barra(r.puntuacion),
               _e(r.aplicables), _e(len(r.brechas)), _e(len(r.sin_evaluar))] for r in an.results]
     out.append(_tabla(["Marco", "Cumplimiento", "", "Aplicables", "Brechas evaluadas", "Sin evaluar"], filas))
+    if an.ens_verificar:
+        out.append(f'<p class="aviso"><strong>Aviso ENS:</strong> {_e(len(an.ens_verificar))} medidas ENS tienen '
+                   "aplicabilidad pendiente de contrastar con el Anexo II del RD 311/2022 (<code>verificar</code>): "
+                   "«no aplica» y los refuerzos por categoría no son definitivos. Se marcan con (verificar).</p>")
     sin_eval = sum(len(r.sin_evaluar) for r in an.results)
     if sin_eval:
         out.append(f'<p class="nota">El cumplimiento incluye {sin_eval} controles sin evaluar, que puntúan como '
@@ -91,7 +99,7 @@ def _resumen(an: Analisis, h: int) -> str:
     out.append(f"<h{h + 1}>Top 10 brechas P1 (evaluadas)</h{h + 1}>")
     if p1:
         out.append(_tabla(["Control", "Título", "Estado", "Notas"],
-                          [[_e(b.control.id), _e(b.control.titulo), _e(b.estado), _e(b.notas)] for b in p1]))
+                          [[_e(b.control.id) + _m(b.control), _e(b.control.titulo), _e(b.estado), _e(b.notas)] for b in p1]))
     else:
         out.append("<p>Ninguna brecha P1 evaluada.</p>")
     out.append(f"<h{h + 1}>Acciones vencidas a {_e(an.hoy.isoformat())}</h{h + 1}>")
@@ -109,7 +117,7 @@ def _marco(an: Analisis, r, h: int) -> str:
     out.append(f"<h{h + 1}>Brechas evaluadas ({len(r.brechas)})</h{h + 1}>")
     if r.brechas:
         out.append(_tabla(["P", "Control", "Título", "Estado", "Refuerzos ENS", "Notas"],
-                          [[_tag(b.nivel), _e(b.control.id), _e(b.control.titulo), _e(b.estado),
+                          [[_tag(b.nivel), _e(b.control.id) + _m(b.control), _e(b.control.titulo), _e(b.estado),
                             _e(", ".join(b.refuerzos) or "—"), _e(b.notas)] for b in r.brechas]))
     else:
         out.append("<p>Sin brechas evaluadas.</p>")
@@ -122,7 +130,7 @@ def _marco(an: Analisis, r, h: int) -> str:
         filas = []
         for d in r.sin_evaluar_detalle:
             her = ", ".join(f"{i} ({e})" for i, e in d.heredado_de)
-            filas.append([_tag(d.nivel), _e(d.control.id), _e(d.control.titulo),
+            filas.append([_tag(d.nivel), _e(d.control.id) + _m(d.control), _e(d.control.titulo),
                           _e(", ".join(d.refuerzos) or "—"), _e(her + " (sugerencia, no puntúa)" if her else "—")])
         out.append(_tabla(["P", "Control", "Título", "Refuerzos ENS", "Heredado de"], filas))
     if r.no_aplican:
@@ -133,7 +141,7 @@ def _marco(an: Analisis, r, h: int) -> str:
             agrup.setdefault(str(c.extra.get("categoria_minima", "—")), []).append(c)
         for cat in sorted(agrup):
             out.append(f"<p><strong>Exigibles desde {_e(cat)}:</strong></p><ul class=\"cols\">"
-                       + "".join(f"<li>{_e(c.id)} · {_e(c.titulo)}</li>" for c in agrup[cat]) + "</ul>")
+                       + "".join(f"<li>{_e(c.id)}{_m(c)} · {_e(c.titulo)}</li>" for c in agrup[cat]) + "</ul>")
     return "\n".join(out)
 
 
@@ -176,7 +184,7 @@ def render_body(an: Analisis, nivel: int = 2) -> str:
 
 def _cabecera(an: Analisis) -> str:
     c = an.cliente
-    cat = f" · Categoría ENS: {_e(an.categoria_ens or c.get('categoria_ens'))}" if c.get("sector_publico") else ""
+    cat = f" · Categoría ENS: {_e(an.categoria_ens)}" if an.categoria_ens else ""
     return (f"<h1>Informe de brechas · {_e(c.get('nombre', 'cliente'))}</h1>"
             f'<p class="meta">Sector: {_e(c.get("sector", "—"))} · Entidad NIS2: {_e(c.get("tipo_entidad_nis2", "—"))}'
             f" · Sector público: {'sí' if c.get('sector_publico') else 'no'}{cat}"
