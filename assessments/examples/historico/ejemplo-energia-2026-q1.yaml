@@ -1,0 +1,56 @@
+# Ejemplo ficticio — mismo cliente que ../ejemplo-energia.yaml, evaluación anterior (Q1 2026) con más brechas.
+# Sirve para demostrar `smc.compare` (evolución entre evaluaciones).
+cliente:
+  nombre: "Distribuidora Eléctrica Ejemplo, S.A."
+  sector: Energía (distribución eléctrica)
+  tamano: grande
+  tipo_entidad_nis2: esencial
+  sector_publico: false
+  fecha: "2026-07-15"
+  evaluador: "SMC demo"
+
+evaluaciones:
+  NIS2-20.1: {estado: implementado, evidencias: ["Acta del consejo 2026-03"]}
+  NIS2-20.2: {estado: no_implementado, notas: "Sin formación directiva"}
+  NIS2-21.2.a: {estado: implementado, evidencias: ["Análisis de riesgos ISO 27005 2026"]}
+  NIS2-21.2.b: {estado: implementado, evidencias: ["Procedimiento PR-INC-03", "Ejercicio de mesa 2026-06"]}
+  NIS2-21.2.c: {estado: parcial, evidencias: ["Plan de continuidad v3"], notas: "Pruebas de restauración solo en sistemas corporativos, no en OT"}
+  NIS2-21.2.d: {estado: no_implementado, notas: "Sin evaluación de riesgos de proveedores críticos de OT"}
+  NIS2-21.2.e: {estado: parcial}
+  NIS2-21.2.f: {estado: implementado, evidencias: ["Informe de auditoría interna 2026"]}
+  NIS2-21.2.j: {estado: parcial, notas: "MFA solo en accesos remotos"}
+  NIS2-23.alerta: {estado: implementado, evidencias: ["Runbook de notificación 24 h"]}
+  NIS2-23.notificacion: {estado: implementado, evidencias: ["Plantilla de notificación 72 h v1"]}
+  TRV-GOB-01: {estado: implementado, evidencias: ["Política de seguridad v4"]}
+  TRV-RGPD-01: {estado: implementado, evidencias: ["Registro de actividades de tratamiento"]}
+  TRV-VUL-01: {estado: parcial, notas: "Parcheo mensual en TI, trimestral en OT"}
+  TRV-DET-01: {estado: implementado, evidencias: ["SIEM con cobertura 24x7"]}
+  TRV-EDR-01: {estado: no_implementado, notas: "EDR solo en servidores"}
+  TRV-EMAIL-01: {estado: implementado, evidencias: ["DMARC en p=reject"]}
+  TRV-BCK-01: {estado: implementado, evidencias: ["Copias inmutables"]}
+  TRV-TI-01: {estado: parcial, notas: "Inventario parcial de terceros"}
+  NET-SEG-01: {estado: parcial, notas: "Separación TI/OT con cortafuegos, sin DMZ industrial"}
+  NET-SEG-02: {estado: no_implementado}
+  NET-OT-01: {estado: parcial, notas: "Inventario OT incompleto"}
+  NET-MON-01: {estado: implementado, evidencias: ["Sensores de red en la frontera TI/OT"]}
+  NET-WIFI-01: {estado: implementado, evidencias: ["802.1X"]}
+
+plan_accion:
+  - {id: ENE-01, controles: [NIS2-21.2.d, TRV-TI-01], accion: "Evaluar a los proveedores críticos de OT y mantener el inventario de terceros", responsable: "Responsable de compras y CISO", fecha_objetivo: "2027-01-31", estado: pendiente}
+  - {id: ENE-02, controles: [NIS2-21.2.c], accion: "Probar la restauración de copias en sistemas OT", responsable: "Responsable de OT", fecha_objetivo: "2026-10-30", estado: en_curso}
+  - {id: ENE-03, controles: [NET-SEG-02, NET-SEG-01], accion: "Crear DMZ industrial y microsegmentar el entorno OT", responsable: "Responsable de redes", fecha_objetivo: "2027-06-30", estado: pendiente}
+  - {id: ENE-04, controles: [TRV-EDR-01], accion: "Completar el despliegue de EDR", responsable: "Responsable de puesto de trabajo", fecha_objetivo: "2026-09-30", estado: en_curso}
+
+# Madurez por vertical (0-5; no_evaluable exige motivo y no puntúa). Productos ficticios.
+verticales:
+  VRT-EDR: {madurez: 2, producto: "EDR ejemplo", notas: "Cobertura 97 %"}
+  VRT-OT: {madurez: 1, notas: "Monitorización pasiva solo en una subestación"}
+  VRT-NET: {madurez: 5}
+  VRT-FW: {madurez: 4, producto: "Firewall ejemplo"}
+  VRT-ZTNA: {madurez: no_evaluable, motivo: "Sin proyecto ZTNA"}
+  VRT-GRC: {madurez: 3, notas: "Indicadores trimestrales al comité; auditoría anual con plan de acción"}
+  VRT-IAM: {madurez: 4, notas: "PAM con grabación de sesiones; recertificación medida"}
+  VRT-DATA: {madurez: 3, notas: "DLP en correo y endpoint; DSPM sin desplegar"}
+  VRT-AI: {madurez: 2, notas: "Inventario con propietario y política de uso; sin clasificación RIA"}
+  VRT-OFF: {madurez: 2, notas: "Pentest externo e interno anual con retest de críticos"}
+  VRT-HUNT: {madurez: no_evaluable, motivo: "Sin telemetría centralizada para cazar"}
