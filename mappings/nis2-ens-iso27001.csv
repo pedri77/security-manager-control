@@ -1,16 +1,16 @@
 nis2_id,nis2_tema,ens_medidas,iso27001_2022_anexo_a,notas
-NIS2-20.1,Aprobación y supervisión por dirección,org.1,5.1;5.4,Responsabilidad del órgano de dirección
-NIS2-20.2,Formación de dirección,mp.per.4,6.3,
-NIS2-21.2.a,Análisis de riesgos y políticas,org.1;org.2;op.pl.1,5.1 (cláusulas 6.1 y 8.2),
-NIS2-21.2.b,Gestión de incidentes,op.exp.7;op.exp.9;op.mon.1,5.24;5.25;5.26;5.27;5.28,
-NIS2-21.2.c,Continuidad y copias,op.cont.1;op.cont.2;op.cont.3;op.cont.4;mp.info.6,5.29;5.30;8.13;8.14,
-NIS2-21.2.d,Cadena de suministro,op.ext.1;op.ext.2;op.ext.3;op.nub.1,5.19;5.20;5.21;5.22;5.23,
-NIS2-21.2.e,Adquisición desarrollo y vulnerabilidades,op.pl.3;op.exp.4;mp.sw.1;mp.sw.2,8.8;8.25;8.26;8.28;8.29,
-NIS2-21.2.f,Evaluación de eficacia,op.mon.2,5.35;5.36 (cláusula 9),
-NIS2-21.2.g,Ciberhigiene y formación,mp.per.3;mp.per.4;op.exp.2;op.exp.6,6.3;8.7;8.9,
-NIS2-21.2.h,Criptografía,op.exp.10;mp.si.2;mp.com.2,8.24,
-NIS2-21.2.i,RR. HH. accesos y activos,op.acc.1-4;op.exp.1;mp.per.1;mp.per.2,5.9;5.15;5.18;6.1;6.2;6.5;8.2,
-NIS2-21.2.j,MFA y comunicaciones seguras,op.acc.5;op.acc.6;mp.com.2;mp.com.3,5.17;8.5,
-NIS2-23.alerta,Alerta temprana 24 h,op.exp.7,5.24;5.26,Más notificación a CCN-CERT (sector público) / INCIBE-CERT (privado)
-NIS2-23.notificacion,Notificación 72 h,op.exp.7,5.26,
-NIS2-23.final,Informe final 1 mes,op.exp.9,5.27,
+NIS2-20.1,Aprobación y supervisión por dirección,ENS-org.1,5.1;5.4,Responsabilidad del órgano de dirección
+NIS2-20.2,Formación de dirección,ENS-mp.per.4,6.3,
+NIS2-21.2.a,Análisis de riesgos y políticas,ENS-org.1;ENS-org.2;ENS-op.pl.1,5.1,ISO 27001: cláusulas 6.1 y 8.2
+NIS2-21.2.b,Gestión de incidentes,ENS-op.exp.7;ENS-op.exp.9;ENS-op.mon.1,5.24;5.25;5.26;5.27;5.28,
+NIS2-21.2.c,Continuidad y copias,ENS-op.cont.1;ENS-op.cont.2;ENS-op.cont.3;ENS-op.cont.4;ENS-mp.info.6,5.29;5.30;8.13;8.14,
+NIS2-21.2.d,Cadena de suministro,ENS-op.ext.1;ENS-op.ext.2;ENS-op.ext.3;ENS-op.nub.1,5.19;5.20;5.21;5.22;5.23,
+NIS2-21.2.e,Adquisición desarrollo y vulnerabilidades,ENS-op.pl.3;ENS-op.exp.4;ENS-mp.sw.1;ENS-mp.sw.2,8.8;8.25;8.26;8.28;8.29,
+NIS2-21.2.f,Evaluación de eficacia,ENS-op.mon.2,5.35;5.36,ISO 27001: cláusula 9
+NIS2-21.2.g,Ciberhigiene y formación,ENS-mp.per.3;ENS-mp.per.4;ENS-op.exp.2;ENS-op.exp.6,6.3;8.7;8.9,
+NIS2-21.2.h,Criptografía,ENS-op.exp.10;ENS-mp.si.2;ENS-mp.com.2,8.24,
+NIS2-21.2.i,RR. HH. accesos y activos,ENS-op.acc.1;ENS-op.acc.2;ENS-op.acc.3;ENS-op.acc.4;ENS-op.exp.1;ENS-mp.per.1;ENS-mp.per.2,5.9;5.15;5.18;6.1;6.2;6.5;8.2,
+NIS2-21.2.j,MFA y comunicaciones seguras,ENS-op.acc.5;ENS-op.acc.6;ENS-mp.com.2;ENS-mp.com.3,5.17;8.5,
+NIS2-23.alerta,Alerta temprana 24 h,ENS-op.exp.7,5.24;5.26,Más notificación a CCN-CERT (sector público) / INCIBE-CERT (privado)
+NIS2-23.notificacion,Notificación 72 h,ENS-op.exp.7,5.26,
+NIS2-23.final,Informe final 1 mes,ENS-op.exp.9,5.27,
