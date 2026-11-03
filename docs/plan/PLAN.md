@@ -289,14 +289,14 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: reservada por coordinador 2026-11-03
 
-- [~] **T27** — PMO: vida del proyecto, horas, costes y presupuesto
+- [x] **T27** — PMO: vida del proyecto, horas, costes y presupuesto
   - Hace: `smc/pmo.py` y `pmo/` con plantilla `proyecto.template.yaml` y un ejemplo ficticio: proyecto (cliente ficticio, fechas, presupuesto total y por partida: horas, licencias, servicios, formación), tareas (id, título, controles o brechas SMC relacionados, acción del `plan_accion` opcional, responsable por rol, horas estimadas, horas imputadas, % avance, fechas, dependencias), tarifas por rol, imputaciones de horas (fecha, rol, tarea, horas), costes no laborales (proveedor, concepto, importe, fecha, partida), eventos e hitos (comités, auditorías, renovaciones, entregas) y riesgos del proyecto. Cálculos con `hoy` inyectado: coste real por partida, desviación sobre presupuesto, valor ganado simple (PV, EV, AC, CPI, SPI), tareas retrasadas, tareas sin control asociado, próximos eventos (30 días), horas por rol y mes. Opcional: sumar `coste_anual` de suscripciones de un registry vía `smc.tech` (sin recalcular). `render_markdown` y export de eventos a iCalendar (`.ics`, texto escapado según RFC 5545). `docs/pmo.md` y ADR-005 (presupuesto, horas y tarifas son datos de cliente: fuera del repositorio, ADR-001).
   - No hace: no toca `smc/cli.py` ni el informe HTML (lo integra T28); no es un gestor de proyectos completo (sin Gantt interactivo).
   - Toca: `pmo/`, `smc/pmo.py`, `tests/test_pmo.py`, `docs/pmo.md`, `docs/adr/ADR-005-pmo-datos-de-cliente.md`, `docs/plan/informes/T27-dev-proyecto.md`
   - Depende: T23
   - Verifica: EVM correcto en un caso calculado a mano en el test; contraprueba: una imputación a una tarea inexistente da aviso y un importe no numérico no rompe; el .ics valida (líneas CRLF, escapado de `,;\`).
   - Prod: —
-  - Estado: reservada por coordinador 2026-11-03
+  - Estado: hecha en 2f9d181 · evidencia informes/T27-dev-proyecto.md
 
 ## Ola 13 (v0.7.0)
 
