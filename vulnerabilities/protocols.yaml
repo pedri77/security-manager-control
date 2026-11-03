@@ -48,7 +48,7 @@ protocolos:
   - T1187
   - T1210
   consulta:
-    nvd: https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&search_type=all&query=SMB
+    nvd: https://nvd.nist.gov/vuln/search?keyword=SMB&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=SMB
     cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=SMB
     cvedetails: https://www.cvedetails.com/google-search-results.php?q=SMB
@@ -85,7 +85,7 @@ protocolos:
   - T1110
   - T1133
   consulta:
-    nvd: https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&search_type=all&query=RDP
+    nvd: https://nvd.nist.gov/vuln/search?keyword=RDP&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=RDP
     cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=RDP
     cvedetails: https://www.cvedetails.com/google-search-results.php?q=RDP
@@ -123,7 +123,7 @@ protocolos:
   - T1110
   - T1572
   consulta:
-    nvd: https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&search_type=all&query=SSH
+    nvd: https://nvd.nist.gov/vuln/search?keyword=SSH&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=SSH
     cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=SSH
     cvedetails: https://www.cvedetails.com/google-search-results.php?q=SSH
@@ -157,7 +157,7 @@ protocolos:
   - T1078
   - T1110
   consulta:
-    nvd: https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&search_type=all&query=Telnet
+    nvd: https://nvd.nist.gov/vuln/search?keyword=Telnet&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=Telnet
     cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=Telnet
     cvedetails: https://www.cvedetails.com/google-search-results.php?q=Telnet
@@ -192,7 +192,7 @@ protocolos:
   - T1048
   - T1078
   consulta:
-    nvd: https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&search_type=all&query=FTP
+    nvd: https://nvd.nist.gov/vuln/search?keyword=FTP&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=FTP
     cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=FTP
     cvedetails: https://www.cvedetails.com/google-search-results.php?q=FTP
@@ -227,7 +227,7 @@ protocolos:
   - T1602.001
   - T1046
   consulta:
-    nvd: https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&search_type=all&query=SNMP
+    nvd: https://nvd.nist.gov/vuln/search?keyword=SNMP&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=SNMP
     cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=SNMP
     cvedetails: https://www.cvedetails.com/google-search-results.php?q=SNMP
@@ -263,7 +263,7 @@ protocolos:
   - T1071.004
   - T1048
   consulta:
-    nvd: https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&search_type=all&query=DNS
+    nvd: https://nvd.nist.gov/vuln/search?keyword=DNS&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=DNS
     cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=DNS
     cvedetails: https://www.cvedetails.com/google-search-results.php?q=DNS
@@ -294,7 +294,7 @@ protocolos:
   attack:
   - T1498
   consulta:
-    nvd: https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&search_type=all&query=NTP
+    nvd: https://nvd.nist.gov/vuln/search?keyword=NTP&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=NTP
     cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=NTP
     cvedetails: https://www.cvedetails.com/google-search-results.php?q=NTP
@@ -331,7 +331,7 @@ protocolos:
   - T1087
   - T1018
   consulta:
-    nvd: https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&search_type=all&query=LDAP
+    nvd: https://nvd.nist.gov/vuln/search?keyword=LDAP&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=LDAP
     cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=LDAP
     cvedetails: https://www.cvedetails.com/google-search-results.php?q=LDAP
@@ -368,7 +368,7 @@ protocolos:
   - T1558.003
   - T1550
   consulta:
-    nvd: https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&search_type=all&query=Kerberos
+    nvd: https://nvd.nist.gov/vuln/search?keyword=Kerberos&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=Kerberos
     cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=Kerberos
     cvedetails: https://www.cvedetails.com/google-search-results.php?q=Kerberos
@@ -404,7 +404,7 @@ protocolos:
   - T1557.001
   - T1187
   consulta:
-    nvd: https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&search_type=all&query=NTLM
+    nvd: https://nvd.nist.gov/vuln/search?keyword=NTLM&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=NTLM
     cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=NTLM
     cvedetails: https://www.cvedetails.com/google-search-results.php?q=NTLM
@@ -443,7 +443,7 @@ protocolos:
   - T1557
   - T1040
   consulta:
-    nvd: https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&search_type=all&query=TLS
+    nvd: https://nvd.nist.gov/vuln/search?keyword=TLS&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=TLS
     cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=TLS
     cvedetails: https://www.cvedetails.com/google-search-results.php?q=TLS
@@ -484,7 +484,7 @@ protocolos:
   - T1190
   - T1071.001
   consulta:
-    nvd: https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&search_type=all&query=HTTP
+    nvd: https://nvd.nist.gov/vuln/search?keyword=HTTP&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=HTTP
     cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=HTTP
     cvedetails: https://www.cvedetails.com/google-search-results.php?q=HTTP
@@ -522,7 +522,7 @@ protocolos:
   - T1071.003
   - T1566
   consulta:
-    nvd: https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&search_type=all&query=SMTP
+    nvd: https://nvd.nist.gov/vuln/search?keyword=SMTP&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=SMTP
     cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=SMTP
     cvedetails: https://www.cvedetails.com/google-search-results.php?q=SMTP
@@ -559,7 +559,7 @@ protocolos:
   - T1110
   - T1114
   consulta:
-    nvd: https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&search_type=all&query=IMAP
+    nvd: https://nvd.nist.gov/vuln/search?keyword=IMAP&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=IMAP
     cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=IMAP
     cvedetails: https://www.cvedetails.com/google-search-results.php?q=IMAP
@@ -599,7 +599,7 @@ protocolos:
   - T1110
   - T1498
   consulta:
-    nvd: https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&search_type=all&query=SIP
+    nvd: https://nvd.nist.gov/vuln/search?keyword=SIP&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=SIP
     cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=SIP
     cvedetails: https://www.cvedetails.com/google-search-results.php?q=SIP
@@ -637,7 +637,7 @@ protocolos:
   - T1040
   - T1190
   consulta:
-    nvd: https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&search_type=all&query=MQTT
+    nvd: https://nvd.nist.gov/vuln/search?keyword=MQTT&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=MQTT
     cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=MQTT
     cvedetails: https://www.cvedetails.com/google-search-results.php?q=MQTT
@@ -673,7 +673,7 @@ protocolos:
   - T0856
   - T0842
   consulta:
-    nvd: https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&search_type=all&query=Modbus
+    nvd: https://nvd.nist.gov/vuln/search?keyword=Modbus&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=Modbus
     cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=Modbus
     cvedetails: https://www.cvedetails.com/google-search-results.php?q=Modbus
@@ -708,7 +708,7 @@ protocolos:
   - T0855
   - T0846
   consulta:
-    nvd: https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&search_type=all&query=S7comm
+    nvd: https://nvd.nist.gov/vuln/search?keyword=S7comm&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=S7comm
     cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=S7comm
     cvedetails: https://www.cvedetails.com/google-search-results.php?q=S7comm
@@ -743,7 +743,7 @@ protocolos:
   - T0855
   - T0856
   consulta:
-    nvd: https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&search_type=all&query=DNP3
+    nvd: https://nvd.nist.gov/vuln/search?keyword=DNP3&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=DNP3
     cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=DNP3
     cvedetails: https://www.cvedetails.com/google-search-results.php?q=DNP3
@@ -777,7 +777,7 @@ protocolos:
   - T0842
   - T0846
   consulta:
-    nvd: https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&search_type=all&query=BACnet
+    nvd: https://nvd.nist.gov/vuln/search?keyword=BACnet&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=BACnet
     cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=BACnet
     cvedetails: https://www.cvedetails.com/google-search-results.php?q=BACnet
@@ -810,7 +810,7 @@ protocolos:
   attack:
   - T0855
   consulta:
-    nvd: https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&search_type=all&query=OPC%20UA
+    nvd: https://nvd.nist.gov/vuln/search?keyword=OPC%20UA&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=OPC%20UA
     cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=OPC%20UA
     cvedetails: https://www.cvedetails.com/google-search-results.php?q=OPC%20UA
@@ -841,7 +841,7 @@ protocolos:
   - T1557.002
   - T1040
   consulta:
-    nvd: https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&search_type=all&query=ARP
+    nvd: https://nvd.nist.gov/vuln/search?keyword=ARP&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=ARP
     cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=ARP
     cvedetails: https://www.cvedetails.com/google-search-results.php?q=ARP
@@ -873,7 +873,7 @@ protocolos:
   - T1557
   - T1040
   consulta:
-    nvd: https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&search_type=all&query=EAP
+    nvd: https://nvd.nist.gov/vuln/search?keyword=EAP&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=EAP
     cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=EAP
     cvedetails: https://www.cvedetails.com/google-search-results.php?q=EAP
@@ -904,7 +904,7 @@ protocolos:
   - T1095
   - T1498
   consulta:
-    nvd: https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&search_type=all&query=ICMP
+    nvd: https://nvd.nist.gov/vuln/search?keyword=ICMP&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=ICMP
     cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=ICMP
     cvedetails: https://www.cvedetails.com/google-search-results.php?q=ICMP
@@ -940,7 +940,7 @@ protocolos:
   - T1133
   - T1190
   consulta:
-    nvd: https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&search_type=all&query=IKE
+    nvd: https://nvd.nist.gov/vuln/search?keyword=IKE&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=IKE
     cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=IKE
     cvedetails: https://www.cvedetails.com/google-search-results.php?q=IKE
@@ -972,7 +972,7 @@ protocolos:
   attack:
   - T1557
   consulta:
-    nvd: https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&search_type=all&query=BGP
+    nvd: https://nvd.nist.gov/vuln/search?keyword=BGP&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=BGP
     cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=BGP
     cvedetails: https://www.cvedetails.com/google-search-results.php?q=BGP
@@ -1005,7 +1005,7 @@ protocolos:
   attack:
   - T1557.003
   consulta:
-    nvd: https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&search_type=all&query=DHCP
+    nvd: https://nvd.nist.gov/vuln/search?keyword=DHCP&resultType=records
     euvd: https://euvd.enisa.europa.eu/search?text=DHCP
     cisa_kev: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=DHCP
     cvedetails: https://www.cvedetails.com/google-search-results.php?q=DHCP
