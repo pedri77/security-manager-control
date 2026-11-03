@@ -81,7 +81,9 @@ def frameworks_in_scope(cliente: dict) -> list[str]:
     return fws
 
 
-NOTA_VERIFICAR = "aplicabilidad pendiente de contrastar"
+ETIQUETA_MITRE = "Catálogo de casos de uso del SOC (común a todos los clientes)"
+NOTA_VERIFICAR = ("dependen de las dimensiones C/I/T/A/D (aproximadas por la categoría del sistema); las 73 medidas están "
+                  "contrastadas con el Anexo II del RD 311/2022 (BOE-A-2022-7191) y faltan las guías CCN-STIC")
 
 
 def _estado_de(ev) -> object:
@@ -276,7 +278,7 @@ def render_v06_md(registry=None, hoy: date | None = None, mitre_datos: dict | No
         for (_p, mon), c in sb["coste_por_proveedor"].items():
             tot[mon] = tot.get(mon, 0.0) + (c if _num_md(c) != "—" else 0.0)
         out += ["", "## Suscripciones", "",
-                "Coste anual total: " + (" + ".join(f"{_num_md(v)} {md_texto(m)}" for m, v in sorted(tot.items())) or "—"), "",
+                "Coste anual total: " + (" + ".join(f"{_num_md(v)} {md_texto(m)}" for m, v in sorted(tot.items(), key=lambda kv: str(kv[0]))) or "—"), "",
                 "### Vencen en 90 días", ""]
         out += [f"- {x['fecha']} · {md_texto(x['id'])} {md_texto(x['nombre'])} ({md_texto(x['proveedor'])}, "
                 f"{_num_md(x['coste_anual'])} {md_texto(x['moneda'])})" for x in sb["renovaciones"]] or ["- Ninguna"]
@@ -288,7 +290,8 @@ def render_v06_md(registry=None, hoy: date | None = None, mitre_datos: dict | No
         out.append("")
     datos = mitre_datos if mitre_datos is not None else {"madurez": mitre.madurez(hoy=hoy), "sin_playbook": mitre.sin_playbook()}
     m = datos["madurez"]
-    out += ["## Madurez MITRE ATT&CK", "", f"Técnicas con caso de uso: {len(m['tecnicas'])} · Casos de uso: {len(m['casos'])}", "",
+    out += ["## Madurez MITRE ATT&CK", "", f"**{ETIQUETA_MITRE}.** No describe al cliente: es la cobertura del SOC.", "",
+            f"Técnicas con caso de uso: {len(m['tecnicas'])} · Casos de uso: {len(m['casos'])}", "",
             "| Táctica | Madurez (0-5) |", "|---|---|"]
     out += [f"| {md_texto(t)} | {n} |" for t, n in m["tacticas"].items()]
     out += ["", f"### Casos sin playbook ({len(datos['sin_playbook'])})", ""]
@@ -326,9 +329,9 @@ def render_markdown(an: Analisis | dict, results=None, warnings=None, registry=N
         out.append(f"| {r.framework} | {r.total} | {r.aplicables} | {r.puntuacion}% | {len(r.brechas)} | "
                    f"{len(r.sin_evaluar)} | {len(r.no_aplican)} |")
     if an.ens_verificar:
-        out += ["", f"> **Aviso ENS:** {len(an.ens_verificar)} medidas ENS tienen {NOTA_VERIFICAR} "
-                "con el Anexo II del RD 311/2022 (`verificar`); «no aplica» y los refuerzos por categoría no son "
-                "definitivos. Se marcan con (verificar)."]
+        out += ["", f"> **Aviso ENS:** {len(an.ens_verificar)} medidas ENS {NOTA_VERIFICAR} "
+                "(`verificar`); «no aplica» y los refuerzos por categoría pueden variar según esas dimensiones. "
+                "Se marcan con (verificar)."]
     for r in results:
         out += ["", f"## {r.framework}"]
         if r.brechas:

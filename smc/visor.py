@@ -7,17 +7,20 @@ API:
 Lee SOLO el JSON `smc-mapa/1` (ver docs/mapa-3d.md). La página no hace fetch, no carga nada de la red:
 three.js (MIT, vendorizado en smc/assets, ver ADR-004) y el código del visor van dentro del HTML.
 Seguridad: el JSON va en <script type="application/json"> con '<' escapado; el DOM del visor se rellena
-con textContent; la tabla en texto se genera aquí con html.escape.
+con textContent; la tabla en texto se genera aquí con html.escape. La CSP admite solo el script del módulo,
+por su sha256 (el script es constante: three.js + visor-app.js + licencia), sin 'unsafe-inline' en script-src.
 """
 from __future__ import annotations
 
 import argparse
+import base64
+import hashlib
 import html
 import json
 import sys
 from pathlib import Path
 
-from .mapa import SCHEMA, validar_mapa
+from .mapa import SCHEMA, SEMAFOROS, validar_mapa
 
 ASSETS = Path(__file__).parent / "assets"
 SEMAFORO_TXT = {"rojo": "ROJO", "ambar": "ÁMBAR", "gris": "GRIS (no se sabe)", "verde": "VERDE"}
@@ -40,27 +43,73 @@ def _e(v) -> str:
     return html.escape("" if v is None else str(v), quote=True)
 
 
+def _entero(v) -> bool:
+    return isinstance(v, int) and not isinstance(v, bool) and v >= 0
+
+
+def _validar_resumen(mapa: dict) -> None:
+    """ValueError si el resumen o los avisos no tienen la forma que el visor pinta (enteros no negativos)."""
+    r = mapa.get("resumen")
+    if not isinstance(r, dict):
+        raise ValueError("mapa no válido: resumen debe ser un objeto")
+    if not _entero(r.get("dispositivos")):
+        raise ValueError("mapa no válido: resumen.dispositivos debe ser un entero no negativo")
+    por = r.get("por_semaforo")
+    if not isinstance(por, dict):
+        raise ValueError("mapa no válido: falta resumen.por_semaforo")
+    for s in SEMAFOROS:
+        if not _entero(por.get(s)):
+            raise ValueError(f"mapa no válido: resumen.por_semaforo.{s} debe ser un entero no negativo")
+    if not isinstance(mapa.get("avisos"), list):
+        raise ValueError("mapa no válido: avisos debe ser una lista")
+
+
 def _tabla(mapa: dict) -> str:
-    cab = ["Zona", "ID", "Dispositivo", "Tipo", "Capa OSI", "Vertical", "Semáforo", "Reglas", "Any-any",
-           "Vulns abiertas", "Fuera de SLA", "KEV fuera de SLA", "Motivos"]
+    cab = ["Zona", "Semáforo de zona", "ID", "Dispositivo", "Tipo", "Capa OSI", "Vertical", "Semáforo", "Reglas",
+           "Reglas (total)", "Any-any", "Reglas sin uso", "Vulns abiertas", "Fuera de SLA", "KEV fuera de SLA",
+           "CVE fuera de SLA", "Motivos"]
     filas = []
-    grupos = [(z["nombre"], z["dispositivos"]) for z in mapa["zonas"]] + [("Sin zona", mapa["sin_zona"])]
-    for nombre, ds in grupos:
+    grupos = [(z["nombre"], SEMAFORO_TXT.get(z.get("semaforo"), SEMAFORO_TXT["gris"]), z["dispositivos"]) for z in mapa["zonas"]] \
+        + [("Sin zona", "—", mapa["sin_zona"])]
+    for nombre, semz, ds in grupos:
         for d in ds:
             r, v = d.get("reglas") or {}, d.get("vulnerabilidades") or {}
             estado = r.get("estado")
             reglas = f"No evaluable: {r.get('motivo')}" if estado == "no_evaluable" else estado
             sem = SEMAFORO_TXT.get(d.get("semaforo"), SEMAFORO_TXT["gris"])
-            motivos = "; ".join(d.get("semaforo_motivos") or [])
+            motivos = "; ".join(str(m) for m in (d.get("semaforo_motivos") or []))
             if d.get("motivo_sin_zona"):
                 motivos += f" | Sin zona: {d['motivo_sin_zona']}"
-            celdas = [nombre, d.get("id"), d.get("nombre"), d.get("tipo"),
+            cves = ", ".join(str(c) for c in (v.get("cves_fuera_sla") or []))
+            celdas = [nombre, semz, d.get("id"), d.get("nombre"), d.get("tipo"),
                       "desconocida" if d.get("capa_osi") is None else d["capa_osi"], d.get("vertical") or "—", sem, reglas,
-                      r.get("reglas_any_any"), v.get("abiertas"), v.get("fuera_sla"), v.get("kev_fuera_sla"), motivos]
+                      r.get("n_reglas"), r.get("reglas_any_any"), r.get("reglas_sin_uso"),
+                      v.get("abiertas"), v.get("fuera_sla"), v.get("kev_fuera_sla"), cves or "—", motivos]
             filas.append("<tr>" + "".join(f"<td>{_e(c)}</td>" for c in celdas) + "</tr>")
     cuerpo = "\n".join(filas) or f'<tr><td colspan="{len(cab)}">Sin dispositivos</td></tr>'
     return ('<table><caption>Dispositivos del mapa (la misma información que la vista 3D)</caption><thead><tr>'
             + "".join(f'<th scope="col">{c}</th>' for c in cab) + f"</tr></thead><tbody>\n{cuerpo}\n</tbody></table>")
+
+
+def _resumen_texto(mapa: dict) -> str:
+    """Resumen del mapa y avisos en el servidor (lo que el panel pinta con JS), por si no se ejecuta JS."""
+    r = mapa["resumen"]
+    por = r["por_semaforo"]
+    mad = r.get("madurez_verticales_media")
+    items = [f"Generado para: {mapa.get('generado_para')}",
+             f"Dispositivos: {r['dispositivos']} (sin zona: {r.get('sin_zona')})",
+             "Rojo / ámbar / gris / verde: " + " / ".join(str(por[s]) for s in ("rojo", "ambar", "gris", "verde")),
+             f"Reglas no evaluables: {r.get('reglas_no_evaluables')}",
+             f"Vulnerabilidades abiertas: {r.get('vulnerabilidades_abiertas')}",
+             f"Vulnerabilidades fuera de SLA: {r.get('vulnerabilidades_fuera_sla')}",
+             "Madurez media de verticales: " + ("sin evaluación" if mad is None else str(mad))]
+    out = ['<h2>Resumen del mapa</h2>', "<ul>" + "".join(f"<li>{_e(i)}</li>" for i in items) + "</ul>"]
+    zonas = [f"{z['nombre']}: semáforo {SEMAFORO_TXT.get(z.get('semaforo'), SEMAFORO_TXT['gris'])}, "
+             f"{len(z['dispositivos'])} dispositivos" for z in mapa["zonas"]]
+    out += ["<h2>Zonas</h2>", "<ul>" + "".join(f"<li>{_e(z)}</li>" for z in zonas) + "</ul>"]
+    if mapa["avisos"]:
+        out += ["<h2>Avisos</h2>", "<ul>" + "".join(f"<li>{_e(a)}</li>" for a in mapa["avisos"]) + "</ul>"]
+    return "\n".join(out)
 
 
 CSS = """
@@ -86,6 +135,16 @@ th,td{border:1px solid var(--bd);padding:4px 8px;text-align:left;vertical-align:
 """
 
 
+def script_modulo() -> str:
+    """Texto EXACTO del <script type="module"> (constante: no depende del mapa). Su sha256 va en la CSP."""
+    licencia = _asset("THREE-LICENSE").strip()
+    if "*/" in licencia:
+        raise ValueError("THREE-LICENSE contiene '*/' y rompería el comentario")
+    cab = ("/*! three.js r186, vendorizado (ver docs/adr/ADR-004-three-js-vendorizado.md). Licencia completa:\n\n"
+           + licencia + "\n*/")
+    return f"\n{cab}\n{_asset('three.bundle.min.js')}\n{_asset('visor-app.js')}\n"
+
+
 def generar_visor(mapa: dict) -> str:
     """Devuelve el HTML autocontenido del visor para un mapa `smc-mapa/1` ya construido.
 
@@ -93,17 +152,20 @@ def generar_visor(mapa: dict) -> str:
     errores = validar_mapa(mapa)
     if errores:
         raise ValueError("mapa no válido: " + "; ".join(errores[:5]))
+    _validar_resumen(mapa)
     r = mapa["resumen"]
     por = r["por_semaforo"]
-    sub = (f"Mapa para {_e(mapa['generado_para'])} · {r['dispositivos']} dispositivos "
-           f"(rojo {por['rojo']}, ámbar {por['ambar']}, gris {por['gris']}, verde {por['verde']})")
-    three, app = _asset("three.bundle.min.js"), _asset("visor-app.js")
+    sub = (f"Mapa para {_e(mapa['generado_para'])} · {_e(r['dispositivos'])} dispositivos "
+           f"(rojo {_e(por['rojo'])}, ámbar {_e(por['ambar'])}, gris {_e(por['gris'])}, verde {_e(por['verde'])})")
+    script = script_modulo()
+    csp = ("default-src 'none'; script-src 'sha256-" + base64.b64encode(hashlib.sha256(script.encode("utf-8")).digest()).decode()
+           + "'; style-src 'unsafe-inline'; img-src data:")
     return f"""<!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:">
+<meta http-equiv="Content-Security-Policy" content="{csp}">
 <title>SMC · Mapa de la red</title>
 <style>{CSS}</style>
 </head>
@@ -124,14 +186,11 @@ def generar_visor(mapa: dict) -> str:
 </main>
 <p class="leyenda">Semáforo: rojo = vulnerabilidad KEV/crítica fuera de SLA o reglas any-any; ámbar = revisión pendiente o vulnerabilidad fuera de SLA; gris = no se puede evaluar (nunca verde); verde = revisado y sin brechas. Arrastrar para girar, rueda para acercar; cualquier gesto detiene la visita.</p>
 <section class="texto" aria-label="Alternativa en texto">
+{_resumen_texto(mapa)}
 {_tabla(mapa)}
 </section>
 <script type="application/json" id="smc-data">{json_embebido(mapa)}</script>
-<script type="module">
-/* three.js r186 (MIT), vendorizado: ver smc/assets/THREE-LICENSE y docs/adr/ADR-004-three-js-vendorizado.md */
-{three}
-{app}
-</script>
+<script type="module">{script}</script>
 </body>
 </html>
 """
