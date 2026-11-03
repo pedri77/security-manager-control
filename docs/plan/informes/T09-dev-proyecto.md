@@ -36,3 +36,8 @@ Cambiando en `soc/verticals.yaml` la URL de wafforge por `https://github.com/ped
 
 ## Queda
 Integración (cli/informes/dashboard) en T14; corregir cifra "12 verticales" en README.
+
+## Verificación del coordinador (2026-11-03)
+- Verifica: pytest en worktree 106 passed; en main tras fusionar: 106 passed.
+- Superficies: OK. Toca: sin ficheros fuera. gitleaks: sin hallazgos.
+- Contraprueba: URL de wafforge -> repo privado repo-privado -> 3 failed, 103 passed; restaurada, 106 passed.

@@ -24,3 +24,8 @@ Con `UMBRAL_INFRAUSO = 0.95` el test de suscripciones en rojo; restaurado a 0.70
 - `vertical` no se valida contra el catálogo (lo hará una tarea posterior); los IDs VRT-EDR/NET/MDM/SASE son provisionales.
 - Coste ocioso = coste × (1 − uso). Coste por proveedor separado por moneda.
 - Sin tocar cli.py (integración en T14). PLAN.md sin marcar. Sin push.
+
+## Verificación del coordinador (2026-11-03)
+- Verifica: pytest en worktree 89 passed; en main tras fusionar: 117 passed.
+- Superficies: OK. Toca: sin ficheros fuera. gitleaks: sin hallazgos.
+- Contraprueba: UMBRAL_INFRAUSO 0.70 -> 0.95 -> 2 failed, 87 passed; restaurado, 89 passed.
