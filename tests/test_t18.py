@@ -70,5 +70,6 @@ def test_contraprueba_sin_grc_no_hay_agregacion_en_20():
 def test_informes_sin_nombres_de_repos_privados():
     for t in ("T09", "T12"):
         txt = (ROOT / "docs" / "plan" / "informes" / f"{t}-dev-proyecto.md").read_text(encoding="utf-8")
-        assert "sase-evaluation-pack" not in txt and "riskitera-news" not in txt
+        from smc.resources import urls_no_publicas
+        assert urls_no_publicas(txt) == []
         assert "un repo privado" in txt

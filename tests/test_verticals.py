@@ -49,7 +49,7 @@ def test_urls_dentro_de_la_lista_publica():
 def test_url_fuera_de_la_lista_pone_rojo():
     """Contraprueba: una URL de repo privado o ajena se detecta."""
     vs = V.cargar_verticales()
-    vs[0].recursos.append({"titulo": "x", "url": "https://github.com/pedri77/sase-evaluation-pack"})
+    vs[0].recursos.append({"titulo": "x", "url": "https://github.com/pedri77/repo-privado-ficticio"})
     assert any("fuera de la lista pública" in e for e in V.validar_catalogo(vs))
     assert V.validar_catalogo() == []   # el YAML real sigue limpio
 

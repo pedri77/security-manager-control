@@ -37,15 +37,15 @@ def test_opml_escapa():
 
 def test_ningun_repo_privado():
     txt = (R.RSS_FILE.read_text() + R.ECO_FILE.read_text() + R.render_markdown()).lower()
-    assert not any(p in txt for p in R.PROHIBIDOS)
+    assert R.urls_no_publicas(txt) == []
 
 
 def test_contraprueba_repo_privado_en_rojo():
     eco = copy.deepcopy(R.cargar_ecosistema())
-    eco.append({"id": "X", "nombre": "x", "tipo": "repo", "estado": "publicado", "url": "https://github.com/pedri77/sase-evaluation-pack"})
+    eco.append({"id": "X", "nombre": "x", "tipo": "repo", "estado": "publicado", "url": "https://github.com/pedri77/repo-privado-ficticio"})
     assert any("repo privado" in e for e in R.validar(eco=eco))
     rss = copy.deepcopy(R.cargar_rss())
-    rss[0]["url_web"] = "https://github.com/pedri77/riskitera-news"
+    rss[0]["url_web"] = "https://pedri77.github.io/otro-repo-no-listado/"
     assert any("repo privado" in e for e in R.validar(rss=rss))
 
 
