@@ -56,6 +56,8 @@ class Comparacion:
     cliente_despues: str = ""
     fecha_antes: date | None = None
     fecha_despues: date | None = None
+    dejan_de_evaluarse: list[CambioControl] = field(default_factory=list)   # evaluados antes, ausentes ahora
+    sin_catalogo: list[str] = field(default_factory=list)                   # IDs evaluados que no existen en el catálogo
 
 
 def _fecha(assessment) -> date | None:
@@ -81,6 +83,14 @@ def _nombre(assessment) -> str:
     return str(n).strip() if n else ""
 
 
+def _aplicables(an) -> set[str]:
+    """IDs de los controles aplicables en el alcance de un análisis (catálogo de sus marcos menos los que no aplican)."""
+    from .catalog import load_all
+    cat = load_all()
+    ids = {c.id for r in an.results for c in cat.get(r.framework, [])}
+    return ids - {c.id for r in an.results for c in r.no_aplican}
+
+
 def _estados(assessment) -> dict[str, str]:
     ev = assessment.get("evaluaciones") if isinstance(assessment, dict) else None
     out = {}
@@ -95,6 +105,8 @@ def _clasificar(a: str, d: str) -> str:
     """a, d: estado o 'sin_evaluar'. Devuelve mejoran|empeoran|cerrados|nuevas_brechas|sin_cambio."""
     if a == d:
         return "sin_cambio"
+    if d == "sin_evaluar":
+        return "dejan_de_evaluarse"       # presente antes (cualquier estado), ausente ahora
     if a in _BRECHA and d in _BRECHA:
         return "mejoran" if _RANGO[d] > _RANGO[a] else "empeoran"
     if a in _BRECHA:
@@ -103,8 +115,6 @@ def _clasificar(a: str, d: str) -> str:
         return "nuevas_brechas"
     if a == "sin_evaluar" and d == "implementado":
         return "mejoran"
-    if a == "implementado" and d == "sin_evaluar":
-        return "empeoran"
     return "sin_cambio"
 
 
@@ -155,9 +165,19 @@ def comparar(anterior: dict, actual: dict, hoy: date | None = None) -> Comparaci
             marcos.append(DeltaMarco(fw, a, d, delta))
 
     e0, e1 = _estados(anterior), _estados(actual)
+    from .catalog import load_all
+    existentes = {c.id for lista in load_all().values() for c in lista}
+    sin_catalogo = sorted({c for c in set(e0) | set(e1) if c not in existentes})
+    if sin_catalogo:
+        avisos.append("Controles evaluados que no existen en el catálogo (se ignoran): " + ", ".join(sin_catalogo))
+    ap0, ap1 = _aplicables(an0), _aplicables(an1)
+    # solo se clasifican los controles aplicables en las dos evaluaciones (los que dejan de aplicar por la categoría
+    # ENS o por el alcance no son brechas nuevas ni cerradas)
+    comunes = ap0 & ap1
     grupos: dict[str, list[CambioControl]] = {k: [] for k in
-                                              ("mejoran", "empeoran", "cerrados", "nuevas_brechas", "sin_cambio")}
-    for cid in sorted(set(e0) | set(e1)):
+                                              ("mejoran", "empeoran", "cerrados", "nuevas_brechas", "sin_cambio",
+                                               "dejan_de_evaluarse")}
+    for cid in sorted((set(e0) | set(e1)) & comunes):
         a, d = e0.get(cid, "sin_evaluar"), e1.get(cid, "sin_evaluar")
         grupos[_clasificar(a, d)].append(CambioControl(cid, a, d))
 
@@ -181,7 +201,7 @@ def comparar(anterior: dict, actual: dict, hoy: date | None = None) -> Comparaci
     return Comparacion(marcos, grupos["mejoran"], grupos["empeoran"], grupos["cerrados"], grupos["nuevas_brechas"],
                        grupos["sin_cambio"], _p1(an0), _p1(an1), verts, m0, m1,
                        round(m1 - m0, 2) if m0 is not None and m1 is not None else None,
-                       cerradas, avisos, n0, n1, f0, f1)
+                       cerradas, avisos, n0, n1, f0, f1, grupos["dejan_de_evaluarse"], sin_catalogo)
 
 
 def _s(x, dec=1) -> str:
@@ -211,7 +231,7 @@ def render_markdown(comp: Comparacion) -> str:
                  f"{_d(m.delta) if m.comparable else 'no comparable'} |")
     L += ["", "## Controles", ""]
     L += _lista("Cerrados", comp.cerrados) + _lista("Mejoran", comp.mejoran) + _lista("Empeoran", comp.empeoran)
-    L += _lista("Nuevas brechas", comp.nuevas_brechas)
+    L += _lista("Nuevas brechas", comp.nuevas_brechas) + _lista("Dejan de evaluarse", comp.dejan_de_evaluarse)
     L += [f"Sin cambio: {len(comp.sin_cambio)} controles.", ""]
     L += ["## Brechas P1", "", f"Antes ({len(comp.p1_antes)}): {', '.join(comp.p1_antes) or 'ninguna'}",
           f"Después ({len(comp.p1_despues)}): {', '.join(comp.p1_despues) or 'ninguna'}", ""]

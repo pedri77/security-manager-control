@@ -1,5 +1,5 @@
 """T35: smc compare, soa, evidencias; sección Evolución; evidencia caducada en el dashboard; régimen transitorio
-en el informe HTML (render_ia); documentación y versión 0.8.0. Cada bloque lleva su contraprueba."""
+en el informe HTML (render_ia); documentación y versión 0.8.1. Cada bloque lleva su contraprueba."""
 import copy
 import re
 import zipfile
@@ -180,7 +180,8 @@ def test_dashboard_muestra_evidencia_caducada(tmp_path):
 
 def _inv(**kw):
     s = {"id": "IA-T", "nombre": "Sistema <b>ficticio</b>", "rol": ["proveedor"],
-         "nivel_riesgo": "alto_riesgo_anexo_iii", "en_mercado_desde": "2026-01-01"}
+         "nivel_riesgo": "alto_riesgo_anexo_iii", "en_mercado_desde": "2026-01-01",
+         "cambios_significativos": False}
     s.update(kw)
     return {"organizacion": "Ficticia", "sistemas": [s]}
 
@@ -207,8 +208,8 @@ def _readme():
 
 def test_version_080_y_badge_ci():
     from smc import __version__
-    assert __version__ == "0.8.0" and "versión-0.8.0" in _readme()
-    assert "## 0.8.0" in (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+    assert __version__ == "0.8.1" and "versión-0.8.1" in _readme()
+    assert "## 0.8.1" in (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
     assert "https://github.com/pedri77/security-manager-control/actions/workflows/tests.yml/badge.svg" in _readme()
     assert "versión-0.7.1" not in _readme()                                             # contraprueba
 

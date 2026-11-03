@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 import yaml
@@ -282,8 +282,38 @@ def validar_inventario(inventario) -> list[str]:
             errores.append(str(e))
         if isinstance(s, dict):
             ids.append(s.get("id"))
+        if isinstance(s, dict):
+            sid = s.get("id", "?")
+            for campo in ("cambios_significativos", "autoridad_publica"):
+                if s.get(campo) is not None and not isinstance(s.get(campo), bool):
+                    errores.append(f"{sid}: {campo} debe ser true o false (no {s.get(campo)!r})")
+            if s.get("en_mercado_desde") not in (None, "") and _fecha_mercado(s.get("en_mercado_desde")) is None:
+                errores.append(f"{sid}: en_mercado_desde no es una fecha AAAA-MM-DD ({s.get('en_mercado_desde')!r})")
     errores += [f"{i}: ID de sistema duplicado" for i in sorted({i for i in ids if ids.count(i) > 1}, key=str)]
     return errores
+
+
+def _fecha_mercado(v) -> date | None:
+    """Fecha de `en_mercado_desde`: date (un datetime se reduce a su fecha) o cadena AAAA-MM-DD; si no, None."""
+    if isinstance(v, datetime):
+        return v.date()
+    if isinstance(v, date):
+        return v
+    if isinstance(v, str):
+        try:
+            return date.fromisoformat(v.strip())
+        except ValueError:
+            return None
+    return None
+
+
+def _bandera(s: dict, campo: str, sid: str, warnings: list[str]) -> bool | None:
+    """true/false del inventario; ausente = None («no consta»); otro tipo = None con aviso (lo rechaza la validación)."""
+    v = s.get(campo)
+    if v is None or isinstance(v, bool):
+        return v
+    warnings.append(f"{sid}: {campo} debe ser true o false (se ignora; cuenta como «no consta»)")
+    return None
 
 
 def _evidencia(valor) -> bool:
@@ -346,10 +376,12 @@ def obligaciones(inventario, hoy: date | None = None, estricto: bool = True,
             warnings.append(f"{sid}: nivel transparencia sin supuestos: se aplican todas las obligaciones del art. 50")
         en_mercado = None
         if s.get("en_mercado_desde") not in (None, ""):
-            try:
-                en_mercado = _fecha(s.get("en_mercado_desde"))
-            except ValueError:
+            en_mercado = _fecha_mercado(s.get("en_mercado_desde"))
+            if en_mercado is None:
                 warnings.append(f"{sid}: en_mercado_desde no es una fecha válida (se ignora)")
+        cambios = _bandera(s, "cambios_significativos", sid, warnings)
+        publica = bool(_bandera(s, "autoridad_publica", sid, warnings))
+        aviso_cambios = False
         sistema = ObligacionesSistema(sid, str(s.get("nombre") or ""), cl.nivel, cl.roles)
         for o in catalogo:
             if cl.nivel not in o.niveles:
@@ -368,12 +400,19 @@ def obligaciones(inventario, hoy: date | None = None, estricto: bool = True,
                 warnings.append(f"{o.id}: sin fecha para el nivel {cl.nivel} (se omite)")
                 continue
             nota = o.nota
-            # T34, art. 111.2 RIA: alto riesgo en el mercado antes de la fecha del capítulo III y sin cambios
-            # significativos de diseño: las obligaciones del capítulo III (arts. 6-49) no se emiten como pendientes.
+            # Art. 111.2 RIA: alto riesgo en el mercado antes de la fecha del capítulo III y SIN cambios significativos
+            # de diseño (declarado: cambios_significativos false): las obligaciones del capítulo III (arts. 6-49) no se
+            # emiten como pendientes. Dato ausente = «no consta»: no se recorta y se avisa.
             if (cl.nivel.startswith("alto_riesgo") and not o.preexistente and es_capitulo_iii(o.articulo)
-                    and en_mercado is not None and en_mercado < fecha
-                    and not _evidencia(s.get("cambios_significativos"))):
-                if not _evidencia(s.get("autoridad_publica")):
+                    and en_mercado is not None and en_mercado < fecha and cambios is None and not aviso_cambios):
+                aviso_cambios = True
+                warnings.append(f"{sid}: en el mercado desde {en_mercado}, antes del capítulo III, y no consta si hay cambios "
+                                f"significativos de diseño: se emiten las obligaciones del capítulo III como pendientes; "
+                                f"si no los hay, aplicaría el régimen transitorio del art. 111.2 (declare "
+                                f"cambios_significativos: false)")
+            if (cl.nivel.startswith("alto_riesgo") and not o.preexistente and es_capitulo_iii(o.articulo)
+                    and en_mercado is not None and en_mercado < fecha and cambios is False):
+                if not publica:
                     sistema.regimen_transitorio.append(ObligacionTransitoria(
                         o.id, o.articulo, o.titulo, roles, None,
                         "solo con cambios significativos de diseño (art. 111.2)"))
@@ -389,12 +428,10 @@ def obligaciones(inventario, hoy: date | None = None, estricto: bool = True,
                 # Art. 111.2 RIA (Ómnibus, punto 39 a): solo para alto riesgo ya en el mercado antes de la fecha del capítulo III.
                 if en_mercado is None or en_mercado >= fecha:
                     continue
-                cambios = _evidencia(s.get("cambios_significativos"))
-                publica = _evidencia(s.get("autoridad_publica"))
-                if "cambios_significativos" not in s:
-                    warnings.append(f"{sid}: en el mercado desde {en_mercado}, antes de {fecha}; sin cambios_significativos "
-                                    f"se asume que no los hay (art. 111.2)")
-                if cambios:
+                if cambios is None:
+                    nota += (" No consta si hay cambios significativos de diseño (declare cambios_significativos): "
+                             "con ellos, el capítulo III le aplica desde la fecha de su nivel.")
+                elif cambios:
                     nota += " Declara cambios significativos de diseño: el capítulo III le aplica desde la fecha de su nivel."
                 elif publica:
                     fecha = FECHA_AUTORIDADES_PUBLICAS
