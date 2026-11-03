@@ -42,4 +42,8 @@ verticales:
   VRT-MAIL: {madurez: 4, producto: "Pasarela de correo ejemplo"}
   VRT-BCK: {madurez: 2, notas: "Sin pruebas de restauración"}
   VRT-GRC: {madurez: 3, notas: "Política aprobada y declaración de aplicabilidad; auditoría ENS pendiente"}
+  VRT-IAM: {madurez: 2, notas: "MFA en remoto y administradores; bajas manuales; sin revisión de accesos semestral"}
+  VRT-DATA: {madurez: 2, notas: "Clasificación aplicada a los sistemas principales; sin DLP"}
+  VRT-AI: {madurez: no_evaluable, motivo: "Sin inventario de herramientas de IA todavía; se hará en la próxima visita"}
+  VRT-OFF: {madurez: 1, notas: "Pentest puntual tras una auditoría, sin plan ni retest"}
   VRT-MDM: {madurez: no_evaluable, motivo: "Sin inventario de móviles corporativos todavía"}
