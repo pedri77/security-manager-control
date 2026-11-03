@@ -311,14 +311,14 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 
 ## Ola 14 (v0.7.1)
 
-- [~] **T29** — Endurecer v0.7 (hallazgos de revisor-ola olas 12-13)
+- [x] **T29** — Endurecer v0.7 (hallazgos de revisor-ola olas 12-13)
   - Hace: corrige los hallazgos 1-6 y 9 de `informes/ola-12-13-revisor-ola.md`. Decisiones: (a) purple cuenta para la madurez solo si `tecnica` está en las técnicas del caso de uso; (b) por caso y técnica manda el ejercicio más reciente: solo sube si ese es `detectado`; la madurez nunca baja por debajo de lo declarado en el catálogo; (c) hallazgo `corregido` con `resultado_retest` `persiste` o `parcial` se trata como abierto con su SLA desde `fecha_deteccion` y aparece además en una lista `retest_fallido` con aviso; (d) RIA: obligación nueva para el art. 111.2 (sistemas de alto riesgo en el mercado antes de la fecha del capítulo III: obligados solo con cambios significativos de diseño; los destinados a autoridades públicas, a más tardar 2030-08-02), con campos de inventario opcionales `en_mercado_desde`, `cambios_significativos`, `autoridad_publica`; contrastar con el PDF del BOE del Ómnibus; (e) `*.ics` al `.gitignore`; (f) aviso en PMO cuando una tarea tiene costes no laborales y no tiene `presupuesto` explícito; (g) comprobar AML.T0101, AML.M0036 y AML.M0037 contra `ATLAS.yaml` de mitre-atlas/atlas-data y corregir los que no existan; (h) corrige el informe T25 (22 verticales). Versión 0.7.1 y CHANGELOG.
   - No hace: no añade funciones nuevas.
   - Toca: `smc/mitre.py`, `smc/offensive.py`, `smc/ai_act.py`, `smc/pmo.py`, `frameworks/ai-act/obligaciones.yaml`, `ai/inventario.template.yaml`, `.gitignore`, `tests/`, `docs/plan/informes/T25-dev-proyecto.md`, `CHANGELOG.md`, `pyproject.toml`, `smc/__init__.py`, `README.md`, `docs/plan/informes/T29-dev-proyecto.md`
   - Depende: T28
   - Verifica: un test por hallazgo con su contraprueba anotada; todos los tests verdes.
   - Prod: —
-  - Estado: reservada por coordinador 2026-11-03
+  - Estado: hecha en 51f5745 · evidencia informes/T29-dev-proyecto.md
 
 ## Libro
 
