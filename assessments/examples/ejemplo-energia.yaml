@@ -11,12 +11,13 @@ cliente:
 evaluaciones:
   NIS2-20.1: {estado: implementado, evidencias: ["Acta del consejo 2026-03"]}
   NIS2-20.2: {estado: parcial, notas: "Formación directiva solo a una parte del consejo"}
-  NIS2-21.2.a: {estado: implementado, evidencias: ["Análisis de riesgos ISO 27005 2026"]}
+  # Evidencia en formato dict (fecha, vigencia y huella opcional): esta ya ha caducado y se lista con aviso, sin afectar a la puntuación
+  NIS2-21.2.a: {estado: implementado, evidencias: [{ref: "Análisis de riesgos ISO 27005 2025", fecha: "2025-01-15", vigencia_dias: 365}]}
   NIS2-21.2.b: {estado: implementado, evidencias: ["Procedimiento PR-INC-03", "Ejercicio de mesa 2026-06"]}
   NIS2-21.2.c: {estado: parcial, evidencias: ["Plan de continuidad v3"], notas: "Pruebas de restauración solo en sistemas corporativos, no en OT"}
   NIS2-21.2.d: {estado: no_implementado, notas: "Sin evaluación de riesgos de proveedores críticos de OT"}
   NIS2-21.2.e: {estado: parcial}
-  NIS2-21.2.f: {estado: implementado, evidencias: ["Informe de auditoría interna 2026"]}
+  NIS2-21.2.f: {estado: implementado, evidencias: [{ref: "Informe de auditoría interna 2026", fecha: "2026-05-10", caduca: "2027-05-10"}]}
   NIS2-21.2.j: {estado: implementado, evidencias: ["MFA en accesos remotos y administración"]}
   NIS2-23.alerta: {estado: implementado, evidencias: ["Runbook de notificación 24 h"]}
   NIS2-23.notificacion: {estado: parcial, notas: "Plantilla de notificación a las 72 h sin validar"}
