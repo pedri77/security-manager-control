@@ -53,13 +53,13 @@ def test_h2_verificar_marcado_en_md_y_html():
     assert len(an.ens_verificar) == 28   # tras T21 (BOE): solo las dependientes de dimensión
     md, html = render_markdown(an), render_html(an)
     for doc in (md, html):
-        assert "pendiente de contrastar" in doc and "(verificar)" in doc
+        assert "contrastadas con el Anexo II" in doc and "(verificar)" in doc
     assert "ENS-op.cont.2 (verificar)" in md       # marca en la lista de «no aplican» / sin evaluar
     # contraprueba: sin ENS en alcance no hay aviso
     a["cliente"]["sector_publico"] = False
     a["cliente"]["proveedor_sector_publico"] = False
     an2 = analyse(a, HOY)
-    assert an2.ens_verificar == [] and "pendiente de contrastar" not in render_markdown(an2)
+    assert an2.ens_verificar == [] and "contrastadas con el Anexo II" not in render_markdown(an2)
 
 
 # 3. .gitignore
@@ -189,6 +189,6 @@ def test_h11_p1_con_accion_bloqueada_sale_sin_accion(ass):
 
 # versión
 def test_version_060():
-    assert __version__ == "0.6.0"
-    assert 'version = "0.6.0"' in (ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    assert "## 0.6.0" in (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+    assert __version__ == "0.6.1"
+    assert 'version = "0.6.1"' in (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    assert "## 0.6.1" in (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
