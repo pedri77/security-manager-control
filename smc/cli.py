@@ -57,6 +57,50 @@ def _comando_v07(args) -> int:
     return 0
 
 
+def _comando_v08(args) -> int:
+    """smc compare | soa | evidencias. rc 0 correcto, 2 fichero o datos no válidos."""
+    from .gap import _load
+    ruta = args.assessment if args.cmd != "compare" else args.anterior
+    try:
+        if args.cmd == "compare":
+            from . import compare
+            ruta = args.anterior
+            ant = _load(args.anterior)
+            ruta = args.actual
+            act = _load(args.actual)
+            for r, d in ((args.anterior, ant), (args.actual, act)):
+                if not isinstance(d, dict):
+                    return _error(r, "no es una evaluación (se esperaba un mapa YAML)")
+            texto = compare.render_markdown(compare.comparar(ant, act, args.hoy))
+            if args.output:
+                args.output.write_text(texto, encoding="utf-8")
+                print(f"Comparación escrita en {args.output}")
+            else:
+                print(texto, end="")
+            return 0
+        datos = _load(ruta)
+        if not isinstance(datos, dict):
+            return _error(ruta, "no es una evaluación (se esperaba un mapa YAML)")
+        if args.cmd == "soa":
+            from . import soa
+            d = soa.declaracion(datos, args.hoy)
+            if args.formato == "csv":
+                args.output.write_bytes(soa.a_csv(d).encode("utf-8"))   # a_csv ya lleva el BOM; sin traducir saltos de línea
+            elif args.formato == "xlsx":
+                args.output.write_bytes(soa.a_xlsx(d))
+            else:
+                args.output.write_text(soa.a_html(d), encoding="utf-8")
+            print(f"Declaración de aplicabilidad ({args.formato}) escrita en {args.output}")
+            return 0
+        from . import evidencias
+        if args.base is not None and not args.base.is_dir():
+            return _error(args.base, "--base no es un directorio")
+        print(evidencias.render_markdown(datos, args.hoy, args.base), end="")
+    except _ERRORES_DATOS as exc:
+        return _error(ruta, exc)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="smc", description="Security Manager Control")
     parser.add_argument("--version", action="version", version=f"smc {__version__}")
@@ -80,7 +124,23 @@ def main(argv: list[str] | None = None) -> int:
     rp.add_argument("--pentest", type=Path, help="Seguimiento de pentest (YAML): añade la sección de hallazgos")
     rp.add_argument("--purple", type=Path, help="Ejercicios purple team (YAML): añade la sección y cuenta los detectados en la madurez MITRE")
     rp.add_argument("--ai", type=Path, help="Inventario de IA (YAML): añade RIA y seguridad de agentes")
+    rp.add_argument("--anterior", type=Path, help="Evaluación anterior (YAML): añade la sección «Evolución»")
     rp.add_argument("--pmo", type=Path, help="Proyecto PMO (YAML): añade costes, EVM y alertas")
+
+    cp = sub.add_parser("compare", help="Evolución entre dos evaluaciones del mismo cliente")
+    cp.add_argument("anterior", type=Path)
+    cp.add_argument("actual", type=Path)
+    cp.add_argument("-o", "--output", type=Path, help="Fichero Markdown de salida (por defecto, stdout)")
+    cp.add_argument("--hoy", type=_fecha, help="Fecha de referencia AAAA-MM-DD (por defecto, hoy)")
+    so = sub.add_parser("soa", help="Declaración de aplicabilidad y evidencias para el auditor (csv, xlsx o html)")
+    so.add_argument("assessment", type=Path)
+    so.add_argument("--formato", choices=("csv", "xlsx", "html"), required=True)
+    so.add_argument("-o", "--output", type=Path, required=True, help="Fichero de salida")
+    so.add_argument("--hoy", type=_fecha, help="Fecha de referencia AAAA-MM-DD (por defecto, hoy)")
+    ev = sub.add_parser("evidencias", help="Evidencias con fecha, caducidad y huella de una evaluación")
+    ev.add_argument("assessment", type=Path)
+    ev.add_argument("--base", type=Path, help="Directorio base de los ficheros de evidencia: verifica las huellas sha256")
+    ev.add_argument("--hoy", type=_fecha, help="Fecha de referencia AAAA-MM-DD (por defecto, hoy)")
 
     db = sub.add_parser("dashboard", help="Dashboard estático multicliente desde un directorio de evaluaciones")
     db.add_argument("directorio", type=Path)
@@ -156,6 +216,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.cmd in ("pentest", "purple", "ai", "pmo"):
         return _comando_v07(args)
+    if args.cmd in ("compare", "soa", "evidencias"):
+        return _comando_v08(args)
     if args.cmd == "mitre":
         purple = None
         if args.purple:
@@ -287,7 +349,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"ERROR: --registry {args.registry}: {exc}", file=sys.stderr)
             return 2
         try:
-            html = run_html(args.assessment, args.hoy, reg, args.pentest, args.purple, args.ai, args.pmo)
+            html = run_html(args.assessment, args.hoy, reg, args.pentest, args.purple, args.ai, args.pmo, args.anterior)
         except _ERRORES_DATOS as exc:
             print(f"ERROR: {type(exc).__name__}: {exc}", file=sys.stderr)
             return 2

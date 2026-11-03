@@ -81,6 +81,12 @@ Un centro de control que, a partir del perfil del cliente, determine los marcos 
 - RF-37 `smc report` admite `--pentest`, `--purple`, `--ai` y `--pmo`; `smc dashboard` los toma de `<evaluación>.pentest.yaml`, `.purple.yaml`, `.ai.yaml` y `.pmo.yaml`. Sin esos ficheros el informe no cambia. Todo texto se escapa y solo se enlazan URLs `https://`. Un fichero que no vale da rc 2 en la CLI y un aviso en el dashboard.
 - RF-38 `smc validate` valida también el catálogo `frameworks/ai-act/` y las plantillas de inventario de IA, pentest, purple team y PMO.
 - RF-39 Los datos de pentest, purple team, IA y PMO de un cliente son datos de cliente: `.gitignore` los excluye salvo plantillas y ejemplos (ADR-001, ADR-005).
+- RF-40 `smc compare <anterior> <actual> [--hoy] [-o]` compara dos evaluaciones con `smc.gap.analyse`: cumplimiento por marco antes, después y delta; controles cerrados, que mejoran, que empeoran y nuevas brechas; brechas P1 y madurez de verticales en cada fecha; acciones del plan cerradas. Avisa si los clientes no coinciden, si la evaluación actual es más antigua o si la categoría ENS cambia (delta no comparable).
+- RF-41 `smc report ... --anterior <evaluación>` añade al informe HTML la sección «Evolución» (todo texto escapado); `smc dashboard` muestra por cliente los controles implementados con toda su evidencia caducada.
+- RF-42 `smc soa <evaluación> --formato csv|xlsx|html -o <fichero>` genera la declaración de aplicabilidad y el registro de evidencias para el auditor: CSV UTF-8 con BOM, XLSX con dos hojas (stdlib, sin dependencias) y HTML imprimible. Sin inyección de fórmulas, con escape y con el aviso de que la declaración formal la firma el responsable de seguridad.
+- RF-43 Las evidencias admiten `{ref, fecha, caduca | vigencia_dias, sha256}`; `smc evidencias <evaluación> [--base <dir>] [--hoy]` informa de su estado (vigente, caduca pronto, caducada, sin fecha) y verifica las huellas sin leer fuera de la base. Una evidencia caducada avisa pero no cambia la puntuación.
+- RF-44 El informe HTML de IA muestra el régimen transitorio del art. 111.2 del RIA (obligaciones del capítulo III que no se emiten como pendientes) y el de pentest la tabla de retest fallido.
+- RF-45 CI en GitHub Actions (tests, `smc validate` y comandos de ejemplo) y política de versiones en `docs/release.md`.
 
 ## 6. Requisitos no funcionales
 
@@ -99,7 +105,8 @@ Un centro de control que, a partir del perfil del cliente, determine los marcos 
 | v0.5 | Verticales ampliadas, evaluación de tecnologías y suscripciones, protocolos, madurez MITRE con Navigator, RSS, ecosistema y mapa de red (RF-19 a RF-26) | Hecha |
 | v0.6 | Visor 3D del mapa, informe y dashboard con registro de tecnologías y MITRE, contraste del Anexo II del ENS con el BOE (RF-27 a RF-31) | Hecha |
 | v0.7 | Pentesting y purple team, RIA y seguridad de agentes, PMO, verticales de identidad y datos, IA y seguridad ofensiva (22 en total), informe y dashboard con las secciones nuevas (RF-32 a RF-39) | Hecha |
-| v0.8 | Contraste de las 28 medidas ENS por dimensión con CCN-STIC, visor en GPU integrada y móvil, conectores de evidencias (EDR, SIEM, escáneres, EASM, firewall), ingesta NVD/KEV/EPSS, cumplimiento por dominio | Pendiente |
+| v0.8 | Comparación entre evaluaciones, salida para auditor (CSV, XLSX, HTML), evidencias con fecha, caducidad y huella, CI y régimen transitorio del RIA (RF-40 a RF-45) | Hecha |
+| v0.9 | Contraste de las 28 medidas ENS por dimensión con CCN-STIC, visor en GPU integrada y móvil, conectores de evidencias (EDR, SIEM, escáneres, EASM, firewall), ingesta NVD/KEV/EPSS, cumplimiento por dominio | Pendiente |
 
 Nota: el dashboard de v0.4 se resolvió como sitio estático generado en local, no como aplicación web con servidor (ADR-002).
 
