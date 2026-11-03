@@ -8,7 +8,7 @@ Evalúa el rendimiento general del SOC (propio o externalizado) con datos, no co
 |---|---|
 | `sla.yaml` | SLAs por severidad (ack, contención, resolución) y por tier N1/N2/N3 |
 | `metrics.yaml` | Catálogo de KPIs del SOC con fórmula, objetivo y umbral |
-| `verticals.yaml` | 20 verticales (v2) con su clasificación NIS2, criterios de madurez y recursos públicos; VRT-NET es paraguas de FW, SASE, ZTNA y OSI (no puntúa si alguna de ellas está evaluada) |
+| `verticals.yaml` | 22 verticales (v2) con su clasificación NIS2, criterios de madurez y recursos públicos; VRT-NET es paraguas de FW, SASE, ZTNA y OSI (no puntúa si alguna de ellas está evaluada) |
 | `use-cases/catalog.yaml` | Casos de uso de detección mapeados a MITRE ATT&CK, fuentes y playbook |
 | `incidents.template.csv` | Formato de exportación de incidentes para calcular métricas |
 
