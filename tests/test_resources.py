@@ -61,7 +61,17 @@ def test_id_duplicado_y_http_y_pendiente_con_url():
 
 def test_pendientes_requeridos():
     pend = {p["id"] for p in R.cargar_ecosistema() if p["estado"] == "pendiente"}
-    assert pend == {"ECO-ZTNA", "ECO-MAPA3D"}
+    assert pend == {"ECO-MAPA3D"}   # ECO-ZTNA pasó a privado en v0.7
+    ztna = next(p for p in R.cargar_ecosistema() if p["id"] == "ECO-ZTNA")
+    assert ztna["estado"] == "privado" and ztna["url"] is None
+
+
+def test_privado_no_lleva_url_contraprueba():
+    eco = copy.deepcopy(R.cargar_ecosistema())
+    next(p for p in eco if p["id"] == "ECO-ZTNA")["url"] = "https://github.com/pedri77/pack-privado"
+    errs = R.validar(eco=eco)
+    assert any("privado no lleva URL" in e for e in errs) and any("repo privado" in e for e in errs)
+    assert "Pack de evaluación ZTNA (privado, bajo petición)" in R.render_markdown()
 
 
 def test_markdown():

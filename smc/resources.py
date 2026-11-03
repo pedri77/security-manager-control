@@ -20,7 +20,7 @@ from .catalog import ROOT
 RSS_FILE = ROOT / "resources" / "rss.yaml"
 ECO_FILE = ROOT / "resources" / "ecosistema.yaml"
 CATEGORIAS = ("avisos", "noticias", "vulnerabilidades", "normativa")
-ESTADOS_ECO = ("publicado", "pendiente")
+ESTADOS_ECO = ("publicado", "pendiente", "privado")
 TIPOS_ECO = ("pages", "repo", "pendiente")
 # Lista blanca de repos públicos de pedri77 que se pueden enlazar (GitHub o GitHub Pages).
 # Cualquier otro github.com/pedri77/<repo> o pedri77.github.io/<repo> se trata como privado o no listado.
@@ -96,6 +96,8 @@ def validar(rss: list[dict] | None = None, eco: list[dict] | None = None) -> lis
             err.append(f"ecosistema {pid}: estado no válido {p['estado']!r}")
         if p.get("estado") == "pendiente" and p.get("url"):
             err.append(f"ecosistema {pid}: un pendiente no lleva URL")
+        if p.get("estado") == "privado" and p.get("url"):
+            err.append(f"ecosistema {pid}: un recurso privado no lleva URL")
         if p.get("estado") == "publicado" and not p.get("url"):
             err.append(f"ecosistema {pid}: publicado sin URL")
         err += _url_errores(f"ecosistema {pid}", p.get("url"))
@@ -133,5 +135,5 @@ def render_markdown(rss: list[dict] | None = None, eco: list[dict] | None = None
         if p.get("url"):
             out.append(f"- [{p['nombre']}]({p['url']}) ({p['tipo']})")
         else:
-            out.append(f"- {p['nombre']} (pendiente)")
+            out.append(f"- {p['nombre']} ({'privado, bajo petición' if p.get('estado') == 'privado' else 'pendiente'})")
     return "\n".join(out) + "\n"

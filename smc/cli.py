@@ -5,8 +5,10 @@ import argparse
 import sys
 from pathlib import Path
 
+import yaml
+
 from . import __version__
-from .catalog import load_all, validar_v05, validate
+from .catalog import load_all, validar_v05, validar_v07, validate
 from .gap import run, run_plan
 
 
@@ -16,6 +18,43 @@ def _fecha(v: str):
         return date.fromisoformat(v)
     except ValueError:
         raise argparse.ArgumentTypeError(f"fecha no válida '{v}' (AAAA-MM-DD)")
+
+
+_ERRORES_DATOS = (ValueError, OSError, yaml.YAMLError)   # OffensiveError y AIActError son ValueError
+
+
+def _error(ruta, exc) -> int:
+    print(f"ERROR: {ruta}: {exc}", file=sys.stderr)
+    return 2
+
+
+def _comando_v07(args) -> int:
+    """smc pentest | purple | ai | pmo. rc 0 correcto, 2 fichero o datos no válidos."""
+    from . import ai_act, offensive, pmo
+    ruta = args.fichero if args.cmd in ("pentest", "purple") else getattr(args, "inventario", None) or args.proyecto
+    try:
+        if args.cmd == "pentest":
+            print(offensive.render_markdown(pentest=offensive.estado_hallazgos(ruta, args.hoy)), end="")
+        elif args.cmd == "purple":
+            print(offensive.render_markdown(purple_res=offensive.purple(ruta, args.hoy)), end="")
+        elif args.cmd == "ai":
+            res = ai_act.obligaciones(ruta, args.hoy, estricto=False)
+            print(ai_act.render_markdown(res, ai_act.riesgos_agente(ruta)), end="")
+        else:
+            from .gap import _load
+            for nombre in ("registry", "assessment"):
+                r = getattr(args, nombre)
+                if r is not None and not r.is_file():
+                    return _error(r, "no existe")
+            ass = _load(args.assessment) if args.assessment else None
+            proyecto = pmo.cargar_proyecto(ruta)
+            print(pmo.render_markdown(pmo.analizar(proyecto, args.hoy, ass, args.registry)), end="")
+            if args.ics:
+                pmo.exportar_ics(proyecto, args.ics, args.hoy)
+                print(f"Calendario escrito en {args.ics}", file=sys.stderr)
+    except _ERRORES_DATOS as exc:
+        return _error(ruta, exc)
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -38,6 +77,10 @@ def main(argv: list[str] | None = None) -> int:
     rp.add_argument("-o", "--output", type=Path, required=True, help="Fichero HTML de salida")
     rp.add_argument("--hoy", type=_fecha, help="Fecha de referencia AAAA-MM-DD (por defecto, hoy)")
     rp.add_argument("--registry", type=Path, help="Registro de tecnologías YAML: añade tecnologías, reglas y suscripciones")
+    rp.add_argument("--pentest", type=Path, help="Seguimiento de pentest (YAML): añade la sección de hallazgos")
+    rp.add_argument("--purple", type=Path, help="Ejercicios purple team (YAML): añade la sección y cuenta los detectados en la madurez MITRE")
+    rp.add_argument("--ai", type=Path, help="Inventario de IA (YAML): añade RIA y seguridad de agentes")
+    rp.add_argument("--pmo", type=Path, help="Proyecto PMO (YAML): añade costes, EVM y alertas")
 
     db = sub.add_parser("dashboard", help="Dashboard estático multicliente desde un directorio de evaluaciones")
     db.add_argument("directorio", type=Path)
@@ -50,6 +93,22 @@ def main(argv: list[str] | None = None) -> int:
     mi.add_argument("--navigator", action="store_true", help="Exporta la capa ATT&CK Navigator (JSON)")
     mi.add_argument("-o", "--output", type=Path, help="Fichero de salida del export Navigator")
     mi.add_argument("--hoy", type=_fecha, help="Fecha de referencia AAAA-MM-DD (por defecto, hoy)")
+    mi.add_argument("--purple", type=Path, help="Ejercicios purple team (YAML): un ejercicio detectado cuenta como prueba del caso de uso")
+    pt = sub.add_parser("pentest", help="Hallazgos de pentest: abiertos, fuera de SLA, retest pendiente")
+    pt.add_argument("fichero", type=Path)
+    pt.add_argument("--hoy", type=_fecha, help="Fecha de referencia AAAA-MM-DD (por defecto, hoy)")
+    pu = sub.add_parser("purple", help="Ejercicios purple team: cobertura por táctica, no detectadas, mejoras")
+    pu.add_argument("fichero", type=Path)
+    pu.add_argument("--hoy", type=_fecha, help="Fecha de referencia AAAA-MM-DD (por defecto, hoy)")
+    ia = sub.add_parser("ai", help="RIA (Reglamento (UE) 2024/1689) y seguridad de agentes desde un inventario de IA")
+    ia.add_argument("inventario", type=Path)
+    ia.add_argument("--hoy", type=_fecha, help="Fecha de referencia AAAA-MM-DD (por defecto, hoy)")
+    pm = sub.add_parser("pmo", help="PMO: presupuesto, horas, EVM y alertas de un proyecto")
+    pm.add_argument("proyecto", type=Path)
+    pm.add_argument("--ics", type=Path, help="Exporta los eventos a un fichero iCalendar (.ics)")
+    pm.add_argument("--registry", type=Path, help="Registro de tecnologías YAML: suma las suscripciones")
+    pm.add_argument("--assessment", type=Path, help="Evaluación del cliente (YAML): valida las acciones y hereda controles")
+    pm.add_argument("--hoy", type=_fecha, help="Fecha de referencia AAAA-MM-DD (por defecto, hoy)")
     vt = sub.add_parser("verticals", help="Madurez por vertical y por medida NIS2 de una evaluación")
     vt.add_argument("assessment", type=Path)
     te = sub.add_parser("tech", help="Evaluación de tecnologías y estado de reglas")
@@ -95,11 +154,20 @@ def main(argv: list[str] | None = None) -> int:
         from .soc import render_soc, soc_metrics
         print(render_soc(soc_metrics(args.incidents)))
         return 0
+    if args.cmd in ("pentest", "purple", "ai", "pmo"):
+        return _comando_v07(args)
     if args.cmd == "mitre":
+        purple = None
+        if args.purple:
+            from . import offensive
+            try:
+                purple = offensive.cargar_purple(args.purple)
+            except _ERRORES_DATOS as exc:
+                return _error(args.purple, exc)
         if args.navigator:
             import json
             from .mitre import a_navigator
-            texto = json.dumps(a_navigator(hoy=args.hoy), ensure_ascii=False, indent=2) + "\n"
+            texto = json.dumps(a_navigator(hoy=args.hoy, purple=purple), ensure_ascii=False, indent=2) + "\n"
             if args.output:
                 args.output.write_text(texto, encoding="utf-8")
                 print(f"Capa Navigator escrita en {args.output}")
@@ -107,7 +175,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(texto, end="")
             return 0
         from .soc import mitre_coverage
-        print(mitre_coverage(hoy=args.hoy))
+        print(mitre_coverage(hoy=args.hoy, purple=purple))
         return 0
     if args.cmd == "verticals":
         from .gap import _load, render_verticales_md
@@ -195,7 +263,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "validate":
         from .refs import validate_refs
-        errors = validate() + validate_refs() + validar_v05()
+        errors = validate() + validate_refs() + validar_v05() + validar_v07()
         for e in errors:
             print(f"ERROR: {e}", file=sys.stderr)
         if not errors:
@@ -215,9 +283,13 @@ def main(argv: list[str] | None = None) -> int:
         from .report_html import cargar_registry, run_html
         try:
             reg = cargar_registry(args.registry) if args.registry else None
-            html = run_html(args.assessment, args.hoy, reg)
         except ValueError as exc:
             print(f"ERROR: --registry {args.registry}: {exc}", file=sys.stderr)
+            return 2
+        try:
+            html = run_html(args.assessment, args.hoy, reg, args.pentest, args.purple, args.ai, args.pmo)
+        except _ERRORES_DATOS as exc:
+            print(f"ERROR: {type(exc).__name__}: {exc}", file=sys.stderr)
             return 2
         args.output.write_text(html, encoding="utf-8")
         print(f"Informe escrito en {args.output}")
