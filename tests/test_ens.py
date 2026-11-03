@@ -20,7 +20,7 @@ def test_73_medidas_con_categoria(ctl):
 def test_refuerzos_validos(ctl):
     for c in ctl.values():
         for cat, rs in (c.extra.get("refuerzos_por_categoria") or {}).items():
-            assert cat in ("MEDIA", "ALTA") and all(r.startswith("R") for r in rs), c.id
+            assert cat in ens.CATEGORIAS and all(r.startswith(("R", "[R")) for r in rs), c.id
 
 
 def test_solo_alta(ctl):
@@ -58,7 +58,7 @@ def test_refuerzos(ctl):
     c = ctl["ENS-op.pl.1"]
     assert ens.refuerzos(c, "BASICA") == []
     assert ens.refuerzos(c, "MEDIA") == ["R1"]
-    assert ens.refuerzos(c, "ALTA") == ["R1", "R2"]
+    assert ens.refuerzos(c, "ALTA") == ["R2"]   # celda ALTA del BOE: «+ R2» (T21)
     assert ens.refuerzos(ctl["ENS-op.cont.4"], "BASICA") == []
 
 
