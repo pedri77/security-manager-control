@@ -331,32 +331,32 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en 2869e47 · evidencia informes/T30-dev-proyecto.md
 
-- [~] **T31** — Comparación entre evaluaciones (evolución)
+- [x] **T31** — Comparación entre evaluaciones (evolución)
   - Hace: `smc/compare.py` con `comparar(anterior, actual, hoy=None) -> Comparacion` que reutiliza `smc.gap.analyse` sobre las dos evaluaciones (no reimplementa el análisis) y devuelve: cumplimiento por marco antes, después y delta; controles que mejoran, empeoran, cerrados (brecha que deja de serlo), nuevas brechas y sin cambio; P1 antes y después; madurez de verticales antes, después y delta (vía `smc.verticals.evaluar`, `estricto=False`); acciones del `plan_accion` cerradas entre una y otra. Avisos si los clientes no coinciden, si la evaluación «actual» es más antigua (campo `fecha` si existe; si no, aviso) o si la categoría ENS cambia (el delta ENS no es comparable y se marca). `render_markdown(comp)`. Un segundo ejemplo ficticio `assessments/examples/historico/ejemplo-energia-2026-q1.yaml` (mismo cliente ficticio que `ejemplo-energia.yaml`, unos meses antes, con más brechas) para demostrar la evolución.
   - No hace: no toca `smc/gap.py`, `smc/cli.py`, ni el informe HTML (lo integra T35). No cambia `ejemplo-energia.yaml`.
   - Toca: `smc/compare.py`, `tests/test_compare.py`, `assessments/examples/historico/`, `docs/plan/informes/T31-dev-proyecto.md`
   - Depende: T29
   - Verifica: deltas calculados a mano en el test sobre el par de ejemplos; contraprueba: intercambiar anterior y actual invierte el signo y da aviso de fechas; clientes distintos dan aviso. Comprobar que los tests existentes que leen `assessments/examples/` (dashboard) no cambian con la subcarpeta nueva; si cambian, anotarlo y decidir con el coordinador.
   - Prod: —
-  - Estado: reservada por coordinador 2026-11-03
+  - Estado: hecha en 9698b14 · evidencia informes/T31-dev-proyecto.md
 
-- [~] **T32** — Salida para auditor: declaración de aplicabilidad y registro de evidencias
+- [x] **T32** — Salida para auditor: declaración de aplicabilidad y registro de evidencias
   - Hace: `smc/soa.py` con `declaracion(assessment, hoy=None)` que, a partir de `smc.gap.analyse`, produce filas por control de cada marco aplicable (marco, id, título, aplica sí/no, justificación de no aplicación —`notas` o el motivo de categoría ENS—, estado, evidencias, prioridad si es brecha, refuerzos ENS de la categoría, mapeo a otros marcos de `mappings/`) y una hoja de evidencias (control, evidencia, fecha y caducidad si la evidencia es un dict, ver formato en Decisiones). Exportadores: `a_csv(filas) -> str` (stdlib `csv`, UTF-8 con BOM para Excel, sin inyección de fórmulas: celdas que empiezan por `= + - @` o tabulador se prefijan con `'`), `a_xlsx(hojas) -> bytes` (SpreadsheetML mínimo con `zipfile` de la stdlib, sin dependencias, cadenas en línea escapadas para XML, dos hojas: «Aplicabilidad» y «Evidencias») y `a_html(filas) -> str` imprimible a PDF desde el navegador (`@media print`, escape, sin JS ni CDN). Aviso fijo: «Documento de trabajo generado por SMC; la declaración formal la firma el responsable de seguridad».
   - No hace: no toca `smc/cli.py` ni `smc/gap.py`. No genera PDF directamente (sin dependencias).
   - Toca: `smc/soa.py`, `tests/test_soa.py`, `docs/plan/informes/T32-dev-proyecto.md`
   - Depende: T29
   - Verifica: el xlsx abre con `zipfile` y su XML parsea con `xml.etree` (test) y contiene las dos hojas; ENS MEDIA del ejemplo da 73 filas ENS con las no aplicables justificadas; contraprueba: una evidencia `=HYPERLINK(...)` sale prefijada en CSV y XLSX y un `<script>` sale escapado en HTML.
   - Prod: —
-  - Estado: reservada por coordinador 2026-11-03
+  - Estado: hecha en 62e093e · evidencia informes/T32-dev-proyecto.md
 
-- [~] **T33** — Evidencias con fecha, caducidad y huella
+- [x] **T33** — Evidencias con fecha, caducidad y huella
   - Hace: admite en `evidencias` de cada control, además de texto, un dict `{ref, fecha (AAAA-MM-DD), caduca (AAAA-MM-DD) | vigencia_dias, sha256 (64 hex, opcional)}` (formato en Decisiones). `smc/evidencias.py`: `normalizar(e)`, `estado(e, hoy)` (vigente, caduca_pronto ≤ 30 días, caducada, sin_fecha), `verificar_huellas(assessment, base: Path)` (calcula sha256 de `base/ref` cuando `ref` es una ruta relativa sin `..` ni absoluta y la compara; no sigue enlaces simbólicos fuera de `base`) y `render_markdown`. En `smc/gap.py`: `FrameworkResult` gana `evidencia_caducada` (implementados cuyas evidencias están todas caducadas), listado en el Markdown y aviso; **no cambia la puntuación** (decisión anotada; se revisa con David). Texto plano sigue funcionando igual. Plantilla con un ejemplo del formato dict comentado y el ejemplo `ejemplo-energia.yaml` con dos evidencias en formato dict (una caducada) para demostrarlo.
   - No hace: no toca `smc/cli.py` ni el informe HTML (lo integra T35); no sube ficheros de evidencia al repo.
   - Toca: `smc/evidencias.py`, `smc/gap.py`, `assessments/assessment.template.yaml`, `assessments/examples/ejemplo-energia.yaml`, `tests/test_evidencias.py`, `docs/plan/informes/T33-dev-proyecto.md`
   - Depende: T29
   - Verifica: tests con `hoy` inyectado para los cuatro estados; huella correcta e incorrecta sobre un fichero temporal; contraprueba: `ref: ../../etc/passwd` y una ruta absoluta no se leen (aviso); todos los tests anteriores siguen verdes (las cifras de cumplimiento del ejemplo no cambian).
   - Prod: —
-  - Estado: reservada por coordinador 2026-11-03
+  - Estado: hecha en b743827 · evidencia informes/T33-dev-proyecto.md
 
 - [~] **T34** — Flecos de la v0.7: art. 111.2 del RIA y retest fallido en el informe
   - Hace: (a) en `smc/ai_act.py`, cuando un sistema de alto riesgo tiene `en_mercado_desde` anterior a la fecha de su nivel y `cambios_significativos` no es verdadero, las obligaciones del capítulo III de ese nivel no se emiten como pendientes: salen en una lista `regimen_transitorio` con la fecha en que pasarían a aplicar (2030-08-02 si `autoridad_publica`; si no, «solo con cambios significativos»); AIA-070 sigue apareciendo como aviso; actualiza la `nota` de AIA-070. Las obligaciones que no son del capítulo III (art. 4, 5, 50, uso general) no se recortan. Contrastar el alcance con el texto del art. 111.2 en EUR-Lex (excepción a «sin red» ya aprobada para el RIA). (b) En `smc/report_html.py`, la sección de pentest muestra una tabla «Retest fallido» propia (escapada) cuando `retest_fallido` no está vacío.
