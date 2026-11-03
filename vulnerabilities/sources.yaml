@@ -1,4 +1,7 @@
 # Fuentes oficiales y de referencia para consultar vulnerabilidades (T11, v0.5).
+# Comprobado con Chrome el 2026-11-03: búsquedas de NVD (?keyword=…&resultType=records), EUVD (?text=…),
+# CISA KEV (?search_api_fulltext=…), INCIBE-CERT y CCN-CERT devuelven resultados. CVE Details está detrás de
+# Cloudflare y no se puede comprobar de forma automática: abrir a mano.
 # Dominios permitidos en protocols.yaml: los de esta lista más pedri77.github.io (aprendizaje).
 version: v1
 fuentes:
