@@ -26,3 +26,8 @@ Rama `t13` (desde main 8d0a532). 87 tests verdes (78 previos + 9 nuevos).
 ## Verifica
 - `uv run --no-project --with pytest --with pyyaml python -m pytest -q` → 87 passed.
 - Contraprueba: mover `PB-UC-004-volcado-lsass.md` fuera pone en rojo `test_playbooks_referenciados_existen`; restaurado vuelve a verde.
+
+## Verificación del coordinador (2026-11-03)
+- Verifica: pytest en worktree 87 passed; en main tras fusionar: 151 passed.
+- Superficies: OK. Toca: sin ficheros fuera. gitleaks: sin hallazgos.
+- Contraprueba: mover PB-UC-004-volcado-lsass.md fuera -> 1 failed, 86 passed; restaurado, 87 passed.

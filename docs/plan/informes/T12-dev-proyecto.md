@@ -24,3 +24,8 @@ Cambiar la `url_web` de un feed a `https://github.com/pedri77/riskitera-news`: 2
 ## Decisiones y pendiente
 - El OPML solo incluye feeds con `url_feed`; "un outline por feed" se cumple para ellos. Si se prefiere incluir los null, habría que dar una URL.
 - Pendiente humano: comprobar con red cada `url_feed` y averiguar las rutas de los 9 feeds con `null`, luego poner `verificado: true`. NVD ya no ofrece un RSS fiable (por eso null).
+
+## Verificación del coordinador (2026-11-03)
+- Verifica: pytest en worktree 87 passed; en main tras fusionar: 142 passed.
+- Superficies: OK. Toca: sin ficheros fuera. gitleaks: sin hallazgos.
+- Contraprueba: url_web de RSS-INCIBE-AVISOS -> repo privado riskitera-news -> 2 failed, 85 passed; restaurada, 87 passed.

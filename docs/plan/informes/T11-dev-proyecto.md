@@ -31,3 +31,8 @@ Contraprueba: `test_contraprueba_dominio_no_permitido` (URL a evil.example.com),
 
 ## Queda
 Integración en CLI y `smc validate` (T14); verificación humana de las URLs de búsqueda.
+
+## Verificación del coordinador (2026-11-03)
+- Verifica: pytest en worktree 94 passed; en main tras fusionar: 133 passed.
+- Superficies: OK. Toca: sin ficheros fuera. gitleaks: sin hallazgos.
+- Contraprueba: URL modelo_OSI -> evil.example.com -> 3 failed, 91 passed; restaurada, 94 passed.
