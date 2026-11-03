@@ -166,6 +166,9 @@ smc pmo pmo/examples/ejemplo-energia.yaml --ics /tmp/eventos.ics --assessment as
 smc report assessments/examples/ejemplo-energia.yaml -o /tmp/completo.html --pentest offensive/examples/ejemplo-pentest.yaml --purple offensive/examples/ejemplo-purple.yaml --ai ai/inventario.template.yaml --pmo pmo/examples/ejemplo-energia.yaml
 ```
 
+> [!TIP]
+> **Vídeos de uso.** Ocho vídeos cortos (de 1:30 a 2:30) recorren todo esto con los ejemplos ficticios, con capítulos, comandos y transcripción: [`docs/videos/`](docs/videos/README.md).
+
 ## Comandos
 
 ```bash
