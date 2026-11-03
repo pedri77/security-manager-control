@@ -18,7 +18,7 @@ from pathlib import Path
 
 import yaml
 
-from .gap import Analisis, analyse, _load, estado_vertical, url_https
+from .gap import ETIQUETA_MITRE, NOTA_VERIFICAR, Analisis, analyse, _load, estado_vertical, url_https
 from .plan import Accion
 
 CSS = """
@@ -88,9 +88,9 @@ def _resumen(an: Analisis, h: int) -> str:
               _e(r.aplicables), _e(len(r.brechas)), _e(len(r.sin_evaluar))] for r in an.results]
     out.append(_tabla(["Marco", "Cumplimiento", "", "Aplicables", "Brechas evaluadas", "Sin evaluar"], filas))
     if an.ens_verificar:
-        out.append(f'<p class="aviso"><strong>Aviso ENS:</strong> {_e(len(an.ens_verificar))} medidas ENS tienen '
-                   "aplicabilidad pendiente de contrastar con el Anexo II del RD 311/2022 (<code>verificar</code>): "
-                   "«no aplica» y los refuerzos por categoría no son definitivos. Se marcan con (verificar).</p>")
+        out.append(f'<p class="aviso"><strong>Aviso ENS:</strong> {_e(len(an.ens_verificar))} medidas ENS '
+                   + _e(NOTA_VERIFICAR) + " (<code>verificar</code>): «no aplica» y los refuerzos por categoría pueden "
+                   "variar según esas dimensiones. Se marcan con (verificar).</p>")
     sin_eval = sum(len(r.sin_evaluar) for r in an.results)
     if sin_eval:
         out.append(f'<p class="nota">El cumplimiento incluye {sin_eval} controles sin evaluar, que puntúan como '
@@ -305,7 +305,7 @@ def _suscripciones(registry: dict, hoy: date, h: int) -> str:
     totales: dict[str, float] = {}
     for (_prov, mon), c in r["coste_por_proveedor"].items():
         totales[mon] = totales.get(mon, 0.0) + (c if isinstance(c, (int, float)) and math.isfinite(c) else 0.0)
-    total = " + ".join(f"{_n(v)} {_e(m)}" for m, v in sorted(totales.items())) or "—"
+    total = " + ".join(f"{_n(v)} {_e(m)}" for m, v in sorted(totales.items(), key=lambda kv: str(kv[0]))) or "—"
     out = [f"<h{h}>Suscripciones</h{h}>", f"<p>Coste anual total: <strong>{total}</strong></p>"]
     out.append(f"<h{h + 1}>Vencen en {dias} días ({len(r['renovaciones'])})</h{h + 1}>")
     if r["renovaciones"]:
@@ -333,7 +333,7 @@ def _suscripciones(registry: dict, hoy: date, h: int) -> str:
     out.append(f"<h{h + 1}>Coste anual por proveedor</h{h + 1}>")
     if r["coste_por_proveedor"]:
         out.append(_tabla(["Proveedor", "Coste anual"],
-                          [[_e(p), f"{_n(c)} {_e(m)}"] for (p, m), c in sorted(r["coste_por_proveedor"].items())]))
+                          [[_e(p), f"{_n(c)} {_e(m)}"] for (p, m), c in sorted(r["coste_por_proveedor"].items(), key=lambda kv: (str(kv[0][0]), str(kv[0][1])))]))
     else:
         out.append("<p>Sin suscripciones.</p>")
     if r["avisos"]:
@@ -350,6 +350,7 @@ def datos_mitre(hoy: date) -> dict:
 def render_mitre(datos: dict, h: int = 2) -> str:
     m = datos["madurez"]
     out = [f"<h{h}>Madurez MITRE ATT&amp;CK</h{h}>",
+           f'<p class="nota"><strong>{_e(ETIQUETA_MITRE)}.</strong> No describe al cliente: es la cobertura del SOC.</p>',
            '<p class="nota">Niveles: 0 sin caso · 1 caso sin regla · 2 regla · 3 regla con playbook · 4 probada · '
            "5 probada en los últimos 90 días. La táctica toma el mínimo de sus casos activos.</p>",
            f"<p>Técnicas con caso de uso: <strong>{len(m['tecnicas'])}</strong> · Casos de uso: "

@@ -90,11 +90,27 @@ def _es_evaluacion(d) -> bool:
     return isinstance(d, dict) and isinstance(d.get("cliente"), dict) and isinstance(d.get("evaluaciones"), dict)
 
 
-def _asociar(stem: str, registros: dict[str, dict], usados: set[str]) -> str | None:
-    """Fichero de registro asociado a la evaluación `stem` (prefijo + separador); None si no hay."""
-    cands = [n for n in registros if n not in usados and len(n) > len(stem) and n.startswith(stem)
-             and n[len(stem)] in ".-_"]
-    return sorted(cands)[0] if cands else None
+def _casa(stem: str, nombre: str) -> bool:
+    return len(nombre) > len(stem) and nombre.startswith(stem) and nombre[len(stem)] in ".-_"
+
+
+def _emparejar(stems: list[str], registros: dict[str, dict]) -> tuple[dict[str, str], list[Aviso]]:
+    """Asocia cada registro a la evaluación de stem MÁS LARGO que casa (prefijo + separador).
+
+    Devuelve ({stem: fichero de registro}, avisos). Si una evaluación tiene dos registros que casan igual
+    (mismo stem), hay un aviso y no se asocia ninguno: mejor sin datos que con los de otro cliente."""
+    por_stem: dict[str, list[str]] = {}
+    for nombre in sorted(registros):
+        mejor = max((s for s in stems if _casa(s, nombre)), key=len, default=None)
+        if mejor is not None:
+            por_stem.setdefault(mejor, []).append(nombre)
+    res, avisos = {}, []
+    for stem, noms in por_stem.items():
+        if len(noms) == 1:
+            res[stem] = noms[0]
+        else:
+            avisos.append(Aviso(f"{stem}.yaml", "registro ambiguo, no se asocia ninguno: " + ", ".join(noms)))
+    return res, avisos
 
 
 def recopilar(directorio: Path, hoy: date | None = None) -> Resultado:
@@ -117,6 +133,8 @@ def recopilar(directorio: Path, hoy: date | None = None) -> Resultado:
         else:
             cargados.append((f, datos))
     registros_usados: set[str] = set()
+    asignados, av = _emparejar([f.stem for f, d in cargados if _es_evaluacion(d)], registros)
+    res.avisos += av
     for f, datos in cargados:
         if not _es_evaluacion(datos):
             res.avisos.append(Aviso(f.name, "no es una evaluación (faltan 'cliente' y 'evaluaciones')"))
@@ -132,7 +150,7 @@ def recopilar(directorio: Path, hoy: date | None = None) -> Resultado:
             slug, n = f"{base}-{n}", n + 1
         usados.add(slug)
         reg = None
-        nom = _asociar(f.stem, registros, registros_usados)
+        nom = asignados.get(f.stem)
         if nom:
             registros_usados.add(nom)
             reg = registros[nom]
