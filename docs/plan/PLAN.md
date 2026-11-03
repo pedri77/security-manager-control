@@ -160,13 +160,14 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 
 ## Ola 6 (v0.5)
 
-- [ ] **T14** — Integración v0.5 en CLI, validate, informe y dashboard
+- [~] **T14** — Integración v0.5 en CLI, validate, informe y dashboard
   - Hace: subcomandos `smc verticals <evaluación>`, `smc tech <registry>` (evaluación + reglas), `smc subs <registry> [--hoy --days]`, `smc protocols [ID]`, `smc rss [--opml -o]`, `smc mitre [--navigator -o capa.json] [--hoy]`; `smc validate` valida también verticales, protocolos, fuentes, RSS, ecosistema y casos de uso; informe HTML y Markdown con sección de verticales (madurez y no evaluables con motivo) y enlaces a recursos; dashboard con columna de madurez media de verticales. Escape HTML en todo lo nuevo.
   - No hace: no cambia los catálogos de la ola 5 salvo errores que impidan validar (anotarlos).
   - Toca: `smc/cli.py`, `smc/catalog.py`, `smc/gap.py`, `smc/report_html.py`, `smc/dashboard.py`, `tests/test_cli_v05.py`, `docs/plan/informes/T14-dev-proyecto.md`
   - Depende: T09, T10, T11, T12, T13
   - Verifica: cada comando nuevo rc=0 sobre los ejemplos; XSS en un `motivo` de no_evaluable sale escapado (contraprueba).
   - Prod: —
+  - Estado: reservada por coordinador 2026-11-03
 
 - [ ] **T15** — Mapa 3D de dispositivos: contrato de datos y adaptación de teardown
   - Hace: `smc/mapa.py` + `smc mapa <registry> [--evaluacion] -o mapa.json`: exporta dispositivos (de `technologies/registry` y `resources/internal`) con zona de red, capa OSI, vertical, estado de reglas, vulnerabilidades abiertas del tracker y semáforo, en un JSON versionado (`schema: smc-mapa/1`). `docs/mapa-3d.md`: diseño de la adaptación de la skill teardown (origen: elvarofficial/teardown, MIT, sobre whaleyxbt/claude-motion, MIT): la «máquina» es la red del cliente, cada zona un subsistema que se abre, paneles que leen los números reales del JSON, visita automática; qué se reutiliza y qué se cambia; todo offline. `docs/adr/ADR-003-mapa-3d-desde-teardown.md`. El prototipo HTML queda como siguiente paso.
