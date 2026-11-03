@@ -229,14 +229,14 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: reservada por coordinador 2026-11-03
 
-- [~] **T21** — Contrastar las medidas ENS con el Anexo II del RD 311/2022 (BOE)
+- [x] **T21** — Contrastar las medidas ENS con el Anexo II del RD 311/2022 (BOE)
   - Hace: contrasta las 73 medidas de `frameworks/ens/controls.yaml` con el texto consolidado del BOE (BOE-A-2022-7191, Anexo II): id, grupo, título, categoría mínima (BASICA/MEDIA/ALTA o aplica por dimensión) y refuerzos por categoría. Corrige lo que no coincida y quita `verificar: true` solo de lo contrastado; deja en `verificar` (con nota) lo que dependa de dimensiones o de guías CCN-STIC no consultadas. Fuente citada con URL del BOE en la cabecera. Actualiza los mapeos que dependan de ids corregidos y los tests de cifras.
   - No hace: no cambia la fórmula de prioridad ni otros marcos.
   - Toca: `frameworks/ens/controls.yaml`, `mappings/`, `tests/test_ens.py`, `tests/test_ens_boe.py`, `tests/test_smc.py`, `tests/test_gap_v02.py`, `tests/test_t08.py`, `tests/test_t17.py`, `tests/test_t18.py`, `docs/plan/informes/T21-dev-proyecto.md`
   - Depende: T18
   - Verifica: tabla en el informe medida a medida (coincide / corregido / sigue verificar y por qué) con la URL y fecha de consulta; `smc validate` OK; contraprueba: un id ENS inexistente en un mapeo pone un test en rojo.
   - Prod: —
-  - Estado: reservada por coordinador 2026-11-03
+  - Estado: hecha en 880a926 · evidencia informes/T21-dev-proyecto.md
 
 ## Ola 10 (v0.6.0)
 
