@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 from . import __version__
-from .catalog import load_all, validate
+from .catalog import load_all, validar_v05, validate
 from .gap import run, run_plan
 
 
@@ -45,7 +45,25 @@ def main(argv: list[str] | None = None) -> int:
 
     soc = sub.add_parser("soc", help="Métricas del SOC (MTTD/MTTA/MTTC/MTTR, SLA) desde CSV de incidentes")
     soc.add_argument("incidents", type=Path)
-    sub.add_parser("mitre", help="Cobertura MITRE ATT&CK de los casos de uso")
+    mi = sub.add_parser("mitre", help="Cobertura y madurez MITRE ATT&CK de los casos de uso")
+    mi.add_argument("--navigator", action="store_true", help="Exporta la capa ATT&CK Navigator (JSON)")
+    mi.add_argument("-o", "--output", type=Path, help="Fichero de salida del export Navigator")
+    mi.add_argument("--hoy", type=_fecha, help="Fecha de referencia AAAA-MM-DD (por defecto, hoy)")
+    vt = sub.add_parser("verticals", help="Madurez por vertical y por medida NIS2 de una evaluación")
+    vt.add_argument("assessment", type=Path)
+    te = sub.add_parser("tech", help="Evaluación de tecnologías y estado de reglas")
+    te.add_argument("registry", type=Path)
+    te.add_argument("--hoy", type=_fecha, help="Fecha de referencia AAAA-MM-DD (por defecto, hoy)")
+    te.add_argument("--days", type=int, default=180, help="Días sin revisar las reglas (180)")
+    sb = sub.add_parser("subs", help="Suscripciones: renovaciones, infrautilización y coste")
+    sb.add_argument("registry", type=Path)
+    sb.add_argument("--hoy", type=_fecha, help="Fecha de referencia AAAA-MM-DD (por defecto, hoy)")
+    sb.add_argument("--days", type=int, default=90, help="Ventana de renovaciones en días (90)")
+    pr = sub.add_parser("protocols", help="Vulnerabilidades por protocolo (lista por capa OSI o detalle de un ID)")
+    pr.add_argument("id", nargs="?")
+    rs = sub.add_parser("rss", help="Catálogo de fuentes RSS y ecosistema; --opml exporta OPML")
+    rs.add_argument("--opml", action="store_true")
+    rs.add_argument("-o", "--output", type=Path, help="Fichero de salida del OPML")
     exp = sub.add_parser("expiring", help="Caducidades del registro de tecnologías")
     exp.add_argument("registry", type=Path)
     exp.add_argument("--days", type=int, default=90)
@@ -66,8 +84,60 @@ def main(argv: list[str] | None = None) -> int:
         print(render_soc(soc_metrics(args.incidents)))
         return 0
     if args.cmd == "mitre":
+        if args.navigator:
+            import json
+            from .mitre import a_navigator
+            texto = json.dumps(a_navigator(hoy=args.hoy), ensure_ascii=False, indent=2) + "\n"
+            if args.output:
+                args.output.write_text(texto, encoding="utf-8")
+                print(f"Capa Navigator escrita en {args.output}")
+            else:
+                print(texto, end="")
+            return 0
         from .soc import mitre_coverage
-        print(mitre_coverage())
+        print(mitre_coverage(hoy=args.hoy))
+        return 0
+    if args.cmd == "verticals":
+        from .gap import _load, render_verticales_md
+        from .verticals import VerticalesError, evaluar
+        try:
+            res = evaluar(_load(args.assessment))
+        except VerticalesError as exc:
+            print(f"ERROR: {exc}", file=sys.stderr)
+            return 2
+        print(render_verticales_md(res))
+        return 0
+    if args.cmd in ("tech", "subs"):
+        from . import tech
+        if args.cmd == "tech":
+            print(tech.render_evaluacion(tech.evaluar_tecnologias(args.registry)))
+            print(tech.render_reglas(tech.reglas(args.registry, args.hoy, args.days), args.hoy, args.days))
+        else:
+            print(tech.render_suscripciones(tech.suscripciones(args.registry, args.hoy, args.days), args.hoy, args.days))
+        return 0
+    if args.cmd == "protocols":
+        from . import protocols
+        if args.id:
+            try:
+                print(protocols.render_protocolo(args.id))
+            except ValueError as exc:
+                print(f"ERROR: {exc}", file=sys.stderr)
+                return 2
+            return 0
+        for capa, lista in protocols.por_capa().items():
+            print(f"Capa {capa}: " + ", ".join(p["id"] for p in lista))
+        return 0
+    if args.cmd == "rss":
+        from . import resources
+        if args.opml:
+            texto = resources.a_opml()
+            if args.output:
+                args.output.write_text(texto, encoding="utf-8")
+                print(f"OPML escrito en {args.output}")
+            else:
+                print(texto, end="")
+        else:
+            print(resources.render_markdown())
         return 0
     if args.cmd == "expiring":
         from .tech import expiring, render_expiring
@@ -80,7 +150,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "validate":
         from .refs import validate_refs
-        errors = validate() + validate_refs()
+        errors = validate() + validate_refs() + validar_v05()
         for e in errors:
             print(f"ERROR: {e}", file=sys.stderr)
         if not errors:

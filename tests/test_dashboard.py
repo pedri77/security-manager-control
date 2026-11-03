@@ -66,7 +66,7 @@ def test_sin_recursos_externos_ni_js(dir_ej, tmp_path):
         t = f.read_text(encoding="utf-8")
         p = _parse(t)
         assert "script" not in p.tags and "link" not in p.tags and "img" not in p.tags
-        assert not re.search(r"https?://", t)
+        assert not re.search(r"https?://", re.sub(r'<a href="https://[^"]*"', "", t))   # solo enlaces a recursos
 
 
 def test_escape_de_nombres(dir_ej, tmp_path):
