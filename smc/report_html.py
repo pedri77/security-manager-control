@@ -4,14 +4,19 @@ API:
 - `render_html(analisis) -> str`: documento completo.
 - `render_body(analisis, nivel=2) -> str`: solo el contenido (secciones), reutilizable por el dashboard.
 - `CSS`: hoja de estilos en línea que necesita el cuerpo.
-- `run_html(path, hoy=None) -> str`: carga una evaluación y devuelve el documento.
+- `run_html(path, hoy=None, registry=None) -> str`: carga una evaluación y devuelve el documento.
+- v0.6: `registry` (ruta o dict) añade tecnologías, reglas y suscripciones (cálculo en `smc.tech`); la madurez
+  MITRE (`smc.mitre`) se añade siempre. `render_mitre`, `cargar_registry` y `es_registry` los reutiliza el dashboard.
 Todo texto procedente de la evaluación o de los catálogos pasa por `html.escape`.
 """
 from __future__ import annotations
 
+import math
 from datetime import date
 from html import escape
 from pathlib import Path
+
+import yaml
 
 from .gap import Analisis, analyse, _load, estado_vertical, url_https
 from .plan import Accion
@@ -209,13 +214,170 @@ def _verticales(an: Analisis, h: int) -> str:
     return "\n".join(out)
 
 
-def render_body(an: Analisis, nivel: int = 2) -> str:
-    """Secciones del informe sin cabecera ni <html>. `nivel` = nivel del primer encabezado (h2 por defecto)."""
+# --- v0.6: tecnologías, reglas, suscripciones y MITRE (cálculo en smc.tech y smc.mitre) ---
+
+def es_registry(d) -> bool:
+    """Forma de registro de tecnologías: mapa con lista `technologies` (y sin `evaluaciones`)."""
+    return isinstance(d, dict) and isinstance(d.get("technologies"), list) and "evaluaciones" not in d
+
+
+def cargar_registry(registry) -> dict:
+    """Ruta o dict -> dict de registro. ValueError si no tiene la forma de un registro."""
+    if isinstance(registry, (str, Path)):
+        try:
+            registry = yaml.safe_load(Path(registry).read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, yaml.YAMLError) as exc:
+            raise ValueError(f"registro no legible ({type(exc).__name__})") from exc
+    if not es_registry(registry):
+        raise ValueError("no es un registro de tecnologías (falta la lista 'technologies')")
+    return registry
+
+
+def _n(x, dec: int = 0) -> str:
+    """Número finito formateado; cualquier otra cosa («abc», NaN, inf) sale como «—». Nunca rompe."""
+    if isinstance(x, bool) or not isinstance(x, (int, float)) or not math.isfinite(x):
+        return "—"
+    return f"{x:.{dec}f}"
+
+
+def _pct(x) -> str:
+    return "—" if _n(x) == "—" else f"{_n(x)} %"
+
+
+def _tecnologias(registry: dict, h: int) -> str:
+    from . import tech
+    filas = tech.evaluar_tecnologias(registry)
+    out = [f"<h{h}>Tecnologías evaluadas ({len(filas)})</h{h}>"]
+    if not filas:
+        out.append("<p>El registro no tiene tecnologías.</p>")
+        return "\n".join(out)
+    cel = []
+    for f in filas:
+        mad = f["madurez"]
+        cel.append([_e(f["id"]), _e(f["nombre"]), _e(f["vertical"] or "—"), _pct(f["cobertura_pct"]),
+                    _e(f["configuracion"]), _e(_n(mad, 0) if isinstance(mad, int) else _n(mad, 1)),
+                    _barra(mad * 20) if _n(mad) != "—" else "", _e("; ".join(f["avisos"]) or "—")])
+    out.append(_tabla(["ID", "Tecnología", "Vertical", "Cobertura", "Configuración", "Madurez (0-5)", "", "Avisos"], cel))
+    return "\n".join(out)
+
+
+def _reglas(registry: dict, hoy: date, h: int) -> str:
+    from . import tech
+    r = tech.reglas(registry, hoy)
+    out = [f"<h{h}>Estado de las reglas</h{h}>",
+           f"<p>Revisadas: <strong>{len(r['revisadas'])}</strong> · Sin revisar o con revisión caducada "
+           f"(más de {tech.UMBRAL_REGLAS_DIAS} días): <strong>{len(r['sin_revisar'])}</strong> · "
+           f"No evaluables: <strong>{len(r['no_evaluables'])}</strong> · Con reglas any-any: "
+           f"<strong>{len(r['any_any'])}</strong></p>"]
+    if r["any_any"]:
+        out.append(f'<div class="alerta"><strong>Reglas any-any ({len(r["any_any"])} dispositivo(s)):</strong> una '
+                   "revisión reciente no las hace aceptables.<ul>"
+                   + "".join(f"<li><strong>{_e(f['id'])}</strong> {_e(f['nombre'])}: {_e(f['reglas_any_any'])} "
+                             f"regla(s) any-any (estado: {_e(f['estado'])})</li>" for f in r["any_any"]) + "</ul></div>")
+    cab = ["Dispositivo", "Última revisión", "Días", "Reglas", "any-any", "Sin uso"]
+
+    def fila(f):
+        dias = f["dias_sin_revisar"]
+        return [_e(f"{f['id']} {f['nombre']}"), _e(_fecha(f["ultima_revision"]) if f["ultima_revision"] else "nunca"),
+                _e("—" if dias is None else dias), _e("—" if f["n_reglas"] is None else f["n_reglas"]),
+                f'<span class="venc">{_e(f["reglas_any_any"])}</span>' if f["reglas_any_any"] else "0",
+                _e(f["reglas_sin_uso"])]
+    out.append(f"<h{h + 1}>Sin revisar o revisión caducada ({len(r['sin_revisar'])})</h{h + 1}>")
+    out.append(_tabla(cab, [fila(f) for f in r["sin_revisar"]]) if r["sin_revisar"] else "<p>Ninguno.</p>")
+    out.append(f"<h{h + 1}>No evaluables ({len(r['no_evaluables'])})</h{h + 1}>")
+    if r["no_evaluables"]:
+        out.append('<p class="nota">No se puede decir si sus reglas son correctas. No cuentan como revisadas.</p><ul>'
+                   + "".join(f"<li><strong>{_e(f['id'])}</strong> {_e(f['nombre'])}: {_e(f['motivo'])}</li>"
+                             for f in r["no_evaluables"]) + "</ul>")
+    else:
+        out.append("<p>Ninguno.</p>")
+    out.append(f"<h{h + 1}>Revisadas ({len(r['revisadas'])})</h{h + 1}>")
+    out.append(_tabla(cab, [fila(f) for f in r["revisadas"]]) if r["revisadas"] else "<p>Ninguna.</p>")
+    if r["avisos"]:
+        out.append('<div class="aviso"><ul>' + "".join(f"<li>{_e(a)}</li>" for a in r["avisos"]) + "</ul></div>")
+    return "\n".join(out)
+
+
+def _suscripciones(registry: dict, hoy: date, h: int) -> str:
+    from . import tech
+    dias, umbral = 90, tech.UMBRAL_INFRAUSO
+    r = tech.suscripciones(registry, hoy, dias, umbral)
+    totales: dict[str, float] = {}
+    for (_prov, mon), c in r["coste_por_proveedor"].items():
+        totales[mon] = totales.get(mon, 0.0) + (c if isinstance(c, (int, float)) and math.isfinite(c) else 0.0)
+    total = " + ".join(f"{_n(v)} {_e(m)}" for m, v in sorted(totales.items())) or "—"
+    out = [f"<h{h}>Suscripciones</h{h}>", f"<p>Coste anual total: <strong>{total}</strong></p>"]
+    out.append(f"<h{h + 1}>Vencen en {dias} días ({len(r['renovaciones'])})</h{h + 1}>")
+    if r["renovaciones"]:
+        out.append(_tabla(["Fecha", "Días", "Tecnología", "Proveedor", "Coste anual", "Propietario", "Autorrenovación"],
+                          [[_e(x["fecha"].isoformat()),
+                            '<span class="venc">VENCIDA</span>' if x["dias"] < 0 else _e(x["dias"]),
+                            _e(f"{x['id']} {x['nombre']}"), _e(x["proveedor"]), f"{_n(x['coste_anual'])} {_e(x['moneda'])}",
+                            _e(x["propietario"] or "—"), "sí" if x["autorrenovacion"] else "no"]
+                           for x in r["renovaciones"]]))
+    else:
+        out.append("<p>Ninguna.</p>")
+    out.append(f"<h{h + 1}>Uso bajo el umbral del {_e(_n(umbral * 100))} % ({len(r['infrautilizadas'])})</h{h + 1}>")
+    if r["infrautilizadas"]:
+        out.append(_tabla(["Tecnología", "Proveedor", "En uso / contratadas", "Uso", "Coste ocioso"],
+                          [[_e(f"{x['id']} {x['nombre']}"), _e(x["proveedor"]),
+                            f"{_n(x['en_uso'])} / {_n(x['contratadas'])}", f"{_n(x['uso_pct'], 1)} %",
+                            f"{_n(x['coste_ocioso'])} {_e(x['moneda'])}"] for x in r["infrautilizadas"]]))
+    else:
+        out.append("<p>Ninguna.</p>")
+    if r["sobredespliegue"]:
+        out.append(f"<h{h + 1}>Sobredespliegue ({len(r['sobredespliegue'])})</h{h + 1}>")
+        out.append(_tabla(["Tecnología", "Proveedor", "En uso / contratadas", "Exceso"],
+                          [[_e(f"{x['id']} {x['nombre']}"), _e(x["proveedor"]),
+                            f"{_n(x['en_uso'])} / {_n(x['contratadas'])}", _n(x["exceso"])] for x in r["sobredespliegue"]]))
+    out.append(f"<h{h + 1}>Coste anual por proveedor</h{h + 1}>")
+    if r["coste_por_proveedor"]:
+        out.append(_tabla(["Proveedor", "Coste anual"],
+                          [[_e(p), f"{_n(c)} {_e(m)}"] for (p, m), c in sorted(r["coste_por_proveedor"].items())]))
+    else:
+        out.append("<p>Sin suscripciones.</p>")
+    if r["avisos"]:
+        out.append('<div class="aviso"><ul>' + "".join(f"<li>{_e(a)}</li>" for a in r["avisos"]) + "</ul></div>")
+    return "\n".join(out)
+
+
+def datos_mitre(hoy: date) -> dict:
+    """Madurez y casos sin playbook desde `smc.mitre` (no se recalcula aquí)."""
+    from . import mitre
+    return {"madurez": mitre.madurez(hoy=hoy), "sin_playbook": mitre.sin_playbook()}
+
+
+def render_mitre(datos: dict, h: int = 2) -> str:
+    m = datos["madurez"]
+    out = [f"<h{h}>Madurez MITRE ATT&amp;CK</h{h}>",
+           '<p class="nota">Niveles: 0 sin caso · 1 caso sin regla · 2 regla · 3 regla con playbook · 4 probada · '
+           "5 probada en los últimos 90 días. La táctica toma el mínimo de sus casos activos.</p>",
+           f"<p>Técnicas con caso de uso: <strong>{len(m['tecnicas'])}</strong> · Casos de uso: "
+           f"<strong>{len(m['casos'])}</strong></p>"]
+    if m["tacticas"]:
+        out.append(_tabla(["Táctica", "Madurez (0-5)", ""],
+                          [[_e(t), _e(n), _barra(n * 20)] for t, n in m["tacticas"].items()]))
+    else:
+        out.append("<p>Sin casos de uso activos.</p>")
+    sp = datos["sin_playbook"]
+    out.append(f"<h{h + 1}>Casos sin playbook ({len(sp)})</h{h + 1}>")
+    out.append('<ul class="cols">' + "".join(f"<li>{_e(i)}</li>" for i in sp) + "</ul>" if sp
+               else "<p>Todos los casos tienen playbook.</p>")
+    return "\n".join(out)
+
+
+def render_body(an: Analisis, nivel: int = 2, registry=None, mitre: dict | None = None) -> str:
+    """Secciones del informe sin cabecera ni <html>. `nivel` = nivel del primer encabezado (h2 por defecto).
+    `registry` (dict o ruta) añade tecnologías, reglas y suscripciones; MITRE se añade siempre."""
     h = max(1, min(nivel, 4))
     partes = [_resumen(an, h), f"<h{h}>Detalle por marco</h{h}>"]
     partes += [_marco(an, r, h + 1) for r in an.results]
     if an.verticales is not None:
         partes.append(_verticales(an, h))
+    if registry is not None:
+        reg = cargar_registry(registry)
+        partes += [_tecnologias(reg, h), _reglas(reg, an.hoy, h), _suscripciones(reg, an.hoy, h)]
+    partes.append(render_mitre(mitre if mitre is not None else datos_mitre(an.hoy), h))
     partes.append(_plan(an, h))
     if an.warnings:
         partes.append(f"<h{h}>Avisos</h{h}><div class=\"aviso\"><ul>"
@@ -232,13 +394,15 @@ def _cabecera(an: Analisis) -> str:
             f" · Fecha de evaluación: {_e(c.get('fecha', '—'))} · Informe a {_e(an.hoy.isoformat())}</p>")
 
 
-def render_html(an: Analisis) -> str:
+def render_html(an: Analisis, registry=None, mitre: dict | None = None) -> str:
     nombre = _e(an.cliente.get("nombre", "cliente"))
     return ('<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n'
             '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
             f"<title>Informe de brechas · {nombre}</title>\n<style>{CSS}</style>\n</head>\n"
-            f'<body>\n<main class="smc">\n{_cabecera(an)}\n{render_body(an)}\n</main>\n</body>\n</html>\n')
+            f'<body>\n<main class="smc">\n{_cabecera(an)}\n{render_body(an, 2, registry, mitre)}\n</main>\n</body>\n</html>\n')
 
 
-def run_html(path: Path, hoy: date | None = None) -> str:
-    return render_html(analyse(_load(path), hoy))
+def run_html(path: Path, hoy: date | None = None, registry=None) -> str:
+    if registry is not None:
+        registry = cargar_registry(registry)   # falla antes de analizar si el registro no vale
+    return render_html(analyse(_load(path), hoy), registry)
