@@ -1,4 +1,4 @@
-"""T25: verticales VRT-IDSEC, VRT-DSPM, VRT-AI y VRT-OFF (24 en total)."""
+"""T25: VRT-AI y VRT-OFF nuevas; VRT-IAM y VRT-DATA ampliadas (22 en total)."""
 from pathlib import Path
 
 import yaml
@@ -7,7 +7,7 @@ from smc import verticals as V
 from smc.catalog import load_all
 
 ROOT = Path(__file__).resolve().parent.parent
-NUEVAS = ["VRT-IDSEC", "VRT-DSPM", "VRT-AI", "VRT-OFF"]
+NUEVAS = ["VRT-IAM", "VRT-DATA", "VRT-AI", "VRT-OFF"]
 EJEMPLOS = sorted((ROOT / "assessments" / "examples").glob("*.yaml"))
 
 
@@ -15,9 +15,9 @@ def _v(vid):
     return next(v for v in V.cargar_verticales() if v.id == vid)
 
 
-def test_hay_24_y_las_cuatro_nuevas():
+def test_hay_22_y_las_cuatro():
     ids = [v.id for v in V.cargar_verticales()]
-    assert len(ids) == len(set(ids)) == 24
+    assert len(ids) == len(set(ids)) == 22
     assert set(NUEVAS) <= set(ids)
     assert V.validar_catalogo() == []
 
@@ -33,10 +33,17 @@ def test_baremo_6_niveles_distintos_y_controles_existen():
         assert not v.recursos, vid
 
 
+def test_no_hay_verticales_duplicadas_idsec_dspm():
+    ids = {v.id for v in V.cargar_verticales()}
+    assert not ids & {"VRT-IDSEC", "VRT-DSPM"}
+    assert {"ENS-op.acc.1", "TRV-ID-02"} <= set(_v("VRT-IAM").controles)
+    assert {"ENS-mp.info.1", "TRV-DATA-01"} <= set(_v("VRT-DATA").controles)
+
+
 def test_mapeos_clave():
-    assert {"NIS2-21.2.i", "NIS2-21.2.j"} <= set(_v("VRT-IDSEC").nis2)
-    assert any(c.startswith("ENS-op.acc.") for c in _v("VRT-IDSEC").controles)
-    assert any(c.startswith("ENS-mp.info.") for c in _v("VRT-DSPM").controles)
+    assert {"NIS2-21.2.i", "NIS2-21.2.j"} <= set(_v("VRT-IAM").nis2)
+    assert any(c.startswith("ENS-op.acc.") for c in _v("VRT-IAM").controles)
+    assert any(c.startswith("ENS-mp.info.") for c in _v("VRT-DATA").controles)
     assert {"NIS2-21.2.a", "NIS2-21.2.e"} <= set(_v("VRT-AI").nis2)
     assert "TRV-VUL-02" in _v("VRT-OFF").controles
 
