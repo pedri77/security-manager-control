@@ -178,14 +178,14 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en 1acd498 · evidencia informes/T15-dev-proyecto.md
 
-- [~] **T16** — Documentación y versión 0.5.0
+- [x] **T16** — Documentación y versión 0.5.0
   - Hace: README (mantén el estilo actual con imágenes y badges; actualiza cifras, tabla de módulos, comandos, hoja de ruta v0.5 hecha y v0.6 con lo pendiente, sección «Ecosistema» con las Pages públicas), PRD (RF nuevos), CHANGELOG 0.5.0, versión 0.5.0.
   - No hace: no regenera imágenes.
   - Toca: `README.md`, `soc/README.md`, `docs/prd/PRD-SMC-001-v1.md`, `CHANGELOG.md`, `pyproject.toml`, `smc/__init__.py`, `technologies/registry.template.yaml`, `resources/internal/inventory.template.yaml`, `docs/plan/informes/T16-dev-proyecto.md` (UPDATE 1: añadir `zona` y `capa_osi` ficticias a las plantillas para que `smc mapa` muestre zonas; corregir «12 verticales»)
   - Depende: T15
   - Verifica: todos los comandos del README rc=0 sobre los ejemplos; badges con cifras reales (tests, controles, verticales, protocolos).
   - Prod: —
-  - Estado: reservada por coordinador 2026-11-03
+  - Estado: hecha en 8be8109 · evidencia informes/T16-dev-proyecto.md
 
 ## Libro
 
