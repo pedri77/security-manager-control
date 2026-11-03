@@ -1,5 +1,6 @@
 # Catálogo de casos de uso de detección.
 # estado: activo | en_desarrollo | propuesto | retirado
+# deteccion: sin | regla | probada. playbook: ruta bajo vulnerabilities/playbooks/caso-uso/. vertical: ID de soc/verticals.yaml.
 # mitre: técnicas ATT&CK Enterprise (IDs). La táctica se indica para el cálculo de cobertura por táctica.
 version: v1
 use_cases:
@@ -10,6 +11,7 @@ use_cases:
     fuentes: [Entra ID sign-in logs, AD 4625/4771, VPN]
     severidad: alta
     vertical: VRT-IAM
+    deteccion: probada
     playbook: vulnerabilities/playbooks/caso-uso/PB-UC-001-fuerza-bruta.md
     estado: activo
     ultima_prueba: "2026-09-15"
@@ -20,7 +22,8 @@ use_cases:
     fuentes: [Gateway de correo, EDR, Proxy]
     severidad: alta
     vertical: VRT-MAIL
-    playbook: ""
+    deteccion: regla
+    playbook: vulnerabilities/playbooks/caso-uso/PB-UC-002-phishing.md
     estado: activo
     ultima_prueba: ""
   - id: UC-003
@@ -30,7 +33,8 @@ use_cases:
     fuentes: [EDR, Sysmon 1, PowerShell 4104]
     severidad: media
     vertical: VRT-EDR
-    playbook: ""
+    deteccion: regla
+    playbook: vulnerabilities/playbooks/caso-uso/PB-UC-003-powershell-ofuscado.md
     estado: activo
     ultima_prueba: ""
   - id: UC-004
@@ -40,7 +44,8 @@ use_cases:
     fuentes: [EDR, Sysmon 10]
     severidad: critica
     vertical: VRT-EDR
-    playbook: ""
+    deteccion: regla
+    playbook: vulnerabilities/playbooks/caso-uso/PB-UC-004-volcado-lsass.md
     estado: activo
     ultima_prueba: ""
   - id: UC-005
@@ -50,7 +55,8 @@ use_cases:
     fuentes: [AD 4624 tipo 10, NDR, Firewall interno]
     severidad: alta
     vertical: VRT-NET
-    playbook: ""
+    deteccion: sin
+    playbook: vulnerabilities/playbooks/caso-uso/PB-UC-005-movimiento-lateral.md
     estado: en_desarrollo
     ultima_prueba: ""
   - id: UC-006
@@ -60,7 +66,8 @@ use_cases:
     fuentes: [EDR, Sysmon 1]
     severidad: critica
     vertical: VRT-EDR
-    playbook: ""
+    deteccion: regla
+    playbook: vulnerabilities/playbooks/caso-uso/PB-UC-006-ransomware-preparacion.md
     estado: activo
     ultima_prueba: ""
   - id: UC-007
@@ -70,7 +77,8 @@ use_cases:
     fuentes: [WAF, IDS, Logs de aplicación]
     severidad: critica
     vertical: VRT-APP
-    playbook: ""
+    deteccion: regla
+    playbook: vulnerabilities/playbooks/caso-uso/PB-UC-007-explotacion-servicio-expuesto.md
     estado: activo
     ultima_prueba: ""
   - id: UC-008
@@ -80,6 +88,7 @@ use_cases:
     fuentes: [Proxy, CASB, DLP]
     severidad: alta
     vertical: VRT-DATA
-    playbook: ""
+    deteccion: sin
+    playbook: vulnerabilities/playbooks/caso-uso/PB-UC-008-exfiltracion-cloud.md
     estado: propuesto
     ultima_prueba: ""
