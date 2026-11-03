@@ -1,6 +1,6 @@
 # SMC 3 · Informe completo y dashboard multicliente
 
-Duración: 1:33. Vídeo: pendiente de publicar.
+Duración: 1:33. Vídeo: https://youtu.be/QTY4brqBUwU
 
 Todos los datos que aparecen son ficticios (ejemplos del repositorio).
 

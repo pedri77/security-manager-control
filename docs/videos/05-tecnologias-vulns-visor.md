@@ -1,6 +1,6 @@
 # SMC 5 · Tecnologías, vulnerabilidades y mapa 3D de la red
 
-Duración: 1:58. Vídeo: pendiente de publicar.
+Duración: 1:58. Vídeo: https://youtu.be/T_VvI3PcwHM
 
 Todos los datos que aparecen son ficticios (ejemplos del repositorio).
 

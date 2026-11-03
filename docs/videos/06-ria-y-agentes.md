@@ -1,6 +1,6 @@
 # SMC 6 · Reglamento europeo de IA y seguridad de agentes
 
-Duración: 1:33. Vídeo: pendiente de publicar.
+Duración: 1:33. Vídeo: https://youtu.be/_0o6j21jd_M
 
 Todos los datos que aparecen son ficticios (ejemplos del repositorio).
 

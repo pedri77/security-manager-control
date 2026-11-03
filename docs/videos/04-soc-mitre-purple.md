@@ -1,6 +1,6 @@
 # SMC 4 · SOC, MITRE ATT&CK, pentest y purple team
 
-Duración: 1:50. Vídeo: pendiente de publicar.
+Duración: 1:50. Vídeo: https://youtu.be/IM9AsmU6kYc
 
 Todos los datos que aparecen son ficticios (ejemplos del repositorio).
 

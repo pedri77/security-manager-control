@@ -1,6 +1,6 @@
 # SMC 1 · Tu primera evaluación de ciberseguridad en 5 minutos
 
-Duración: 2:22. Vídeo: pendiente de publicar.
+Duración: 2:22. Vídeo: https://youtu.be/REyQXsflM7g
 
 Todos los datos que aparecen son ficticios (ejemplos del repositorio).
 

@@ -1,6 +1,6 @@
 # SMC 2 · Plan de acción y evolución entre evaluaciones
 
-Duración: 1:34. Vídeo: pendiente de publicar.
+Duración: 1:34. Vídeo: https://youtu.be/I6QSXJhfonM
 
 Todos los datos que aparecen son ficticios (ejemplos del repositorio).
 
