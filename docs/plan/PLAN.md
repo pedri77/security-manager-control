@@ -271,14 +271,14 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en a2fda17 · evidencia informes/T24-dev-proyecto.md
 
-- [~] **T25** — Verticales de identidad, dato, IA y seguridad ofensiva
+- [x] **T25** — Verticales de identidad, dato, IA y seguridad ofensiva
   - Hace: añade a `soc/verticals.yaml`, con el formato vigente (nis2, controles existentes, criterios y `niveles` 0-5 concretos): `VRT-IAM` (identidad y su seguridad: IGA y ciclo de vida, MFA resistente a phishing, PAM, identidades no humanas y de servicio, ITDR, revisión de accesos, AD/Entra hardening), `VRT-DATA` (seguridad del dato: clasificación, DSPM, DLP en endpoint/correo/nube, identidades y permisos con acceso al dato, cifrado y claves, retención), `VRT-AI` (IA: inventario de sistemas y modelos, clasificación según el RIA, gobierno, seguridad de agentes y LLM según OWASP Top 10 for LLM Applications y MITRE ATLAS, permisos y herramientas de agentes, registro y supervisión humana) y `VRT-OFF` (pentesting y purple team: plan anual, retest, ejercicios purple, red team). Controles solo con IDs existentes en los catálogos. Recursos solo de la lista pública (si no hay, ninguno). Añade las 4 a la plantilla y a los dos ejemplos ficticios. Cifras: 24 verticales.
   - No hace: no toca `smc/` salvo `URLS_PUBLICAS` si hiciera falta (no debería).
   - Toca: `soc/verticals.yaml`, `soc/README.md`, `assessments/assessment.template.yaml`, `assessments/examples/`, `tests/test_verticals.py`, `tests/test_t18.py`, `tests/test_verticals_v07.py`, `docs/plan/informes/T25-dev-proyecto.md`
   - Depende: T23
   - Verifica: `smc validate` OK; `smc verticals` sobre los ejemplos muestra las 4; contraprueba: un control inexistente en VRT-AI pone un test en rojo.
   - Prod: —
-  - Estado: reservada por coordinador 2026-11-03
+  - Estado: hecha en a13ab5b · evidencia informes/T25-dev-proyecto.md
 
 - [~] **T26** — RIA (Reglamento (UE) 2024/1689) y seguridad de agentes de IA
   - Hace: `frameworks/ai-act/obligaciones.yaml`: obligaciones por rol (proveedor, responsable del despliegue, importador, distribuidor) y por nivel de riesgo (prohibido art. 5, alto riesgo Anexo I y Anexo III, transparencia art. 50, modelos de uso general art. 53-55, riesgo mínimo), con artículo, descripción breve y fecha de aplicación vigente tras el Ómnibus Digital (Reglamento (UE) 2026/1744: alto riesgo Anexo III 2027-12-02, Anexo I 2028-08-02; contrastar art. 50 y demás fechas en el texto del DOUE o EUR-Lex; lo no contrastado lleva `verificar: true` con nota). `ai/inventario.template.yaml`: sistemas de IA del cliente (nombre, finalidad, rol, nivel de riesgo, datos personales, proveedor del modelo, agentes con herramientas y permisos, supervisión humana, registro). `smc/ai_act.py`: `clasificar` (valida nivel y rol), `obligaciones(inventario, hoy)` (obligaciones aplicables por sistema con estado por fecha: vigente / aplicable desde), `riesgos_agente` (comprobaciones de seguridad de agentes basadas en OWASP Top 10 for LLM Applications 2025 y MITRE ATLAS: herramientas sin límite, permisos excesivos, sin supervisión humana, sin registro, prompt injection sin mitigación) y `render_markdown`. Fuentes con URL https en la cabecera.
