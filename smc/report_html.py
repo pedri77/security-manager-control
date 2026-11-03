@@ -7,6 +7,10 @@ API:
 - `run_html(path, hoy=None, registry=None) -> str`: carga una evaluación y devuelve el documento.
 - v0.6: `registry` (ruta o dict) añade tecnologías, reglas y suscripciones (cálculo en `smc.tech`); la madurez
   MITRE (`smc.mitre`) se añade siempre. `render_mitre`, `cargar_registry` y `es_registry` los reutiliza el dashboard.
+- v0.7: secciones opcionales de pentest, purple team, IA (RIA y agentes) y PMO. `run_html(..., pentest=, purple=,
+  ai=, pmo=)` (rutas o dicts) las calcula con `smc.offensive`, `smc.ai_act` y `smc.pmo`; `render_html`/`render_body`
+  reciben los resultados ya calculados en `extras` (claves `pentest`, `purple`, `ai`, `pmo`). Con `purple` la madurez
+  MITRE cuenta los ejercicios detectados (ver `smc.mitre`). Sin esos ficheros el informe no cambia.
 Todo texto procedente de la evaluación o de los catálogos pasa por `html.escape`.
 """
 from __future__ import annotations
@@ -341,10 +345,10 @@ def _suscripciones(registry: dict, hoy: date, h: int) -> str:
     return "\n".join(out)
 
 
-def datos_mitre(hoy: date) -> dict:
-    """Madurez y casos sin playbook desde `smc.mitre` (no se recalcula aquí)."""
+def datos_mitre(hoy: date, purple=None) -> dict:
+    """Madurez y casos sin playbook desde `smc.mitre` (no se recalcula aquí). `purple`: ejercicios que cuentan como prueba."""
     from . import mitre
-    return {"madurez": mitre.madurez(hoy=hoy), "sin_playbook": mitre.sin_playbook()}
+    return {"madurez": mitre.madurez(hoy=hoy, purple=purple), "sin_playbook": mitre.sin_playbook()}
 
 
 def render_mitre(datos: dict, h: int = 2) -> str:
@@ -367,9 +371,167 @@ def render_mitre(datos: dict, h: int = 2) -> str:
     return "\n".join(out)
 
 
-def render_body(an: Analisis, nivel: int = 2, registry=None, mitre: dict | None = None) -> str:
+# --- v0.7: pentest, purple team, IA y PMO (cálculo en smc.offensive, smc.ai_act y smc.pmo) ---
+
+def _f(d) -> str:
+    return d.isoformat() if hasattr(d, "isoformat") else "—"
+
+
+def _lista(items: list[str]) -> str:
+    return "<ul>" + "".join(f"<li>{x}</li>" for x in items) + "</ul>"
+
+
+def _avisos(avisos: list[str]) -> str:
+    return '<div class="aviso">' + _lista([_e(a) for a in avisos]) + "</div>" if avisos else ""
+
+
+def render_pentest(e, h: int = 2) -> str:
+    """`e`: `offensive.EstadoHallazgos`."""
+    out = [f"<h{h}>Pentesting: hallazgos</h{h}>",
+           f"<p>Total: <strong>{_e(e.total)}</strong> · Abiertos: <strong>{len(e.abiertos)}</strong> · Fuera de SLA: "
+           f"<strong>{len(e.fuera_sla)}</strong> · Pendientes de retest: <strong>{len(e.pendientes_retest)}</strong> · "
+           f"Aceptados sin revisión: <strong>{len(e.aceptados_sin_revision)}</strong></p>",
+           _tabla(["Severidad efectiva", "Abiertos"], [[_e(s), _e(n)] for s, n in e.por_severidad.items()])]
+    if e.fuera_sla:
+        out.append(f"<h{h + 1}>Fuera de SLA</h{h + 1}>")
+        out.append(_tabla(["ID", "Título", "Sev. efectiva", "Días", "SLA", "Activo", "Control"],
+                          [[_e(f.hallazgo.id), _e(f.hallazgo.titulo), _e(f.severidad_efectiva), _e(f.dias), _e(f.sla_dias),
+                            _e(f.hallazgo.activo or "—"), _e(f.hallazgo.control or "—")] for f in e.fuera_sla]))
+    for titulo, lista in (("Pendientes de retest", e.pendientes_retest), ("Aceptados sin fecha de revisión", e.aceptados_sin_revision)):
+        if lista:
+            out.append(f"<h{h + 1}>{_e(titulo)}</h{h + 1}>" + _lista([f"<strong>{_e(x.id)}</strong> {_e(x.titulo)}" for x in lista]))
+    out.append(_avisos(e.avisos))
+    return "\n".join(x for x in out if x)
+
+
+def render_purple(r, h: int = 2) -> str:
+    """`r`: `offensive.ResultadoPurple`."""
+    out = [f"<h{h}>Purple team: ejercicios</h{h}>", f"<p>Ejercicios: <strong>{_e(r.total)}</strong></p>"]
+    if r.cobertura_por_tactica:
+        filas = []
+        for t, c in r.cobertura_por_tactica.items():
+            tm = "—" if c["tiempo_medio_min"] is None else _e(c["tiempo_medio_min"])
+            filas.append([_e(t), _e(c["tecnicas"]), _e(c["detectado"]), _e(c["parcial"]), _e(c["no_detectado"]),
+                          f'{_e(c["cobertura_pct"])} %' + _barra(c["cobertura_pct"]), tm])
+        out.append(_tabla(["Táctica", "Técnicas", "Detectado", "Parcial", "No detectado", "Cobertura", "Tiempo medio (min)"], filas))
+    if r.no_detectadas:
+        out.append(f"<h{h + 1}>Técnicas no detectadas del todo</h{h + 1}>"
+                   + _lista([f"{_e(x.tecnica)} ({_e(x.caso_uso)}, {_e(x.resultado)}, {_f(x.fecha)})" for x in r.no_detectadas]))
+    if r.mejoras_abiertas:
+        out.append(f"<h{h + 1}>Mejoras abiertas</h{h + 1}>"
+                   + _lista([f"<strong>{_e(x.id)}</strong> ({_e(x.mejora.estado)}): {_e(x.mejora.descripcion)}" for x in r.mejoras_abiertas]))
+    if r.ejercicios_caducados:
+        out.append(f"<h{h + 1}>Ejercicios de más de 12 meses</h{h + 1}>"
+                   + _lista([f"{_e(x.id)} ({_f(x.fecha)}, {_e(x.tecnica)})" for x in r.ejercicios_caducados]))
+    out.append(_avisos(r.avisos))
+    return "\n".join(x for x in out if x)
+
+
+def render_ia(res, hallazgos, h: int = 2) -> str:
+    """`res`: `ai_act.ResultadoIA`; `hallazgos`: lista de `ai_act.HallazgoAgente` (o None)."""
+    from . import ai_act
+    out = [f"<h{h}>IA: RIA (Reglamento (UE) 2024/1689) y seguridad de agentes</h{h}>",
+           f'<div class="alerta"><strong>Aviso.</strong> {_e(ai_act.AVISO_JURIDICO)}</div>',
+           '<p class="nota">Fechas vigentes tras el Ómnibus digital sobre IA (Reglamento (UE) 2026/1744). Las obligaciones '
+           "marcadas «verificar» tienen fecha o alcance pendientes de contrastar.</p>"]
+    if res.organizacion:
+        out.append(f"<p>Organización: {_e(res.organizacion)}</p>")
+    filas = [[_e(s.id), _e(s.nombre), _e(s.nivel), _e(", ".join(s.roles)), _e(len(s.obligaciones)),
+              _e(len(s.pendientes)), f'<span class="venc">{len(s.incumplidas)}</span>' if s.incumplidas else "0"]
+             for s in res.sistemas]
+    if filas:
+        out.append(_tabla(["ID", "Sistema", "Nivel", "Rol", "Obligaciones", "Pendientes", "Pendientes ya vigentes"], filas))
+    else:
+        out.append("<p>El inventario no tiene sistemas.</p>")
+    for s in res.sistemas:
+        if not s.obligaciones:
+            continue
+        out.append(f"<h{h + 1}>{_e(s.id)} {_e(s.nombre)}</h{h + 1}>")
+        out.append(_tabla(["Obligación", "Artículo", "Rol", "Estado", "Cumplimiento", "Nota"],
+                          [[_e(f"{o.id} {o.titulo}"), _e(o.articulo), _e(", ".join(o.roles)),
+                            _e("vigente" if o.estado == ai_act.VIGENTE else f"aplicable desde {o.aplica_desde}"),
+                            f'<span class="venc">{_e(o.cumplimiento)}</span>' if o.cumplimiento == ai_act.PENDIENTE else _e(o.cumplimiento),
+                            ('<span class="venc">verificar</span> ' if o.verificar else "") + _e(o.nota)] for o in s.obligaciones]))
+    if res.no_clasificados:
+        out.append(f"<h{h + 1}>Sistemas no clasificados</h{h + 1}>"
+                   + _lista([f"{_e(n.get('id'))} {_e(n.get('nombre'))}: {_e(n.get('error'))}" for n in res.no_clasificados]))
+    if hallazgos is not None:
+        out.append(f"<h{h + 1}>Seguridad de agentes (OWASP Top 10 LLM 2025, MITRE ATLAS)</h{h + 1}>")
+        if hallazgos:
+            out.append(_tabla(["Sistema", "Agente", "Comprobación", "Severidad", "Detalle", "OWASP", "ATLAS", "Mitigaciones ATLAS"],
+                              [[_e(x.sistema), _e(x.agente), _e(f"{x.id} {x.titulo}"), _e(x.severidad), _e(x.detalle),
+                                _e(", ".join(x.owasp)), _e(", ".join(x.atlas) or "—"), _e(", ".join(x.mitigaciones))] for x in hallazgos]))
+        else:
+            out.append("<p>Sin hallazgos.</p>")
+    out.append(f"<h{h + 1}>Fuentes</h{h + 1}>" + _lista([_enlace(t, u) for t, u in ai_act.FUENTES]))
+    out.append(_avisos(res.warnings + res.errores))
+    return "\n".join(x for x in out if x)
+
+
+def _eur(d) -> str:
+    return "n/d" if d is None else _e(f"{d:,.2f}".replace(",", " ") + " €")
+
+
+def render_pmo(a, h: int = 2) -> str:
+    """`a`: `pmo.Analisis`."""
+    p = a.proyecto
+    out = [f"<h{h}>PMO: {_e(p.nombre or p.id)}</h{h}>",
+           f'<p class="meta">Cliente: {_e(p.cliente)} · Periodo: {_f(p.inicio)} a {_f(p.fin)} · A fecha {_f(a.hoy)}</p>',
+           _tabla(["Partida", "Presupuesto", "Real", "Desviación"],
+                  [[_e(k), _eur(v["presupuesto"]), _eur(v["real"]), _eur(v["desviacion"])] for k, v in a.por_partida.items()]
+                  + [["<strong>Total</strong>", _eur(a.total["presupuesto"]), _eur(a.total["real"]), _eur(a.total["desviacion"])]])]
+    e = a.evm
+    out.append(f"<h{h + 1}>Valor ganado (EVM)</h{h + 1}>")
+    out.append(_tabla(["BAC", "PV", "EV", "AC", "CPI", "SPI"],
+                      [[_eur(e.bac), _eur(e.pv), _eur(e.ev), _eur(e.ac), _e(e.cpi if e.cpi is not None else "n/d"),
+                        _e(e.spi if e.spi is not None else "n/d")]]))
+    out.append(f"<h{h + 1}>Tareas retrasadas ({len(a.tareas_retrasadas)})</h{h + 1}>")
+    out.append(_lista([f"<strong>{_e(t.id)}</strong> {_e(t.titulo)}: fin {_f(t.fin)}, avance {_e(t.avance)} %" for t in a.tareas_retrasadas])
+               if a.tareas_retrasadas else "<p>Ninguna.</p>")
+    out.append(f"<h{h + 1}>Tareas sin control asociado ({len(a.tareas_sin_control)})</h{h + 1}>")
+    out.append(_lista([f"<strong>{_e(t.id)}</strong> {_e(t.titulo)}" for t in a.tareas_sin_control])
+               if a.tareas_sin_control else "<p>Ninguna.</p>")
+    out.append(f"<h{h + 1}>Próximos eventos (30 días)</h{h + 1}>")
+    out.append(_tabla(["Fecha", "Tipo", "Evento"], [[_f(x.fecha), _e(x.tipo), _e(x.titulo)] for x in a.proximos_eventos])
+               if a.proximos_eventos else "<p>Ninguno.</p>")
+    if a.horas_rol_mes:
+        out.append(f"<h{h + 1}>Horas por rol y mes</h{h + 1}>")
+        out.append(_tabla(["Rol", "Mes", "Horas"], [[_e(r), _e(m), _e(f"{v.normalize():f}")]
+                                                     for r, ms in a.horas_rol_mes.items() for m, v in ms.items()]))
+    if p.riesgos:
+        out.append(f"<h{h + 1}>Riesgos del proyecto</h{h + 1}>")
+        out.append(_tabla(["ID", "Riesgo", "Prob.", "Impacto", "Estado"],
+                          [[_e(r.id), _e(r.descripcion), _e(r.probabilidad), _e(r.impacto), _e(r.estado)] for r in p.riesgos]))
+    if a.suscripciones is not None:
+        out.append(f"<p>Suscripciones del registro (fuera del presupuesto del proyecto): coste anual en EUR "
+                   f"<strong>{_eur(a.suscripciones['coste_anual_eur'])}</strong></p>")
+    out.append(_avisos(a.avisos))
+    return "\n".join(x for x in out if x)
+
+
+def calcular_extras(hoy: date, pentest=None, purple=None, ai=None, pmo=None, assessment: dict | None = None, registry=None) -> dict:
+    """Resultados de las secciones v0.7 a partir de ficheros o dicts (None = sin sección).
+    Lanza ValueError (OffensiveError, AIActError) si los datos no valen."""
+    from . import ai_act, offensive, pmo as pmo_mod
+    extras: dict = {}
+    if pentest is not None:
+        extras["pentest"] = offensive.estado_hallazgos(pentest, hoy)
+    if purple is not None:
+        pu = purple if isinstance(purple, offensive.Purple) else offensive.cargar_purple(purple)
+        extras["purple_datos"] = pu
+        extras["purple"] = offensive.purple(pu, hoy)
+    if ai is not None:
+        extras["ai"] = (ai_act.obligaciones(ai, hoy, estricto=False), ai_act.riesgos_agente(ai))
+    if pmo is not None:
+        extras["pmo"] = pmo_mod.analizar(pmo_mod.cargar_proyecto(pmo), hoy, assessment, registry)
+    return extras
+
+
+def render_body(an: Analisis, nivel: int = 2, registry=None, mitre: dict | None = None, extras: dict | None = None) -> str:
     """Secciones del informe sin cabecera ni <html>. `nivel` = nivel del primer encabezado (h2 por defecto).
-    `registry` (dict o ruta) añade tecnologías, reglas y suscripciones; MITRE se añade siempre."""
+    `registry` (dict o ruta) añade tecnologías, reglas y suscripciones; MITRE se añade siempre.
+    `extras` (ver `calcular_extras`) añade pentest, purple team, IA y PMO."""
+    extras = extras or {}
     h = max(1, min(nivel, 4))
     partes = [_resumen(an, h), f"<h{h}>Detalle por marco</h{h}>"]
     partes += [_marco(an, r, h + 1) for r in an.results]
@@ -378,7 +540,17 @@ def render_body(an: Analisis, nivel: int = 2, registry=None, mitre: dict | None 
     if registry is not None:
         reg = cargar_registry(registry)
         partes += [_tecnologias(reg, h), _reglas(reg, an.hoy, h), _suscripciones(reg, an.hoy, h)]
-    partes.append(render_mitre(mitre if mitre is not None else datos_mitre(an.hoy), h))
+    if "pentest" in extras:
+        partes.append(render_pentest(extras["pentest"], h))
+    if "purple" in extras:
+        partes.append(render_purple(extras["purple"], h))
+    if "ai" in extras:
+        partes.append(render_ia(extras["ai"][0], extras["ai"][1], h))
+    if "pmo" in extras:
+        partes.append(render_pmo(extras["pmo"], h))
+    if mitre is None:
+        mitre = datos_mitre(an.hoy, extras.get("purple_datos"))
+    partes.append(render_mitre(mitre, h))
     partes.append(_plan(an, h))
     if an.warnings:
         partes.append(f"<h{h}>Avisos</h{h}><div class=\"aviso\"><ul>"
@@ -395,15 +567,19 @@ def _cabecera(an: Analisis) -> str:
             f" · Fecha de evaluación: {_e(c.get('fecha', '—'))} · Informe a {_e(an.hoy.isoformat())}</p>")
 
 
-def render_html(an: Analisis, registry=None, mitre: dict | None = None) -> str:
+def render_html(an: Analisis, registry=None, mitre: dict | None = None, extras: dict | None = None) -> str:
     nombre = _e(an.cliente.get("nombre", "cliente"))
     return ('<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n'
             '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
             f"<title>Informe de brechas · {nombre}</title>\n<style>{CSS}</style>\n</head>\n"
-            f'<body>\n<main class="smc">\n{_cabecera(an)}\n{render_body(an, 2, registry, mitre)}\n</main>\n</body>\n</html>\n')
+            f'<body>\n<main class="smc">\n{_cabecera(an)}\n{render_body(an, 2, registry, mitre, extras)}\n</main>\n</body>\n</html>\n')
 
 
-def run_html(path: Path, hoy: date | None = None, registry=None) -> str:
+def run_html(path: Path, hoy: date | None = None, registry=None, pentest=None, purple=None, ai=None, pmo=None) -> str:
     if registry is not None:
         registry = cargar_registry(registry)   # falla antes de analizar si el registro no vale
-    return render_html(analyse(_load(path), hoy), registry)
+    datos = _load(path)
+    an = analyse(datos, hoy)
+    extras = calcular_extras(an.hoy, pentest, purple, ai, pmo, datos, registry) if any(
+        x is not None for x in (pentest, purple, ai, pmo)) else None
+    return render_html(an, registry, None, extras)

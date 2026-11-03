@@ -21,6 +21,15 @@ dist/
 *.html
 dashboard/
 
+# Pentest, purple team e inventario de IA: datos de cliente (ADR-001, ADR-005)
+offensive/*
+!offensive/pentest.template.yaml
+!offensive/purple.template.yaml
+!offensive/examples/
+ai/*
+!ai/inventario.template.yaml
+!ai/examples/
+
 # PMO: presupuesto, horas y tarifas son datos de cliente (ADR-005, ADR-001)
 pmo/*
 !pmo/proyecto.template.yaml

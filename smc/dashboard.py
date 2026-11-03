@@ -10,6 +10,12 @@ de tecnologías; sin registro, «—». `mitre.html` es la página común de mad
 (no recursivo), genera `index.html` y una página `<slug>.html` por evaluación válida (reutiliza
 `report_html.render_html`). Todo estático: CSS en línea, sin JS, sin recursos externos, enlaces relativos.
 
+v0.7: ficheros acompañantes `<stem>.pentest.yaml`, `<stem>.purple.yaml`, `<stem>.ai.yaml` y `<stem>.pmo.yaml`
+(nombre exacto de la evaluación `<stem>.yaml`) añaden a la página del cliente las secciones de pentest, purple team,
+IA y PMO (`report_html.calcular_extras`; en PMO se usan la evaluación y el registro del cliente). Un acompañante sin
+evaluación, o con datos que no valen, es un aviso y no rompe el resto. El purple del cliente sube la madurez MITRE
+solo en su página; `mitre.html` sigue siendo común y sin ejercicios.
+
 Semáforo (se evalúa en este orden; la cifra de cumplimiento es la media simple de los marcos en alcance):
 - ROJO:   cumplimiento medio < 50 %, o al menos una brecha P1 evaluada sin acción abierta que la cubra.
 - ÁMBAR:  cumplimiento medio < 80 %, o alguna brecha P1 evaluada (con acción), o alguna acción vencida.
@@ -29,7 +35,7 @@ from pathlib import Path
 import yaml
 
 from .gap import Analisis, analyse
-from .report_html import CSS, _e, datos_mitre, es_registry, render_html, render_mitre
+from .report_html import CSS, _e, calcular_extras, datos_mitre, es_registry, render_html, render_mitre
 
 EXTRA_CSS = """
 .sem{display:inline-block;border-radius:10px;padding:1px 10px;font-weight:600;color:#fff;font-size:12px}
@@ -38,6 +44,7 @@ EXTRA_CSS = """
 td .bar{min-width:70px;height:8px}
 """
 
+TIPOS_ACOMPANANTE = ("pentest", "purple", "ai", "pmo")
 SEMAFORO_TXT = {"verde": "Verde", "ambar": "Ámbar", "rojo": "Rojo"}
 
 
@@ -57,6 +64,7 @@ class Fila:
     reglas_no_eval: int | None = None
     any_any: int | None = None
     subs_vencen: int | None = None
+    extras: dict | None = None        # secciones v0.7 (pentest, purple, ia, pmo) ya calculadas
 
 
 @dataclass
@@ -118,10 +126,15 @@ def recopilar(directorio: Path, hoy: date | None = None) -> Resultado:
     hoy = hoy or date.today()
     res = Resultado()
     usados: set[str] = set()
+    acompanantes: dict[str, dict[str, Path]] = {}      # stem -> {tipo: fichero}
     cargados: list[tuple[Path, object]] = []
     registros: dict[str, dict] = {}
     for f in sorted(Path(directorio).glob("*.yaml")):
         if f.name.endswith(".template.yaml"):   # plantillas: no son clientes
+            continue
+        tipo = next((t for t in TIPOS_ACOMPANANTE if f.name.endswith(f".{t}.yaml")), None)
+        if tipo:
+            acompanantes.setdefault(f.name[: -len(f".{tipo}.yaml")], {})[tipo] = f
             continue
         try:
             datos = yaml.safe_load(f.read_text(encoding="utf-8"))
@@ -166,6 +179,19 @@ def recopilar(directorio: Path, hoy: date | None = None) -> Resultado:
             r = tech.reglas(reg, hoy)
             fila.reglas_no_eval, fila.any_any = len(r["no_evaluables"]), len(r["any_any"])
             fila.subs_vencen = len(tech.suscripciones(reg, hoy)["renovaciones"])
+    evaluados = {f.fichero[:-5] for f in res.filas}
+    for stem, tipos in sorted(acompanantes.items()):
+        if stem not in evaluados:
+            res.avisos += [Aviso(fich.name, f"fichero {tipo} sin evaluación asociada ({stem}.yaml), ignorado")
+                           for tipo, fich in sorted(tipos.items())]
+            continue
+        fila = next(f for f in res.filas if f.fichero[:-5] == stem)
+        datos_ev = next(d for ff, d in cargados if ff.stem == stem)
+        try:
+            fila.extras = calcular_extras(hoy, **{t: tipos[t] for t in tipos if t != "ai"}, ai=tipos.get("ai"),
+                                          assessment=datos_ev, registry=fila.registry)
+        except Exception as exc:  # datos rotos de un cliente: aviso, sin las secciones
+            res.avisos.append(Aviso(f"{stem}.*.yaml", f"secciones opcionales ignoradas ({type(exc).__name__}: {exc})"))
     res.registros_sin_cliente = sorted(set(registros) - registros_usados)
     return res
 
@@ -226,7 +252,9 @@ def render_mitre_pagina(hoy: date, mitre: dict | None = None) -> str:
 
 
 def render_cliente(f: Fila, mitre: dict | None = None) -> str:
-    doc = render_html(f.analisis, f.registry, mitre)
+    if f.extras and "purple_datos" in f.extras:
+        mitre = datos_mitre(f.analisis.hoy, f.extras["purple_datos"])   # el purple del cliente solo cuenta en su página
+    doc = render_html(f.analisis, f.registry, mitre, f.extras)
     volver = '<p class="volver"><a href="index.html">&larr; Volver al panel de clientes</a></p>\n'
     doc = doc.replace('<main class="smc">\n', '<main class="smc">\n' + volver, 1)
     return doc.replace("</style>", EXTRA_CSS + "</style>", 1)

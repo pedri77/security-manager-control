@@ -12,7 +12,7 @@ proyectos:
   - {id: ECO-MAIL, nombre: "Correo básico", tipo: pages, url: "https://pedri77.github.io/Basicos_email/", estado: publicado}
   - {id: ECO-KEV, nombre: "KEV dashboard", tipo: repo, url: "https://github.com/pedri77/kev_dash_project", estado: publicado}
   - {id: ECO-TIF, nombre: "Threat intelligence feeds", tipo: repo, url: "https://github.com/pedri77/threat-intelligence-feeds", estado: publicado}
-  - {id: ECO-ZTNA, nombre: "Evaluación de productos ZTNA", tipo: pendiente, url: null, estado: pendiente}
+  - {id: ECO-ZTNA, nombre: "Pack de evaluación ZTNA", tipo: repo, url: null, estado: privado, nota: "Privado, disponible bajo petición."}
   - id: ECO-MAPA3D
     nombre: "Mapa 3D de dispositivos"
     tipo: pendiente
