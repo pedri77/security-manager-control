@@ -113,50 +113,50 @@ Contexto v0.5 (pedido de David el 2026-11-03): verticales Threat Hunting, EDR/XD
 
 Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `smc/report_html.py`, `smc/dashboard.py` ni los ejemplos de `assessments/` salvo la que lo diga; la integración es T14.
 
-- [~] **T09** — Verticales ampliadas y madurez por vertical
+- [x] **T09** — Verticales ampliadas y madurez por vertical
   - Hace: amplía `soc/verticals.yaml` con verticales nuevas: Threat Hunting, MDM, puesto de usuario, y separa el perímetro en firewall, SASE/SSE, ZTNA y protección on-prem por capas OSI (manteniendo los 12 IDs actuales; VRT-NET se conserva y se documenta su relación). Cada vertical: `id`, `nombre`, `nis2` (medidas 21.2), `controles` relacionados (IDs existentes), `criterios` de madurez 0-5 concretos, `recursos` (lista de {titulo, url} solo de la lista pública del contexto) y `estado_recursos` para los pendientes. `smc/verticals.py`: `cargar_verticales()`, `evaluar(assessment)` que lee una sección opcional `verticales:` de la evaluación ({VRT-ID: {madurez 0-5 o no_evaluable, motivo, producto, notas}}), agrega por medida NIS2 21.2 y devuelve resultado estructurado; `no_evaluable` exige `motivo` y no puntúa. Añade la sección `verticales:` a `assessments/assessment.template.yaml` y a los dos ejemplos ficticios.
   - No hace: no toca cli/gap/report/dashboard.
   - Toca: `soc/verticals.yaml`, `smc/verticals.py`, `tests/test_verticals.py`, `assessments/assessment.template.yaml`, `assessments/examples/`, `docs/plan/informes/T09-dev-proyecto.md`
   - Depende: T08
   - Verifica: todo `controles` existe en catálogos; todo `url` está en la lista pública del contexto; agregación NIS2 correcta en un caso; `no_evaluable` sin motivo da error. Contraprueba: una URL fuera de la lista pone un test en rojo.
   - Prod: —
-  - Estado: reservada por coordinador 2026-11-03
+  - Estado: hecha en 663c5a1 · evidencia informes/T09-dev-proyecto.md
 
-- [~] **T10** — Evaluación de tecnologías, estado de reglas y suscripciones
+- [x] **T10** — Evaluación de tecnologías, estado de reglas y suscripciones
   - Hace: amplía `technologies/registry.template.yaml` con, por tecnología: `vertical` (ID de vertical, validado más tarde), `evaluacion` {cobertura %, configuracion: bastionada|por_defecto|desconocida, madurez 0-5}, `reglas` {estado: revisadas|sin_revisar|no_evaluable, ultima_revision, motivo (obligatorio si no_evaluable, p. ej. «sin acceso a la consola»), n_reglas, reglas_any_any, reglas_sin_uso} y `suscripcion` {proveedor, coste_anual, moneda, renovacion, propietario (rol), unidades_contratadas, unidades_en_uso, autorrenovacion}. `smc/tech.py`: `evaluar_tecnologias(registry)`, `reglas(registry, hoy)` (reglas sin revisar más de 180 días, any-any, no evaluables con su motivo) y `suscripciones(registry, hoy, dias)` (renovaciones próximas, infrautilizadas por debajo del 70 %, sobredespliegue, coste total por proveedor) con salidas Markdown. Mantiene `expiring` y `vulns` como están.
   - No hace: no toca cli.py; datos ficticios.
   - Toca: `technologies/registry.template.yaml`, `technologies/README.md`, `smc/tech.py`, `tests/test_tech_v05.py`, `docs/plan/informes/T10-dev-proyecto.md`
   - Depende: T08
   - Verifica: tests con `hoy` inyectado; contraprueba: cambiar el umbral de 70 % cambia el resultado de un test.
   - Prod: —
-  - Estado: reservada por coordinador 2026-11-03
+  - Estado: hecha en efce805 · evidencia informes/T10-dev-proyecto.md
 
-- [~] **T11** — Vulnerabilidades por protocolo y fuentes oficiales
+- [x] **T11** — Vulnerabilidades por protocolo y fuentes oficiales
   - Hace: `vulnerabilities/protocols.yaml` con al menos 20 protocolos (SMB, RDP, SSH, Telnet, FTP, SNMP, DNS, NTP, LDAP, Kerberos, NTLM, TLS/SSL, HTTP, SMTP, IMAP/POP3, SIP, MQTT, Modbus, S7comm, DNP3, BACnet, OPC UA): capa OSI, puertos, riesgos típicos, CWE representativos, mitigaciones, controles SMC relacionados (IDs existentes), técnicas MITRE ATT&CK, y `consulta` con URLs de búsqueda en fuentes oficiales: NVD (nvd.nist.gov), ENISA EUVD (euvd.enisa.europa.eu), CISA KEV, CVE Details (www.cvedetails.com), INCIBE-CERT y CCN-CERT. No inventar CVEs concretos: solo URLs de búsqueda. `vulnerabilities/sources.yaml` con las fuentes oficiales (nombre, organismo, url, tipo, uso). Enlaces de aprendizaje a las Pages de Modelo OSI, Protección por capas OSI, ICS/OT y WAF. `smc/protocols.py`: carga, validación, `por_capa()`, `render_protocolo(id)`.
   - No hace: no consulta la red; no toca cli.py.
   - Toca: `vulnerabilities/protocols.yaml`, `vulnerabilities/sources.yaml`, `vulnerabilities/README.md`, `smc/protocols.py`, `tests/test_protocols.py`, `docs/plan/informes/T11-dev-proyecto.md`
   - Depende: T08
   - Verifica: 20 o más protocolos; todo control existe; toda URL es https y de un dominio de la lista de fuentes o de pedri77.github.io; capa OSI 1-7. Contraprueba: un dominio no permitido pone en rojo un test.
   - Prod: —
-  - Estado: reservada por coordinador 2026-11-03
+  - Estado: hecha en 9aea222 · evidencia informes/T11-dev-proyecto.md
 
-- [~] **T12** — Catálogo de RSS y ecosistema de recursos
+- [x] **T12** — Catálogo de RSS y ecosistema de recursos
   - Hace: `resources/rss.yaml` con feeds de fuentes oficiales y de referencia (INCIBE-CERT, CCN-CERT, ENISA, CISA, NIST/NVD, CERT-EU, NCSC UK, BSI, MITRE ATT&CK y fabricantes principales con avisos) con {id, nombre, organismo, url_feed, url_web, idioma, categoria: avisos|noticias|vulnerabilidades|normativa, vertical opcional, verificado: false}; `verificado: false` porque no hay red (lo comprueba un humano). Exporta OPML (`smc/resources.py: a_opml()`) para que lo ingiera el agregador interno (repo-privado usa feedparser con la URL; no se enlaza el repo privado). `resources/ecosistema.yaml`: proyectos públicos con sus Pages (lista del contexto), repos públicos sin Pages y pendientes (ZTNA, vulnerabilidades por capa OSI, mapa 3D) con `estado: pendiente`. `smc/resources.py` con carga, validación y render Markdown.
   - No hace: no consulta la red; no toca cli.py.
   - Toca: `resources/rss.yaml`, `resources/ecosistema.yaml`, `resources/README.md`, `smc/resources.py`, `tests/test_resources.py`, `docs/plan/informes/T12-dev-proyecto.md`
   - Depende: T08
   - Verifica: OPML válido (xml.etree parsea, un outline por feed); ninguna URL a repos privados (`repo-privado`, `repo-privado`); ids únicos. Contraprueba: añadir una URL de repo privado pone en rojo el test.
   - Prod: —
-  - Estado: reservada por coordinador 2026-11-03
+  - Estado: hecha en 18b88a7 · evidencia informes/T12-dev-proyecto.md
 
-- [~] **T13** — Madurez MITRE ATT&CK con playbooks
+- [x] **T13** — Madurez MITRE ATT&CK con playbooks
   - Hace: amplía `soc/use-cases/catalog.yaml` para que cada caso de uso tenga técnicas ATT&CK (IDs Txxxx), `deteccion` (sin|regla|probada), `ultima_prueba`, `playbook` (ruta en `vulnerabilities/playbooks/caso-uso/`) y `vertical`. Crea los playbooks de caso de uso que falten (formato de PB-UC-001, sin datos reales). `smc/mitre.py`: madurez por técnica y por táctica (0 sin caso, 1 caso sin regla, 2 regla, 3 regla + playbook, 4 probada, 5 probada en los últimos 90 días con `hoy` inyectado), casos sin playbook, playbooks huérfanos y export de capa ATT&CK Navigator (JSON, puntuación = madurez) con `a_navigator()`. `smc/soc.py:mitre_coverage` sigue funcionando (puede delegar).
   - No hace: no toca cli.py ni report.
   - Toca: `soc/use-cases/catalog.yaml`, `vulnerabilities/playbooks/caso-uso/`, `smc/mitre.py`, `smc/soc.py`, `tests/test_mitre.py`, `docs/plan/informes/T13-dev-proyecto.md`
   - Depende: T08
   - Verifica: todo playbook referenciado existe; JSON Navigator con `techniques[].score`; tests de niveles con `hoy`. Contraprueba: borrar un playbook pone en rojo el test de enlaces.
   - Prod: —
-  - Estado: reservada por coordinador 2026-11-03
+  - Estado: hecha en 8f4fe31 · evidencia informes/T13-dev-proyecto.md
 
 ## Ola 6 (v0.5)
 
@@ -195,6 +195,12 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 
 - 2026-11-03 · T08: 78 tests; medidas ENS con `verificar: true` = 39 (37 iniciales + op.cont.2 y op.cont.3); la cifra «39» de T01 venía de un grep que contaba comentarios.
 - 2026-11-03 · Pendiente humano: contrastar con el BOE el Anexo II (op.cont.2/3, mp.si.2, numeración mp.info y op.exp.10/11) y quitar `verificar`.
+- 2026-11-03 · T09: 19 verticales (12 anteriores con los mismos IDs + HUNT, MDM, ENDUSER, FW, SASE, ZTNA, OSI); VRT-NET paraguas (`agrupa`). Ejemplos y plantilla con sección `verticales:`. Recursos pendientes sin URL: ZTNA, VRT-OSI, mapa 3D. 28 tests nuevos.
+- 2026-11-03 · T10: evaluación de tecnologías, reglas (any-any, sin uso, caducadas a 180 d) y suscripciones (umbral 70 %, renovaciones a 90 d); 3 tecnologías ficticias nuevas. 11 tests nuevos.
+- 2026-11-03 · T11: 28 protocolos (capas 2, 3, 6, 7; sin CVEs concretos) y 8 fuentes oficiales; 16 tests nuevos. URL de búsqueda NVD corregida por la sesión principal (`?keyword=…&resultType=records`) con nota de verificación con Chrome.
+- 2026-11-03 · T12: 17 feeds RSS, 13 con `verificado: true` (comprobados con red por la sesión principal; CCN-CERT, ENISA, CISA KEV y NVD sin RSS, con alternativa en `nota`); ecosistema con 8 Pages, 2 repos públicos y 3 pendientes. OPML solo con feeds con `url_feed`. 9 tests.
+- 2026-11-03 · T13: 8 casos de uso con `deteccion`, `playbook`, `vertical`; 7 playbooks nuevos PB-UC-002..008; `smc.mitre` (niveles 1-5, export Navigator, ATT&CK "16"). 9 tests nuevos.
+- 2026-11-03 · Main tras fusionar T09-T13 (sin conflictos, en orden T09, T10, T11, T12, T13): 151 tests verdes (78 + 28 + 11 + 16 + 9 + 9).
 
 ### Supuestos
 - La tabla del Anexo II del RD 311/2022 se puede reconstruir con fiabilidad suficiente; lo dudoso va con `verificar: true`.
@@ -213,6 +219,17 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 - 2026-11-03 · Estado no válido = sin evaluar (aplicable, 0) con aviso · sesión principal
 
 - 2026-11-03 · v0.5: enlaces solo a Pages públicas; repo-privado como consumidor del RSS sin enlazarlo; 3D desde la skill teardown con origen citado · David
+- 2026-11-03 · API para T14 (ola 5) · T09-T13
+  - Verticales: `from smc.verticals import cargar_verticales, validar_catalogo, evaluar, URLS_PUBLICAS`. `evaluar(assessment, estricto=True)` -> `ResultadoVerticales` (verticales, por_nis2, madurez_media, no_evaluables, sin_evaluar, warnings, errores). Entrada `verticales: {VRT-ID: {madurez 0-5|no_evaluable, motivo, producto, notas}}`; `no_evaluable` sin motivo o madurez inválida lanza `VerticalesError` (con `estricto=False` va a `errores`). `smc validate` debe sumar `validar_catalogo()`. Doble cómputo: si alguna de FW/SASE/ZTNA/OSI puntúa, VRT-NET no puntúa.
+  - Tecnologías: `from smc import tech`: `evaluar_tecnologias(registry)`, `reglas(registry, hoy, dias=180)` (revisadas, sin_revisar, no_evaluables con motivo), `suscripciones(registry, hoy, dias=90, umbral=0.70)`, más `render_*`. `hoy` inyectable. Datos mal formados dan aviso. `vertical` no se valida contra el catálogo (T14 debe hacerlo).
+  - Protocolos: `from smc import protocols`: `cargar`, `cargar_fuentes`, `protocolos`, `obtener(id)`, `por_capa()`, `render_protocolo(id)` (ValueError si no existe), `validar()` -> lista de errores (sumar a `smc validate`). Subcomando previsto `smc protocols [ID]`, rc!=0 en ValueError.
+  - Recursos: `from smc import resources`: `cargar_rss`, `cargar_ecosistema`, `validar()` (sumar a `smc validate`), `a_opml()` (para `smc rss --opml -o`), `render_markdown()`. `render_markdown` no escapa: usar `html.escape` si va a HTML. El campo `vertical` de RSS debería validarse contra `soc/verticals.yaml`.
+  - MITRE: `from smc.mitre import madurez, nivel_caso, cargar, playbook_existe, sin_playbook, playbooks_huerfanos, a_navigator`. `madurez(uc_path, hoy, root)` -> {tecnicas, tacticas, casos}. `a_navigator(...)` -> dict para `json.dumps`. `smc.soc.mitre_coverage` conserva su salida y añade tabla de madurez. `smc mitre` no cambia; el export Navigator queda para T14.
+- 2026-11-03 · Avisos de ola 5 para T14/T16 · coordinador
+  - El mapeo NIS2 y `controles` de las verticales nuevas (T09) y `deteccion`/`ultima_prueba` de los casos de uso (T13) son juicio inicial sobre datos de muestra, sin fuente normativa ni SOC real.
+  - CVE Details no se puede verificar automáticamente (Cloudflare); EUVD y CVE Details son las URLs de búsqueda más dudosas.
+  - Capa OSI de TLS (6) y BGP (7) es convención discutible; CWE y ATT&CK validados por regex, no contra el catálogo MITRE.
+  - README y `soc/README.md` aún dicen «12 verticales» (fuera del «Toca» de T09-T13): lo arregla T16.
 
 ### Atasco
 - Ola 1: 0
