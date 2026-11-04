@@ -2,6 +2,13 @@
 
 Formato basado en Keep a Changelog. Versionado semántico.
 
+## [0.8.2](https://github.com/pedri77/security-manager-control/compare/v0.8.1...v0.8.2) (2026-11-04)
+
+
+### Correcciones
+
+* **ci:** adoptar playbook feature-to-prod ([#2](https://github.com/pedri77/security-manager-control/issues/2)) ([5f283ad](https://github.com/pedri77/security-manager-control/commit/5f283ad5b22089d4f68c94bdb1cf87996783fabd))
+
 ## 0.8.1 (2026-11-03)
 
 Endurecimiento de v0.8 tras la revisión de las olas 15-16. Sin funciones nuevas.
