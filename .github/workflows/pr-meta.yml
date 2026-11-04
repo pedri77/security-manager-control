@@ -1,0 +1,51 @@
+# pr-meta.yml — PLAYBOOK-F2P-001 · S5 y S6
+# Separado de ci.yml para que editar el título o la descripción del PR no relance todo el CI.
+# Jobs obligatorios en la regla de rama: pr-title, change-record. También el estado blind-review,
+# que nunca publica un workflow: lo publica la sesión principal tras la revisión ciega (S6) o David
+# en el PR de release (S7).
+name: pr-meta
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+  checks: read
+  statuses: read
+
+jobs:
+  pr-title:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            sec
+            perf
+            refactor
+            docs
+            chore
+            test
+            ci
+            build
+
+  change-record:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - name: Comprobar trazabilidad (issue enlazada + TASK_ID)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: python3 scripts/change_evidence.py pr --pr "$PR_NUMBER" --out change-record
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with: { name: change-record, path: change-record/, retention-days: 90 }

@@ -1,0 +1,158 @@
+# ci.yml — PLAYBOOK-F2P-001 · S5 (PR + CI gates)
+# Jobs obligatorios en la regla de rama: secrets, sast, sca, fs-scan, lint-test, e2e, evals
+# (un job omitido por su `if` cuenta como correcto). sbom es informativo.
+# Actions fijadas por SHA con el tag en comentario; imágenes por tag + digest.
+# Si el repo usa Renovate, actualiza ambas: las de `env:` gracias al customManager de renovate.json.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GITLEAKS_IMAGE: ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
+  OSV_IMAGE: ghcr.io/google/osv-scanner:v2.7.0@sha256:4f3b7e2c64b9d38a5febc5a7e4a3dfef1d1362f726dea7a2ef4762b46469fcd0
+  TRIVY_IMAGE: aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c
+  SYFT_IMAGE: anchore/syft:v1.56.0@sha256:697ae864af1299cfa43c54b161cea3dd65c6d54de82e3dba66ea3dccb3acc313
+
+jobs:
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { fetch-depth: 0, persist-credentials: false }
+      - name: gitleaks (solo commits nuevos)
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BEFORE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          if [ "$EVENT" = "pull_request" ]; then RANGE="$BASE_SHA..$HEAD_SHA";
+          elif [ -n "$BEFORE_SHA" ] && [ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]; then RANGE="$BEFORE_SHA..$HEAD_SHA";
+          else RANGE="$HEAD_SHA"; fi
+          echo "Rango: $RANGE"
+          # gitleaks da verde con «0 commits» si git log falla: comprobar antes que el rango existe.
+          git rev-list --count "$RANGE" || { echo "::error::Rango de commits inaccesible: $RANGE"; exit 1; }
+          docker run --rm -v "$PWD:/repo" -w /repo "$GITLEAKS_IMAGE" \
+            git /repo --redact --verbose --log-opts="$RANGE"
+
+  sast:
+    runs-on: ubuntu-latest
+    container: { image: "semgrep/semgrep:1.183.0@sha256:2e45517a85e13a9cca14a2a00df6bb48affd66b8ebfae1b0991cd57578362fb0" }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - name: semgrep
+        run: |
+          semgrep scan --metrics off \
+            --config p/default --config p/owasp-top-ten \
+            --severity ERROR --error \
+            --json --output semgrep.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with: { name: semgrep, path: semgrep.json, retention-days: 30 }
+
+  sca:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - name: osv-scanner (dependencias)
+        # Bloquea cualquier vulnerabilidad conocida. Excepciones: osv-scanner.toml en la raíz,
+        # con reason e ignoreUntil, nunca sin fecha.
+        run: |
+          code=0
+          docker run --rm -v "$PWD:/src" "$OSV_IMAGE" scan source -r /src || code=$?
+          if [ "$code" -eq 128 ]; then
+            if git ls-files | grep -Eq '(^|/)(pyproject\.toml|package\.json|go\.mod|Cargo\.toml)$'; then
+              echo "::error::Hay manifiesto de dependencias pero ningún lockfile versionado: sca no ha escaneado nada"
+              exit 1
+            fi
+            echo "Sin dependencias declaradas: nada que escanear"; exit 0
+          fi
+          exit "$code"
+
+  fs-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - name: trivy fs (vulnerabilidades + misconfig IaC/Docker)
+        run: |
+          docker run --rm -v "$PWD:/src" "$TRIVY_IMAGE" fs \
+            --scanners vuln,misconfig --severity HIGH,CRITICAL \
+            --ignore-unfixed --exit-code 1 /src
+      - name: trivy licencias (informativo hasta validar la lista)
+        continue-on-error: true
+        run: |
+          docker run --rm -v "$PWD:/src" "$TRIVY_IMAGE" fs \
+            --scanners license --severity HIGH,CRITICAL --exit-code 1 /src
+
+  lint-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        if: hashFiles('pyproject.toml') != ''
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: hashFiles('package.json', '**/package.json') != ''
+        with: { node-version: 22 }
+      - run: make lint
+      - run: make test
+
+  e2e:
+    if: github.event_name == 'pull_request' && github.base_ref == github.event.repository.default_branch
+    needs: lint-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: hashFiles('package.json', '**/package.json') != ''
+        with: { node-version: 22 }
+      - name: make e2e (si el target existe)
+        run: |
+          if make -n e2e >/dev/null 2>&1; then make e2e; else echo "Sin target e2e: omitido"; fi
+
+  evals:
+    if: github.event_name == 'pull_request'
+    needs: lint-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        # Historia completa: sin ella la rama base no existe y no hay baseline con el que comparar.
+        with: { fetch-depth: 0, persist-credentials: false }
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        if: hashFiles('pyproject.toml') != ''
+      - name: make evals + evals-security (si existen evals)
+        env:
+          EVALS_BASELINE_REF: origin/${{ github.base_ref }}
+        run: |
+          EVALS_DIR=""
+          for d in tests/evals evals; do
+            if [ -d "$d" ]; then EVALS_DIR="$d"; break; fi
+          done
+          if [ -z "$EVALS_DIR" ]; then echo "Sin tests/evals ni evals: omitido"; exit 0; fi
+          export EVALS_DIR
+          make evals
+          if [ -d "$EVALS_DIR/security" ]; then make evals-security; fi
+
+  sbom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - name: syft → CycloneDX
+        run: docker run --rm -v "$PWD:/src" "$SYFT_IMAGE" dir:/src -o cyclonedx-json=/src/sbom.cdx.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with: { name: sbom, path: sbom.cdx.json, retention-days: 90 }
