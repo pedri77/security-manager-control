@@ -40,6 +40,8 @@ jobs:
           elif [ -n "$BEFORE_SHA" ] && [ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]; then RANGE="$BEFORE_SHA..$HEAD_SHA";
           else RANGE="$HEAD_SHA"; fi
           echo "Rango: $RANGE"
+          # gitleaks da verde con «0 commits» si git log falla: comprobar antes que el rango existe.
+          git rev-list --count "$RANGE" || { echo "::error::Rango de commits inaccesible: $RANGE"; exit 1; }
           docker run --rm -v "$PWD:/repo" -w /repo "$GITLEAKS_IMAGE" \
             git /repo --redact --verbose --log-opts="$RANGE"
 

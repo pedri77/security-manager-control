@@ -55,7 +55,8 @@ jobs:
           echo "::error::Repo privado: la firma keyless publicaría su identidad en Rekor. Ver PLAYBOOK-F2P-001 §3."
           exit 1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with: { fetch-depth: 0, fetch-tags: true, persist-credentials: false }
+        # El tag, no github.sha: si la release la crea un push posterior, el SBOM firmado sería de otro árbol.
+        with: { ref: "${{ needs.release-please.outputs.tag_name }}", fetch-depth: 0, fetch-tags: true, persist-credentials: false }
       - name: SBOM
         run: |
           mkdir -p "evidence/$TAG"

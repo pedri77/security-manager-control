@@ -14,9 +14,9 @@ Uso:
   python3 scripts/change_evidence.py release --tag v2.3.0 --out evidence/v2.3.0
   python3 scripts/change_evidence.py release --tag v2.3.0 --out /tmp/ev --offline   # solo git, sin API
 
-Excepción: PRs de mantenimiento reciben TASK_ID "MAINT": autor [bot] (Renovate), o PR de release:
-rama release-please--branches--* del propio repo que SOLO toca ficheros de versión. El nombre de
-rama no basta: cualquiera con push puede elegirlo.
+Excepción: el PR de release recibe TASK_ID "MAINT": rama release-please--branches--* del propio
+repo que SOLO toca ficheros de versión. El nombre de rama no basta: cualquiera con push puede
+elegirlo. Es solo una excepción de trazabilidad: blind-review se exige igual, y su falta es un hueco.
 
 Revisión: sin aprobación de GitHub. Vale el estado `blind-review` sobre el SHA de cabeza del PR.
 """
@@ -37,7 +37,7 @@ PR_IN_SUBJECT_RE = re.compile(r"\(#(\d+)\)\s*$")
 BLIND_REVIEW_CONTEXT = "blind-review"
 RELEASE_BRANCH_PREFIX = "release-please--branches--"
 RELEASE_FILES = {"CHANGELOG.md", ".release-please-manifest.json", "pyproject.toml", "uv.lock",
-                 "package.json", "package-lock.json", "setup.py", "setup.cfg", "version.txt"}
+                 "package.json", "package-lock.json", "version.txt"}
 FIRST_RELEASE_LIMIT = 50
 REVIEW_MODEL = (
     "Revisión ciega por agente de IA (estado blind-review sobre el SHA de cabeza) "
@@ -85,10 +85,6 @@ def extract_issues(text: str) -> list[int]:
     return sorted({int(n) for n in CLOSES_RE.findall(text or "")})
 
 
-def is_bot(login: str) -> bool:
-    return login.endswith("[bot]")
-
-
 def allowed_release_files(config: Path = Path("release-please-config.json")) -> set[str]:
     """Ficheros de versión: los fijos más los extra-files de release-please."""
     allowed = set(RELEASE_FILES)
@@ -127,7 +123,7 @@ def collect_pr(repo: str, number: int) -> dict:
 
     author = pr["user"]["login"]
     head_repo = (pr["head"].get("repo") or {}).get("full_name")
-    maint = is_bot(author) or is_release_pr(repo, number, pr["head"].get("ref") or "", head_repo == repo)
+    maint = is_release_pr(repo, number, pr["head"].get("ref") or "", head_repo == repo)
     body = pr.get("body") or ""
     messages = [c["commit"]["message"] for c in commits]
     tasks = extract_tasks(body, *messages) or (["MAINT"] if maint else [])
@@ -287,7 +283,7 @@ def mode_release(args: argparse.Namespace) -> int:
             if not p["tasks"]:
                 gaps.append(f"PR #{n} sin TASK_ID")
             gaps.extend(p["gaps"])
-            if not p["maint"] and blind_review_label(p) != "success":
+            if blind_review_label(p) != "success":
                 gaps.append(f"PR #{n} sin revisión ciega correcta (estado: {blind_review_label(p)})")
             if failed:
                 gaps.append(f"PR #{n} con checks no exitosos: {', '.join(failed)}")
