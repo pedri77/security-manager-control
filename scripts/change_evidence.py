@@ -14,8 +14,9 @@ Uso:
   python3 scripts/change_evidence.py release --tag v2.3.0 --out evidence/v2.3.0
   python3 scripts/change_evidence.py release --tag v2.3.0 --out /tmp/ev --offline   # solo git, sin API
 
-Excepción: PRs de mantenimiento reciben TASK_ID "MAINT": autor [bot] (Renovate) o rama
-release-please--* del propio repo (el PR de release lo abre un token de usuario).
+Excepción: PRs de mantenimiento reciben TASK_ID "MAINT": autor [bot] (Renovate), o PR de release:
+rama release-please--branches--* del propio repo que SOLO toca ficheros de versión. El nombre de
+rama no basta: cualquiera con push puede elegirlo.
 
 Revisión: sin aprobación de GitHub. Vale el estado `blind-review` sobre el SHA de cabeza del PR.
 """
@@ -34,7 +35,9 @@ TASK_RE = re.compile(r"^\s*Task:\s*([A-Z][A-Z0-9]{1,9}-\d{1,5})\s*$", re.MULTILI
 CLOSES_RE = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)\b", re.IGNORECASE)
 PR_IN_SUBJECT_RE = re.compile(r"\(#(\d+)\)\s*$")
 BLIND_REVIEW_CONTEXT = "blind-review"
-RELEASE_BRANCH_PREFIX = "release-please--"
+RELEASE_BRANCH_PREFIX = "release-please--branches--"
+RELEASE_FILES = {"CHANGELOG.md", ".release-please-manifest.json", "pyproject.toml", "uv.lock",
+                 "package.json", "package-lock.json", "setup.py", "setup.cfg", "version.txt"}
 FIRST_RELEASE_LIMIT = 50
 REVIEW_MODEL = (
     "Revisión ciega por agente de IA (estado blind-review sobre el SHA de cabeza) "
@@ -86,8 +89,21 @@ def is_bot(login: str) -> bool:
     return login.endswith("[bot]")
 
 
-def is_maint(login: str, head_ref: str, same_repo: bool) -> bool:
-    return is_bot(login) or (same_repo and head_ref.startswith(RELEASE_BRANCH_PREFIX))
+def allowed_release_files(config: Path = Path("release-please-config.json")) -> set[str]:
+    """Ficheros de versión: los fijos más los extra-files de release-please."""
+    allowed = set(RELEASE_FILES)
+    if config.exists():
+        for pkg in (json.loads(config.read_text(encoding="utf-8")).get("packages") or {}).values():
+            for extra in pkg.get("extra-files") or []:
+                allowed.add(extra["path"] if isinstance(extra, dict) else extra)
+    return allowed
+
+
+def is_release_pr(repo: str, number: int, head_ref: str, same_repo: bool) -> bool:
+    if not (same_repo and head_ref.startswith(RELEASE_BRANCH_PREFIX)):
+        return False
+    files = gh_json(f"repos/{repo}/pulls/{number}/files?per_page=100")
+    return bool(files) and all(f["filename"] in allowed_release_files() for f in files)
 
 
 # ───────────── recogida de datos ─────────────
@@ -111,7 +127,7 @@ def collect_pr(repo: str, number: int) -> dict:
 
     author = pr["user"]["login"]
     head_repo = (pr["head"].get("repo") or {}).get("full_name")
-    maint = is_maint(author, pr["head"].get("ref") or "", head_repo == repo)
+    maint = is_bot(author) or is_release_pr(repo, number, pr["head"].get("ref") or "", head_repo == repo)
     body = pr.get("body") or ""
     messages = [c["commit"]["message"] for c in commits]
     tasks = extract_tasks(body, *messages) or (["MAINT"] if maint else [])
@@ -258,7 +274,13 @@ def mode_release(args: argparse.Namespace) -> int:
             if n in seen:
                 continue
             seen.add(n)
-            p = collect_pr(repo, n)
+            try:
+                p = collect_pr(repo, n)
+            except subprocess.CalledProcessError as e:
+                # La release ya existe: un fallo aquí no puede dejarla sin SBOM ni evidencias.
+                changes.append(c)
+                gaps.append(f"PR #{n} no se pudo leer ({(e.stderr or '').strip() or e})")
+                continue
             failed = [ch["name"] for ch in p["checks"] if ch["conclusion"] not in ("success", "skipped", "neutral")]
             p["ci_status"] = "✅" if not failed else "❌ " + ", ".join(failed)
             changes.append(p)

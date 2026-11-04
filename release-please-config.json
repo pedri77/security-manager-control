@@ -2,6 +2,8 @@
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "release-type": "python",
   "include-v-in-tag": true,
+  "include-component-in-tag": false,
+  "bump-minor-pre-major": true,
   "changelog-sections": [
     {
       "type": "feat",
@@ -39,7 +41,12 @@
     ".": {
       "package-name": "security-manager-control",
       "extra-files": [
-        "smc/__init__.py"
+        "smc/__init__.py",
+        {
+          "type": "toml",
+          "path": "uv.lock",
+          "jsonpath": "$.package[?(@.name.value=='security-manager-control')].version"
+        }
       ]
     }
   }

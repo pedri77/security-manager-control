@@ -17,7 +17,7 @@ Todo cambio entra por PR a `main`: push directo bloqueado, también para adminis
 1. Cada PR pasa el CI y la revisión ciega (estado `blind-review`).
 2. Al fusionar un `feat`, `fix`, `sec` o `perf`, release-please abre o actualiza el PR de release: calcula la versión, escribe el CHANGELOG y sube la versión en `pyproject.toml` y `smc/__init__.py` (lo comprueba `tests/test_version.py`).
 3. Antes de fusionar el PR de release, David revisa que no aparecen nombres de repos privados ni datos reales de clientes en README, docs, ejemplos ni CHANGELOG. release-please no lo cubre.
-4. Fusionar ese PR es el gate humano: crea el tag y la release, y `release.yml` adjunta SBOM firmado y evidence pack.
+4. David publica el estado `blind-review` en ese PR y lo fusiona. Ese es el gate humano: crea el tag y la release, y `release.yml` adjunta SBOM firmado y evidence pack.
 
 No se publica en PyPI.
 
