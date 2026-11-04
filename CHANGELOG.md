@@ -2,6 +2,13 @@
 
 Formato basado en Keep a Changelog. Versionado semántico.
 
+## [0.8.3](https://github.com/pedri77/security-manager-control/compare/v0.8.2...v0.8.3) (2026-11-04)
+
+
+### Correcciones
+
+* **ci:** SBOM con nombre real y no bloqueantes de la revisión ([#6](https://github.com/pedri77/security-manager-control/issues/6)) ([9990439](https://github.com/pedri77/security-manager-control/commit/9990439c223fd0f9c5a7554b3260349f12550656))
+
 ## [0.8.2](https://github.com/pedri77/security-manager-control/compare/v0.8.1...v0.8.2) (2026-11-04)
 
 
