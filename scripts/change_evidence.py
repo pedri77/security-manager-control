@@ -23,6 +23,7 @@ Revisión: sin aprobación de GitHub. Vale el estado `blind-review` sobre el SHA
 from __future__ import annotations
 
 import argparse
+import base64
 import datetime as dt
 import json
 import os
@@ -33,6 +34,7 @@ from pathlib import Path
 
 TASK_RE = re.compile(r"^\s*Task:\s*([A-Z][A-Z0-9]{1,9}-\d{1,5})\s*$", re.MULTILINE)
 CLOSES_RE = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)\b", re.IGNORECASE)
+HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 PR_IN_SUBJECT_RE = re.compile(r"\(#(\d+)\)\s*$")
 BLIND_REVIEW_CONTEXT = "blind-review"
 RELEASE_BRANCH_PREFIX = "release-please--branches--"
@@ -75,31 +77,36 @@ def now_iso() -> str:
 def extract_tasks(*texts: str) -> list[str]:
     found: list[str] = []
     for t in texts:
-        for m in TASK_RE.findall(t or ""):
+        for m in TASK_RE.findall(HTML_COMMENT_RE.sub("", t or "")):
             if m not in found:
                 found.append(m)
     return found
 
 
 def extract_issues(text: str) -> list[int]:
-    return sorted({int(n) for n in CLOSES_RE.findall(text or "")})
+    return sorted({int(n) for n in CLOSES_RE.findall(HTML_COMMENT_RE.sub("", text or ""))})
 
 
-def allowed_release_files(config: Path = Path("release-please-config.json")) -> set[str]:
-    """Ficheros de versión: los fijos más los extra-files de release-please."""
+def allowed_release_files(repo: str, base_ref: str) -> set[str]:
+    """Ficheros de versión: los fijos más los extra-files de la rama BASE, nunca los del propio PR."""
     allowed = set(RELEASE_FILES)
-    if config.exists():
-        for pkg in (json.loads(config.read_text(encoding="utf-8")).get("packages") or {}).values():
-            for extra in pkg.get("extra-files") or []:
-                allowed.add(extra["path"] if isinstance(extra, dict) else extra)
+    try:
+        meta = gh_json(f"repos/{repo}/contents/release-please-config.json?ref={base_ref}")
+    except subprocess.CalledProcessError:
+        return allowed
+    config = json.loads(base64.b64decode(meta["content"]))
+    for pkg in (config.get("packages") or {}).values():
+        for extra in pkg.get("extra-files") or []:
+            allowed.add(extra["path"] if isinstance(extra, dict) else extra)
     return allowed
 
 
-def is_release_pr(repo: str, number: int, head_ref: str, same_repo: bool) -> bool:
+def is_release_pr(repo: str, number: int, head_ref: str, base_ref: str, same_repo: bool) -> bool:
     if not (same_repo and head_ref.startswith(RELEASE_BRANCH_PREFIX)):
         return False
     files = gh_json(f"repos/{repo}/pulls/{number}/files?per_page=100")
-    return bool(files) and all(f["filename"] in allowed_release_files() for f in files)
+    allowed = allowed_release_files(repo, base_ref)
+    return bool(files) and all(f["filename"] in allowed for f in files)
 
 
 # ───────────── recogida de datos ─────────────
@@ -123,7 +130,7 @@ def collect_pr(repo: str, number: int) -> dict:
 
     author = pr["user"]["login"]
     head_repo = (pr["head"].get("repo") or {}).get("full_name")
-    maint = is_release_pr(repo, number, pr["head"].get("ref") or "", head_repo == repo)
+    maint = is_release_pr(repo, number, pr["head"].get("ref") or "", pr["base"]["ref"], head_repo == repo)
     body = pr.get("body") or ""
     messages = [c["commit"]["message"] for c in commits]
     tasks = extract_tasks(body, *messages) or (["MAINT"] if maint else [])
@@ -227,7 +234,7 @@ def release_markdown(r: dict) -> str:
         + f"\n\n## Huecos de trazabilidad\n\n{gaps}\n\n## Controles relacionados\n\n{ctrl}\n\n> {r['controls']['_nota']}\n"
         f"\n## Verificación de la firma del SBOM\n\n```bash\ncosign verify-blob \\\n"
         f"  --bundle sbom.cdx.json.bundle \\\n"
-        f"  --certificate-identity-regexp 'https://github.com/{r['repo']}/.github/workflows/release.yml@.*' \\\n"
+        f"  --certificate-identity-regexp 'https://github.com/{r['repo']}/.github/workflows/release.yml@refs/heads/(main|master)$' \\\n"
         f"  --certificate-oidc-issuer https://token.actions.githubusercontent.com \\\n"
         f"  sbom.cdx.json\n```\n"
     )

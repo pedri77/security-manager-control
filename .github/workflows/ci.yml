@@ -2,7 +2,7 @@
 # Jobs obligatorios en la regla de rama: secrets, sast, sca, fs-scan, lint-test, e2e, evals
 # (un job omitido por su `if` cuenta como correcto). sbom es informativo.
 # Actions fijadas por SHA con el tag en comentario; imágenes por tag + digest.
-# Renovate actualiza ambas: las de `env:` gracias al customManager de renovate.json.
+# Si el repo usa Renovate, actualiza ambas: las de `env:` gracias al customManager de renovate.json.
 name: ci
 
 on:

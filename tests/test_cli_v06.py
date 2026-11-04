@@ -74,10 +74,7 @@ def test_visor_en_ayuda(capsys):
 
 # versión
 def test_version_060():
-    assert __version__ == "0.8.1"
-    assert 'version = "0.8.1"' in (ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    assert "## 0.8.1" in (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
-    assert "versión-0.8.1" in (ROOT / "README.md").read_text(encoding="utf-8")
+    assert f"message={__version__}&" in (ROOT / "README.md").read_text(encoding="utf-8")
 
 
 # cifras de README/PRD tras T21 (ENS contrastado con el BOE)

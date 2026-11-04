@@ -42,6 +42,7 @@
       "package-name": "security-manager-control",
       "extra-files": [
         "smc/__init__.py",
+        "README.md",
         {
           "type": "toml",
           "path": "uv.lock",
