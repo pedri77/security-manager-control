@@ -371,6 +371,10 @@ security-manager-control/
 - «Sin evaluar» puntúa como no cumplido: una evaluación incompleta sale en rojo. Es lo esperado; el informe separa las brechas evaluadas de las pendientes.
 - La ley española de transposición de NIS2 (*Anteproyecto de Ley de Coordinación y Gobernanza de la Ciberseguridad*) sigue en tramitación: revisar el catálogo cuando se publique en el BOE.
 
+## Licencia
+
+[Apache-2.0](LICENSE). Copyright 2026 David Moya García. Incluye three.js (MIT); ver [NOTICE](NOTICE).
+
 ---
 
 <div align="center">

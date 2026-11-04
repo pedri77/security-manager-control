@@ -1,0 +1,11 @@
+Security Manager Control
+Copyright 2026 David Moya García
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This product includes third-party software:
+- three.js 0.186.1, Copyright 2010-2026 three.js authors, MIT License
+  (smc/assets/three.bundle.min.js; license text in smc/assets/THREE-LICENSE).
+
+The 3D viewer design pattern is credited to the "teardown" skill by elvarofficial (MIT),
+based on "claude-motion" by whaleyxbt (MIT); the viewer code is written from scratch.
