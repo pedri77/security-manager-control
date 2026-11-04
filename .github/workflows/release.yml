@@ -60,7 +60,9 @@ jobs:
       - name: SBOM
         run: |
           mkdir -p "evidence/$TAG"
-          docker run --rm -v "$PWD:/src" "$SYFT_IMAGE" dir:/src -o "cyclonedx-json=/src/evidence/$TAG/sbom.cdx.json"
+          docker run --rm -v "$PWD:/src" "$SYFT_IMAGE" dir:/src \
+            --source-name "${GITHUB_REPOSITORY#*/}" --source-version "${TAG#v}" \
+            -o "cyclonedx-json=/src/evidence/$TAG/sbom.cdx.json"
       - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
       - name: Firmar SBOM (keyless)
         run: |

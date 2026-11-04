@@ -34,7 +34,8 @@ from pathlib import Path
 
 TASK_RE = re.compile(r"^\s*Task:\s*([A-Z][A-Z0-9]{1,9}-\d{1,5})\s*$", re.MULTILINE)
 CLOSES_RE = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)\b", re.IGNORECASE)
-HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+# Sin cerrar, GitHub oculta el resto del texto: se ignora igual.
+HTML_COMMENT_RE = re.compile(r"<!--.*?(?:-->|\Z)", re.DOTALL)
 PR_IN_SUBJECT_RE = re.compile(r"\(#(\d+)\)\s*$")
 BLIND_REVIEW_CONTEXT = "blind-review"
 RELEASE_BRANCH_PREFIX = "release-please--branches--"
@@ -92,8 +93,10 @@ def allowed_release_files(repo: str, base_ref: str) -> set[str]:
     allowed = set(RELEASE_FILES)
     try:
         meta = gh_json(f"repos/{repo}/contents/release-please-config.json?ref={base_ref}")
-    except subprocess.CalledProcessError:
-        return allowed
+    except subprocess.CalledProcessError as e:
+        if "404" in (e.stderr or ""):  # rama base sin configuración: solo los ficheros fijos
+            return allowed
+        raise
     config = json.loads(base64.b64decode(meta["content"]))
     for pkg in (config.get("packages") or {}).values():
         for extra in pkg.get("extra-files") or []:
@@ -130,7 +133,11 @@ def collect_pr(repo: str, number: int) -> dict:
 
     author = pr["user"]["login"]
     head_repo = (pr["head"].get("repo") or {}).get("full_name")
-    maint = is_release_pr(repo, number, pr["head"].get("ref") or "", pr["base"]["ref"], head_repo == repo)
+    try:
+        maint = is_release_pr(repo, number, pr["head"].get("ref") or "", pr["base"]["ref"], head_repo == repo)
+    except subprocess.CalledProcessError as e:
+        maint = False
+        gaps.append(f"PR #{number}: no se pudo comprobar si es PR de release ({(e.stderr or '').strip() or e})")
     body = pr.get("body") or ""
     messages = [c["commit"]["message"] for c in commits]
     tasks = extract_tasks(body, *messages) or (["MAINT"] if maint else [])
@@ -234,7 +241,7 @@ def release_markdown(r: dict) -> str:
         + f"\n\n## Huecos de trazabilidad\n\n{gaps}\n\n## Controles relacionados\n\n{ctrl}\n\n> {r['controls']['_nota']}\n"
         f"\n## Verificación de la firma del SBOM\n\n```bash\ncosign verify-blob \\\n"
         f"  --bundle sbom.cdx.json.bundle \\\n"
-        f"  --certificate-identity-regexp 'https://github.com/{r['repo']}/.github/workflows/release.yml@refs/heads/(main|master)$' \\\n"
+        f"  --certificate-identity-regexp '^https://github.com/{r['repo']}/.github/workflows/release.yml@refs/heads/(main|master)$' \\\n"
         f"  --certificate-oidc-issuer https://token.actions.githubusercontent.com \\\n"
         f"  sbom.cdx.json\n```\n"
     )

@@ -9,7 +9,6 @@ import pytest
 import yaml
 
 import smc.ens as ens
-from smc import __version__
 from smc.catalog import load_catalog, validate
 from smc.cli import main
 from smc.dashboard import recopilar
