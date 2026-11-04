@@ -27,7 +27,7 @@ NIS2 · ENS · ISO 27001 · SOC · verticales · tecnologías · vulnerabilidade
 [![MITRE](https://img.shields.io/badge/MITRE%20ATT%26CK-cobertura%20por%20táctica-ff4d4d?style=flat-square&labelColor=07090c)](soc/use-cases/catalog.yaml)
 [![soberanía](https://img.shields.io/badge/soberanía-ejecución%20local%20UE-5ad1ff?style=flat-square&labelColor=07090c)](docs/adr/ADR-001-catalogos-como-datos-y-datos-de-cliente-fuera-del-repo.md)
 
-[**Ver la web**](https://pedri77.github.io/smc-cinematica/) · [Empezar en 1 minuto](#empezar-en-1-minuto) · [Comandos](#comandos) · [Pentest y purple team](#pentest-y-purple-team) · [IA](#ia-ria-y-agentes) · [PMO](#pmo) · [Evolución y auditor](#evolución-salida-para-auditor-y-evidencias)· [Ecosistema](#ecosistema) · [PRD](docs/prd/PRD-SMC-001-v1.md) · [Changelog](CHANGELOG.md)
+[**Ver la web**](https://pedri77.github.io/smc-cinematica/) · [▶ Demo en 1 minuto](https://pedri77.github.io/smc-cinematica/#demo) · [Guía en 8 vídeos](https://www.youtube.com/playlist?list=PLFVCkmnAUZ9g) · [Empezar en 1 minuto](#empezar-en-1-minuto) · [Comandos](#comandos) · [Pentest y purple team](#pentest-y-purple-team) · [IA](#ia-ria-y-agentes) · [PMO](#pmo) · [Evolución y auditor](#evolución-salida-para-auditor-y-evidencias)· [Ecosistema](#ecosistema) · [PRD](docs/prd/PRD-SMC-001-v1.md) · [Changelog](CHANGELOG.md)
 
 </div>
 
@@ -167,7 +167,7 @@ smc report assessments/examples/ejemplo-energia.yaml -o /tmp/completo.html --pen
 ```
 
 > [!TIP]
-> **Vídeos de uso.** Ocho vídeos cortos (de 1:30 a 2:30) recorren todo esto con los ejemplos ficticios, con capítulos, comandos y transcripción: [`docs/videos/`](docs/videos/README.md).
+> **Vídeos de uso.** Ocho vídeos cortos (de 1:30 a 2:30) recorren todo esto con los ejemplos ficticios, con capítulos, comandos y transcripción: [`docs/videos/`](docs/videos/README.md). Están en [una lista de YouTube](https://www.youtube.com/playlist?list=PLFVCkmnAUZ9g), y hay una [demo de un minuto](https://pedri77.github.io/smc-cinematica/#demo) en la web.
 
 ## Comandos
 
