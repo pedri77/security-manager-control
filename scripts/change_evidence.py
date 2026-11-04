@@ -34,7 +34,7 @@ from pathlib import Path
 
 TASK_RE = re.compile(r"^\s*Task:\s*([A-Z][A-Z0-9]{1,9}-\d{1,5})\s*$", re.MULTILINE)
 CLOSES_RE = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)\b", re.IGNORECASE)
-# Sin cerrar, GitHub oculta el resto del texto: se ignora igual.
+# Un comentario sin cerrar se ignora hasta el final del texto, por prudencia.
 HTML_COMMENT_RE = re.compile(r"<!--.*?(?:-->|\Z)", re.DOTALL)
 PR_IN_SUBJECT_RE = re.compile(r"\(#(\d+)\)\s*$")
 BLIND_REVIEW_CONTEXT = "blind-review"
@@ -94,7 +94,7 @@ def allowed_release_files(repo: str, base_ref: str) -> set[str]:
     try:
         meta = gh_json(f"repos/{repo}/contents/release-please-config.json?ref={base_ref}")
     except subprocess.CalledProcessError as e:
-        if "404" in (e.stderr or ""):  # rama base sin configuración: solo los ficheros fijos
+        if "HTTP 404" in (e.stderr or ""):  # rama base sin configuración: solo los ficheros fijos
             return allowed
         raise
     config = json.loads(base64.b64decode(meta["content"]))

@@ -11,7 +11,7 @@ NIS2 · ENS · ISO 27001 · SOC · verticales · tecnologías · vulnerabilidade
 
 [![versión](https://img.shields.io/static/v1?label=versión&message=0.8.2&color=3cf58a&style=for-the-badge&labelColor=07090c)](CHANGELOG.md) <!-- x-release-please-version -->
 [![CI](https://github.com/pedri77/security-manager-control/actions/workflows/tests.yml/badge.svg)](https://github.com/pedri77/security-manager-control/actions/workflows/tests.yml)
-[![tests](https://img.shields.io/badge/tests-641%20en%20verde-3cf58a?style=for-the-badge&labelColor=07090c)](tests/)
+[![tests](https://img.shields.io/badge/tests-642%20en%20verde-3cf58a?style=for-the-badge&labelColor=07090c)](tests/)
 [![python](https://img.shields.io/badge/python-3.10+-3cf58a?style=for-the-badge&logo=python&logoColor=3cf58a&labelColor=07090c)](pyproject.toml)
 [![dependencias](https://img.shields.io/badge/dependencias-solo%20PyYAML-3cf58a?style=for-the-badge&labelColor=07090c)](pyproject.toml)
 
@@ -340,7 +340,7 @@ security-manager-control/
 ├── ai/                  plantilla de inventario de IA
 ├── pmo/                 plantilla de proyecto + ejemplo
 ├── smc/                 CLI (gap, plan, report, dashboard, compare, soa, evidencias, soc, mitre, pentest, purple, ai, pmo, mapa, visor…) · assets/ three.js vendorizado
-├── tests/               641 tests
+├── tests/               642 tests
 └── docs/                PRD · ADR · plan del enjambre · imágenes
 ```
 

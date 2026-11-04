@@ -32,8 +32,9 @@ def test_config_ausente_deja_solo_los_ficheros_fijos(ce, monkeypatch):
     assert ce.allowed_release_files("o/r", "main") == ce.RELEASE_FILES
 
 
-def test_error_de_api_no_se_confunde_con_config_ausente(ce, monkeypatch):
-    _falla_api(ce, monkeypatch, "gh: Forbidden (HTTP 403)")
+@pytest.mark.parametrize("stderr", ["gh: Forbidden (HTTP 403)", "gh: API rate limit exceeded for ID 74045. (HTTP 403)"])
+def test_error_de_api_no_se_confunde_con_config_ausente(ce, monkeypatch, stderr):
+    _falla_api(ce, monkeypatch, stderr)
     with pytest.raises(subprocess.CalledProcessError):
         ce.allowed_release_files("o/r", "main")
 

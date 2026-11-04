@@ -10,7 +10,6 @@ import yaml
 
 import smc.ens as ens
 from smc.catalog import load_catalog, validate
-from smc.cli import main
 from smc.dashboard import recopilar
 from smc.gap import analyse, render_markdown
 from smc.plan import brechas_sin_accion, cargar_plan
