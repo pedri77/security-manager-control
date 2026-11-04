@@ -1,0 +1,37 @@
+name: Feature / tarea del enjambre
+description: Tarea con TASK_ID trazable (PLAYBOOK-F2P-001)
+title: "[<PROJ>-<NNN>] "
+labels: ["triage"]
+body:
+  - type: input
+    id: task_id
+    attributes: { label: TASK_ID, placeholder: "RSK-042" }
+    validations: { required: true }
+  - type: textarea
+    id: context
+    attributes: { label: Contexto y problema }
+    validations: { required: true }
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Criterios de aceptación (Given/When/Then)
+      placeholder: |
+        - Given … When … Then …
+    validations: { required: true }
+  - type: textarea
+    id: out_of_scope
+    attributes: { label: Fuera de alcance }
+  - type: dropdown
+    id: risk
+    attributes: { label: Riesgo, options: [low, medium, high] }
+    validations: { required: true }
+  - type: checkboxes
+    id: triggers
+    attributes:
+      label: Disparadores de threat model / evals
+      options:
+        - label: Toca autenticación o autorización
+        - label: Trata datos personales
+        - label: Expone red, API pública o subida de ficheros
+        - label: Cambia prompts, modelos o tools LLM
+        - label: Añade un tenant o un proveedor externo

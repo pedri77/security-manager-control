@@ -15,14 +15,23 @@ def _version_pyproject():
     return m.group(1)
 
 
+# Entradas a mano («## 0.8.1 (fecha)») y de release-please («## [0.8.2](url) (fecha)»).
+CHANGELOG_RE = re.compile(r"^## \[?(\d+\.\d+\.\d+)\b", re.M)
+
+
 def _version_changelog():
-    m = re.search(r"^## (\d+\.\d+\.\d+)\b", (RAIZ / "CHANGELOG.md").read_text(encoding="utf-8"), re.M)
+    m = CHANGELOG_RE.search((RAIZ / "CHANGELOG.md").read_text(encoding="utf-8"))
     assert m, "CHANGELOG sin entrada de versión"
     return m.group(1)
 
 
 def test_versiones_coinciden():
     assert _version_pyproject() == smc.__version__ == _version_changelog()
+
+
+def test_changelog_lee_el_formato_de_release_please():
+    texto = "# Changelog\n\n## [0.8.2](https://example.com/compare) (2026-11-04)\n\n## 0.8.1 (2026-11-03)\n"
+    assert CHANGELOG_RE.search(texto).group(1) == "0.8.2"
 
 
 def test_version_es_semver():
