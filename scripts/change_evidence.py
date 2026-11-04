@@ -42,6 +42,7 @@ RELEASE_BRANCH_PREFIX = "release-please--branches--"
 RELEASE_FILES = {"CHANGELOG.md", ".release-please-manifest.json", "pyproject.toml", "uv.lock",
                  "package.json", "package-lock.json", "version.txt"}
 FIRST_RELEASE_LIMIT = 50
+FILES_PAGE = 100  # un PR de release toca pocos ficheros: llenar la página ya lo descarta
 REVIEW_MODEL = (
     "Revisión ciega por agente de IA (estado blind-review sobre el SHA de cabeza) "
     "más gate humano en el merge del PR de release. Sin aprobación humana por PR."
@@ -107,7 +108,9 @@ def allowed_release_files(repo: str, base_ref: str) -> set[str]:
 def is_release_pr(repo: str, number: int, head_ref: str, base_ref: str, same_repo: bool) -> bool:
     if not (same_repo and head_ref.startswith(RELEASE_BRANCH_PREFIX)):
         return False
-    files = gh_json(f"repos/{repo}/pulls/{number}/files?per_page=100")
+    files = gh_json(f"repos/{repo}/pulls/{number}/files?per_page={FILES_PAGE}")
+    if len(files) >= FILES_PAGE:  # puede haber más páginas sin leer
+        return False
     allowed = allowed_release_files(repo, base_ref)
     return bool(files) and all(f["filename"] in allowed for f in files)
 
