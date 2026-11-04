@@ -57,6 +57,16 @@ def test_error_al_detectar_pr_de_release_queda_como_hueco(ce, monkeypatch):
     assert any("HTTP 502" in g for g in p["gaps"])
 
 
+@pytest.mark.parametrize("n,esperado", [(99, True), (100, False), (101, False)])
+def test_pr_de_release_con_pagina_llena_no_cuenta(ce, monkeypatch, n, esperado):
+    def gh_json(path):
+        if "/files?" in path:
+            return [{"filename": "CHANGELOG.md"}] * min(n, ce.FILES_PAGE)
+        raise subprocess.CalledProcessError(1, "gh", stderr="gh: Not Found (HTTP 404)")
+    monkeypatch.setattr(ce, "gh_json", gh_json)
+    assert ce.is_release_pr("o/r", 7, "release-please--branches--main", "main", True) is esperado
+
+
 def test_identidad_cosign_anclada_por_los_dos_lados(ce):
     md = ce.release_markdown({"repo": "o/r", "tag": "v1", "range": "a..b", "generated_at": "", "review_model": "",
                               "changes": [], "gaps": [], "controls": {"_nota": ""}})
