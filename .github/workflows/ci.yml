@@ -153,6 +153,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { persist-credentials: false }
       - name: syft → CycloneDX
-        run: docker run --rm -v "$PWD:/src" "$SYFT_IMAGE" dir:/src -o cyclonedx-json=/src/sbom.cdx.json
+        run: |
+          docker run --rm -v "$PWD:/src" "$SYFT_IMAGE" dir:/src \
+            --source-name "${GITHUB_REPOSITORY#*/}" --source-version "$GITHUB_SHA" \
+            -o cyclonedx-json=/src/sbom.cdx.json
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with: { name: sbom, path: sbom.cdx.json, retention-days: 90 }

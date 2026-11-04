@@ -380,7 +380,7 @@ def test_cifras_del_readme_son_las_reales():
     badge = int(re.search(r"tests-(\d+)%20en%20verde", readme).group(1))
     assert badge >= n_tests
     # contraprueba: las cifras de la versión anterior ya no figuran
-    assert "verticales-20-" not in readme and "versión-0.6.1" not in readme
+    assert "verticales-20-" not in readme and "message=0.6.1&" not in readme
 
 
 def test_readme_fechas_del_omnibus_y_aviso():

@@ -210,7 +210,7 @@ def test_version_080_y_badge_ci():
     from smc import __version__
     assert f"message={__version__}&" in _readme()
     assert "https://github.com/pedri77/security-manager-control/actions/workflows/tests.yml/badge.svg" in _readme()
-    assert "versión-0.7.1" not in _readme()                                             # contraprueba
+    assert "message=0.7.1&" not in _readme()                                             # contraprueba
 
 
 def test_readme_documenta_comandos_nuevos_y_sin_repos_privados():

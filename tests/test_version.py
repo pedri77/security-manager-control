@@ -1,4 +1,5 @@
 """T30: coherencia de versión y forma del workflow de CI."""
+import json
 import re
 from pathlib import Path
 
@@ -32,6 +33,13 @@ def test_versiones_coinciden():
 def test_changelog_lee_el_formato_de_release_please():
     texto = "# Changelog\n\n## [0.8.2](https://example.com/compare) (2026-11-04)\n\n## 0.8.1 (2026-11-03)\n"
     assert CHANGELOG_RE.search(texto).group(1) == "0.8.2"
+
+
+def test_release_please_actualiza_el_badge_del_readme():
+    config = json.loads((RAIZ / "release-please-config.json").read_text(encoding="utf-8"))
+    assert "README.md" in config["packages"]["."]["extra-files"]
+    lineas = [l for l in (RAIZ / "README.md").read_text(encoding="utf-8").splitlines() if "x-release-please-version" in l]
+    assert len(lineas) == 1 and f"message={smc.__version__}&" in lineas[0]
 
 
 def test_version_es_semver():
