@@ -45,3 +45,11 @@ Explicación: en el commit head de estos PR la API sin filtro ya devuelve todos 
 
 ## Queda
 Nada pendiente en alcance. Fuera de alcance: `"HTTP 404" in stderr` suelto en `collect_pr`/`allowed_release_files`. Sin push ni PR.
+
+## Revisión del coordinador (2026-11-05)
+- Alcance: solo los 3 ficheros de «Toca»; superficies.py diff dev-proyecto OK; gitleaks sin hallazgos. Pie del commit corregido de v1.7 a v1.5 (versión en disco de dev-proyecto) con amend en la rama de tarea antes de fusionar: SHA nuevo 2e9a60c (antes d006d5a); el informe también.
+- Verifica: pytest completo 816 passed.
+- Contraprueba (copias limpias con git archive, un mutante por copia, 141 tests): Contraprueba: m1 quitar filter=all → 17 rojos; m2 simulador ingenuo → 1; m1+m2 → 2; m3 regex suelto → 1; m4 no 5xx cae a cuerpo vacío → 1 (coincide con el agente). Copias en /private/tmp/claude-501/-Users-pedri77-Dev-Claude-proyectos-Claude/954a23bc-d0e3-4e6f-999b-858a552b0b36/scratchpad/t49/.
+- Comparación real en solo lectura (GET), rama contra origin/main 8d04cfe, PR #11, #19, #20 y #22, rc=0: registros idénticos salvo generated_at; 13 checks y gaps [] en los cuatro. No ejercitan el arreglo (sin repeticiones).
+- Medida sobre 431754b (script `/private/tmp/claude-501/-Users-pedri77-Dev-Claude-proyectos-Claude/954a23bc-d0e3-4e6f-999b-858a552b0b36/scratchpad/t49/real.py`, código de la rama, merged_at = 2026-11-05T16:05:00Z): con filter=all 15 runs; evidence tiene 127363451389 (16:06:24Z) y 127362747209 (16:04:27Z); tras `cut_at_merge` y `latest_check_runs` queda 127362747209 (16:04), sin hueco de evidence. Hay hueco de e2e y evals porque sus únicos runs (skipped) empezaron a las 16:05:12Z y 16:05:20Z, tras el merge: hueco legítimo. Sin filter=all: 13 runs, solo 127363451389 (16:06), tras el corte evidence desaparece y sale hueco falso de evidence (además de e2e y evals).
+- 403 con segunda línea `(HTTP 500)`: `gh api` escribe un error por invocación, una línea `gh: <mensaje> (HTTP nnn)` o `gh: HTTP nnn`; no se observó ningún caso real con segunda línea con código. Se acepta.
