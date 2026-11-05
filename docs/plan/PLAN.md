@@ -25,7 +25,7 @@ Revisión de ola: 3
 | Grupo | Coordinador | Tareas |
 |---|---|---|
 | smc | coordinador | T01, T02, T03, T04, T05, T06, T07, T08 |
-| smc-v05 | coordinador | T09, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28, T29, T30, T31, T32, T33, T34, T35, T36 |
+| smc-v05 | coordinador | T09, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28, T29, T30, T31, T32, T33, T34, T35, T36, T37 |
 
 ## Ola 1
 
@@ -389,6 +389,17 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en c1e83b2 · evidencia informes/T36-dev-proyecto.md
 
+## Ola 18 (SMC-004, prueba real del enjambre con F2P)
+
+- [ ] **T37** — Error limpio en `smc gap` y `smc plan`
+  - Issue: SMC-004 https://github.com/pedri77/security-manager-control/issues/14
+  - Hace: `smc gap` y `smc plan` con fichero inexistente o YAML mal formado escriben `ERROR: <ruta>: <motivo>` en stderr y salen con rc=2, sin traceback, igual que `smc evidencias` y `smc compare`. Reutiliza `_ERRORES_DATOS` y `_error` de `smc/cli.py`. Si falla, `smc gap -o` no crea el fichero de salida.
+  - No hace: no cambia el YAML válido que no es un mapa (sigue rc=0 con aviso), ni los fallos al escribir en `-o`, ni `smc report`, `smc dashboard` u otros comandos. No toca `smc/gap.py`, `smc/plan.py`, README ni CHANGELOG (lo genera release-please).
+  - Toca: `smc/cli.py`, `tests/test_cli_errores.py`, `docs/plan/informes/T37-dev-proyecto.md`
+  - Depende: T36
+  - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde, con un test por criterio de aceptación de la issue. Contraprueba en una copia temporal, no en el worktree: quitar la captura de errores de `gap` y de `plan` pone en rojo los tests nuevos.
+  - Prod: —
+
 ## Libro
 
 ### Hechos
@@ -476,3 +487,4 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 - Ola 15: 0
 - Ola 16: 0
 - Ola 17: 0
+- Ola 18: 0
