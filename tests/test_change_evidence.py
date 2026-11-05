@@ -748,3 +748,105 @@ def test_dos_apps_homonimas_ambas_con_runs_previos_no_dejan_hueco(ce, monkeypatc
     p = _collect_merged(ce, monkeypatch, runs)
     assert sorted(_conclusiones(p)) == [("ci", "failure"), ("ci", "success")]
     assert p["gaps"] == []
+
+
+# --- T48: 5xx de cuerpo vacío con Content-Type JSON ---
+# `gh` 2.89.0 real (cuerpo vacío + application/json, cualquier estado): stderr «unexpected end of JSON input\n»,
+# sin «gh:» ni código, código de salida 1. Con cuerpo no vacío que cita el texto: «gh: <texto> (HTTP 403)\n».
+VACIO = "unexpected end of JSON input\n"
+
+
+@pytest.mark.parametrize("stderr", [VACIO, "unexpected end of JSON input"])
+def test_cuerpo_vacio_json_se_reintenta_hasta_tres_llamadas(ce, monkeypatch, stderr):
+    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err(stderr), _err(stderr), _err(stderr), '{"no": 0}'])
+    with pytest.raises(subprocess.CalledProcessError) as ei:
+        ce.gh_json("x")
+    assert len(llamadas) == 3 and len(esperas) == 2 and ei.value.stderr == stderr
+
+
+def test_cuerpo_vacio_json_y_luego_exito(ce, monkeypatch):
+    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err(VACIO), '{"ok": 1}'])
+    assert ce.gh_json("x") == {"ok": 1} and len(llamadas) == 2 and len(esperas) == 1 and 0 < esperas[0] <= 5
+
+
+def test_cuerpo_vacio_json_dos_veces_y_luego_exito(ce, monkeypatch):
+    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err(VACIO), _err(VACIO), '[1]'])
+    assert ce.gh_json("x") == [1] and len(llamadas) == 3 and len(esperas) == 2
+
+
+def test_cuerpo_vacio_json_mezclado_con_5xx_con_codigo(ce, monkeypatch):
+    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err(VACIO), _err("gh: HTTP 502\n"), '[1]'])
+    assert ce.gh_json("x") == [1] and len(llamadas) == 3
+
+
+@pytest.mark.parametrize("stderr", [
+    "gh: unexpected end of JSON input (HTTP 403)\n",   # 403 con cuerpo JSON {"message": "unexpected end of JSON input"}
+    "gh: unexpected end of JSON input (HTTP 404)\n",
+    "gh: HTTP 404\nunexpected end of JSON input cita\n",
+    "gh: HTTP 403\n",
+])
+def test_con_codigo_no_5xx_y_cita_del_texto_falla_a_la_primera(ce, monkeypatch, stderr):
+    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err(stderr), '{"ok": 1}'])
+    with pytest.raises(subprocess.CalledProcessError):
+        ce.gh_json("x")
+    assert len(llamadas) == 1 and esperas == []
+
+
+@pytest.mark.parametrize("stderr", [
+    "gh: unexpected end of JSON input (HTTP 403)\n",
+    "gh: unexpected end of JSON input (HTTP 404)\n",
+])
+def test_http_status_reconoce_el_codigo_cuando_el_cuerpo_cita_el_texto(ce, stderr):
+    e = subprocess.CalledProcessError(1, "gh", stderr=stderr)
+    assert ce.http_status(e) in (403, 404)
+
+
+@pytest.mark.parametrize("stderr", [
+    "error: unexpected end of JSON input\n",
+    "gh: unexpected end of JSON input.\n",
+    "Unexpected end of JSON input\n",
+    "unexpected end of JSON input extra\n",
+    "x unexpected end of JSON input\n",
+    "gh: connection reset\n",
+    "",
+])
+def test_otros_textos_no_se_reintentan(ce, monkeypatch, stderr):
+    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err(stderr), '{"ok": 1}'])
+    with pytest.raises(subprocess.CalledProcessError):
+        ce.gh_json("x")
+    assert len(llamadas) == 1 and esperas == []
+
+
+def test_linea_exacta_entre_otras_lineas_se_reintenta(ce, monkeypatch):
+    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err("aviso previo\nunexpected end of JSON input\n"), '{"ok": 1}'])
+    assert ce.gh_json("x") == {"ok": 1} and len(llamadas) == 2
+
+
+def test_json_loads_que_falla_sobre_salida_correcta_no_se_reintenta(ce, monkeypatch):
+    llamadas = []
+
+    def run(cmd):
+        llamadas.append(cmd)
+        return "no es json"
+    monkeypatch.setattr(ce, "run", run)
+    monkeypatch.setattr(ce.time, "sleep", lambda s: pytest.fail("no debe esperar"))
+    with pytest.raises(json.JSONDecodeError):
+        ce.gh_json("x")
+    assert len(llamadas) == 1
+
+
+def test_cuerpo_vacio_json_en_collect_pr_deja_hueco_tras_tres_llamadas(ce, monkeypatch):
+    esperas, llamadas = [], []
+    monkeypatch.setattr(ce.time, "sleep", lambda s: esperas.append(s))
+    fake = FakeGh({})
+
+    def run(cmd):
+        path = cmd[-1]
+        if "/check-runs" in path:
+            llamadas.append(path)
+            raise subprocess.CalledProcessError(1, cmd, stderr=VACIO)
+        return json.dumps(fake(path))
+    monkeypatch.setattr(ce, "run", run)
+    p = ce.collect_pr("o/r", 7)
+    assert any("no se pudieron leer los checks" in g and "unexpected end of JSON input" in g for g in p["gaps"])
+    assert len(llamadas) == 3 and len(esperas) == 2
