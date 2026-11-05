@@ -43,3 +43,10 @@ Ningún mutante quedó verde. Matiz m3: la lectura estricta de «ignorar del tod
 
 ## Queda
 Sincronizar la plantilla `f2p/repo-templates` de enjambre-agentes tras fusionar (fuera de alcance). Sin acción de prod.
+
+## Revisión del coordinador (2026-11-05)
+- Alcance: solo los 3 ficheros de «Toca»; superficies.py diff dev-proyecto: OK; gitleaks y grep de secretos: sin hallazgos.
+- Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en la rama de tarea: 761 passed.
+- Contraprueba (copias limpias con git archive, un mutante por copia, `tests/test_change_evidence.py`, 86 tests): Contraprueba: m1 → 2 rojos; m2 → 1; m3 → 11; m4 → 4; m5 → 1; m6 → 2; m7 → 4; m8 → 6; m9 → 2; m10 → 3 (coincide con lo del agente).
+- Lectura estricta de m3 (grupo sin ningún run con fecha se descarta y un run sin fecha nunca gana): 15 rojos, 71 verdes. Añade a los de m3 `test_check_solo_en_segunda_pagina_de_check_runs`, `test_justo_en_el_tope_con_pagina_corta_no_es_hueco`, `test_si_ninguno_tiene_fecha_gana_el_mayor_id` y `test_run_sin_fecha_de_otro_grupo_no_afecta`.
+- merged_at ilegible o ausente: una sola rama, sin corte (`cut_at_merge` devuelve los runs). Hueco por corte sin app: con dos apps del mismo nombre y una sin runs tras el corte, el hueco nombra el check aunque la otra app se conserve: ambiguo, no falso.
