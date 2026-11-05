@@ -1,4 +1,4 @@
-# T37 · Error limpio en `smc gap` y `smc plan` (SMC-004)
+# T38 · Error limpio en `smc gap` y `smc plan` (SMC-004)
 
 Agente: dev-proyecto v1.5 · Worktree: /Users/pedri77/Dev/wt/smc-004-t37 · Rama: t37-smc004
 
