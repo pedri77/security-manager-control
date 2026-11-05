@@ -361,8 +361,21 @@ def test_fallo_concluido_sin_started_at_supera_al_verde(ce, monkeypatch, orden):
 
 
 @pytest.mark.parametrize("orden", ORDENES)
-def test_verde_concluido_sin_started_at_supera_al_fallo(ce, monkeypatch, orden):
+def test_verde_sin_started_at_e_id_1_no_tapa_fallo_con_started_at_e_id_2(ce, monkeypatch, orden):
+    runs = _ordena([_run(1, "ci", "success", None), _run(2, "ci", "failure", "2026-11-04T20:41:00Z")], orden)
+    assert _conclusiones(_collect_runs(ce, monkeypatch, runs)) == [("ci", "failure")]
+
+
+@pytest.mark.parametrize("orden", ORDENES)
+def test_verde_sin_started_at_con_id_mayor_supera_al_fallo_anterior(ce, monkeypatch, orden):
     runs = _ordena([_run(1, "ci", "failure", "2026-11-04T20:41:00Z"), _run(2, "ci", "success", None)], orden)
+    assert _conclusiones(_collect_runs(ce, monkeypatch, runs)) == [("ci", "success")]
+
+
+@pytest.mark.parametrize("orden", ORDENES)
+def test_run_en_cola_antiguo_con_id_menor_no_tapa_al_verde_mas_nuevo(ce, monkeypatch, orden):
+    runs = _ordena([_run(1, "ci", None, None, status="queued"),
+                    _run(2, "ci", "success", "2026-11-04T20:43:00Z")], orden)
     assert _conclusiones(_collect_runs(ce, monkeypatch, runs)) == [("ci", "success")]
 
 
