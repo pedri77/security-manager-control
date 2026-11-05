@@ -41,3 +41,9 @@ Ninguno verde.
 
 ## Puntos donde la especificación no encaja con `gh` real
 Ninguno. Matices: con cuerpo no vacío `{"message":"unexpected end of JSON input"}` `gh` escribe `gh: unexpected end of JSON input (HTTP 403)`, y el código manda (1 petición), como pide la spec. El 403/404 con cuerpo vacío y JSON sí se reintenta (3), aceptado por la spec. Un stderr con la línea exacta y además código no 5xx en otra línea: manda el código.
+
+## Revisión del coordinador (2026-11-05)
+- Alcance: solo los 3 ficheros de «Toca»; superficies.py diff dev-proyecto OK; gitleaks sin hallazgos.
+- Verifica: pytest completo 808 passed.
+- `gh` 2.89.0 real, servidor local propio (peticiones contadas): 500, 502 y 504 vacíos con application/json = 3 cada uno (stderr `unexpected end of JSON input`); casos de T47 (500 JSON, 500 `{}`, 502/503 HTML, 504 text/plain) = 3; 403 y 404 con cuerpo no vacío y 403 HTML/JSON, 404 HTML/JSON = 1; 403 con `{"message":"unexpected end of JSON input"}` = 1 (`gh: unexpected end of JSON input (HTTP 403)`). Un 403 vacío con application/json = 3 (aceptado en la spec). Los stderr simulados coinciden con los reales. Montaje en /../t47/.
+- Contraprueba (copias limpias con git archive, un mutante por copia, 133 tests): m1 → 7 rojos; m2 → 4; m3 → 20; m4 → 10 (coincide con el agente). Copias en /.
