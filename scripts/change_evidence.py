@@ -85,7 +85,8 @@ def http_status(e: subprocess.CalledProcessError) -> int | None:
 def is_transient(e: subprocess.CalledProcessError) -> bool:
     """5xx con código en stderr, o, sin código, una línea que es exactamente el aviso de cuerpo vacío.
 
-    Sin código no se distingue un 5xx de otro estado (un 403 con cuerpo vacío también se reintenta; es un GET).
+    Sin código no se distingue un 5xx de otro estado: un 403 o 404 con cuerpo vacío y Content-Type JSON
+    también se reintenta (es un GET; criterio acotado de la issue #21).
     Con código manda el código: un 403 que cita el texto en su mensaje no se reintenta.
     """
     status = http_status(e)
@@ -253,7 +254,9 @@ def collect_pr(repo: str, number: int) -> dict:
     head_sha = pr["head"]["sha"]
     gaps: list[str] = []
     try:
-        checks = gh_pages(f"repos/{repo}/commits/{head_sha}/check-runs", "check_runs")
+        # filter=all: sin él la API devuelve solo el último run de cada check y el corte en merged_at
+        # se queda sin el run que había al fusionar.
+        checks = gh_pages(f"repos/{repo}/commits/{head_sha}/check-runs?filter=all", "check_runs")
     except READ_ERRORS as e:
         checks = []
         gaps.append(f"PR #{number}: no se pudieron leer los checks ({reason(e)})")
