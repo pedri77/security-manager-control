@@ -456,7 +456,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 
 ## Ola 20 (SMC-005)
 
-- [ ] **T43** — Huecos fiables en `change_evidence`: commits truncados y checks repetidos
+- [~] **T43** — Huecos fiables en `change_evidence`: commits truncados y checks repetidos
   - Issue: SMC-005 https://github.com/pedri77/security-manager-control/issues/17
   - Hace: en `scripts/change_evidence.py`, `collect_pr` anota un hueco si `pr["commits"]` es mayor que los commits leídos (la API corta en 250 sin error). `collect_pr` se queda con el check-run más reciente de cada par nombre y app, por `started_at` e `id`, sin fiarse del orden de la lista y sin dar por bueno un check que sigue en curso: un fallo superado por un verde no deja hueco, y un verde superado por un fallo o por un check en curso sí. En `tests/test_change_evidence.py`, añade el test con `blind-review` en `success` en la primera página y fallo de lectura en la segunda: el estado se descarta y queda hueco. Corrige la aserción de hueco que hoy no puede fallar. El test del modo PR con tope de páginas ejercita `mode_pr`, o se renombra a lo que prueba. Cumple los criterios de aceptación de la issue.
   - No hace: no toca `is_release_pr`, los workflows ni la plantilla de enjambre-agentes. No cambia el formato del registro de cambio. No regenera el evidence pack de v0.8.4. No toca versión ni CHANGELOG (los lleva release-please).
@@ -464,6 +464,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Depende: T38, T42
   - Verifica: `uv run --extra dev pytest -q tests/test_change_evidence.py` y `make test` en verde. Un test por criterio de la issue, con `gh` simulado. Hay test con los check-runs en los dos órdenes de lista, y con dos apps distintas que comparten nombre de check. Contraprueba en una copia temporal, con resultado medido test a test en el informe: quitar la comparación de `pr["commits"]`, quitar la selección del check-run más reciente, ordenar solo por `id` o solo por `started_at` si el test lo distingue, e ignorar la app deben poner en rojo al menos un test cada uno.
   - Prod: —
+  - Estado: reservada por coordinador-smc-f2p 2026-11-05
 
 ## Libro
 
