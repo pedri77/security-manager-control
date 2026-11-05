@@ -60,3 +60,8 @@ Los cuatro ponen en rojo al menos un test. Mutante «solo por `started_at`»: no
 ## Desvíos / decisiones
 - Ninguno respecto a la petición. Se elimina el desvío anterior (un run sin `started_at` ya no cuenta como el más reciente por serlo).
 - Prod: ninguna. Sin push, sin tocar PLAN.md ni `main`.
+
+## Verificación del coordinador (2026-11-05, coordinador v2.3)
+- `pytest -q tests/test_change_evidence.py`: 60 passed. `make test`: 724 passed.
+- Casos sobre `latest_check_runs` (mismo nombre y app, todas las permutaciones): A (success sin started_at id1, failure con id2) gana el fallo; B (failure sin started_at id2, success con id1) gana el fallo; C (success con id1, success sin id2, failure con id3) gana el fallo id3.
+- Mutantes, uno por copia en scratchpad/c44 (m1..m4, m3b), módulo importado de la copia: m1 `failed = []` = 4 rojos; m2 sin `gaps.append` de checks = 4 rojos; m4 solo por `id` (rama `if False`) = 1 rojo (`test_started_at_manda_sobre_id`); m3 centinela (`started_at or "￿"/""` según concluido, el código anterior) = 8 rojos, no los 4 del informe de arriba (el mutante del informe no coincide con el que repite el coordinador; ambos en rojo).
