@@ -26,7 +26,7 @@ Revisión de ola: 3
 |---|---|---|
 | smc | coordinador | T01, T02, T03, T04, T05, T06, T07, T08 |
 | smc-v05 | coordinador | T09, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28, T29, T30, T31, T32, T33, T34, T35, T36 |
-| smc-f2p | coordinador | T37 |
+| smc-f2p | coordinador | T37, T38 |
 
 ## Ola 1
 
@@ -401,6 +401,15 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Verifica: `uv run --extra dev pytest -q tests/test_change_evidence.py` y `make test` en verde; un test por criterio de la issue, con `gh` simulado y varias páginas; contraprueba anotada en el informe: con la lectura de una sola página, cada test nuevo falla.
   - Prod: —
   - Estado: hecha en 97e4d3c546382d4be9c9140d02658174b4047f82 · evidencia informes/T37-dev-proyecto.md
+
+- [ ] **T38** — Tope de páginas como hueco (FAIL de revisión ciega del PR #15)
+  - Issue: SMC-003 https://github.com/pedri77/security-manager-control/issues/13
+  - Hace: el error que lanza `gh_pages` al superar `MAX_PAGES` se trata igual que un error de lectura: en `collect_pr` queda como hueco al leer checks o estados, y `mode_release` no aborta y escribe el pack con el hueco anotado, también si el tope salta en commits o reviews. Añade test del desempate por `id` de `latest_status`: dos estados con el mismo `created_at` y distinto resultado.
+  - No hace: no cambia `PER_PAGE`, `MAX_PAGES`, `is_release_pr`, los workflows ni la plantilla. No cambia el comportamiento ante errores en modo PR para commits y reviews.
+  - Toca: `scripts/change_evidence.py`, `tests/test_change_evidence.py`, `docs/plan/informes/T38-dev-proyecto.md`
+  - Depende: T37
+  - Verifica: `uv run --extra dev pytest -q tests/test_change_evidence.py` y `make test` en verde; test del tope en checks, en estados y en modo release; contraprueba anotada: si el tope corta en silencio, o si el `except` no lo captura, esos tests fallan; si `latest_status` ordena solo por `created_at`, el test de desempate falla.
+  - Prod: —
 
 ## Libro
 
