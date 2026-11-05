@@ -391,7 +391,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 
 ## Ola 18 (SMC-004, prueba real del enjambre con F2P)
 
-- [ ] **T37** — Error limpio en `smc gap` y `smc plan`
+- [~] **T37** — Error limpio en `smc gap` y `smc plan`
   - Issue: SMC-004 https://github.com/pedri77/security-manager-control/issues/14
   - Hace: `smc gap` y `smc plan` con fichero inexistente o YAML mal formado escriben `ERROR: <ruta>: <motivo>` en stderr y salen con rc=2, sin traceback, igual que `smc evidencias` y `smc compare`. Reutiliza `_ERRORES_DATOS` y `_error` de `smc/cli.py`. Si falla, `smc gap -o` no crea el fichero de salida.
   - No hace: no cambia el YAML válido que no es un mapa (sigue rc=0 con aviso), ni los fallos al escribir en `-o`, ni `smc report`, `smc dashboard` u otros comandos. No toca `smc/gap.py`, `smc/plan.py`, README ni CHANGELOG (lo genera release-please).
@@ -399,6 +399,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Depende: T36
   - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde, con un test por criterio de aceptación de la issue. Contraprueba en una copia temporal, no en el worktree: quitar la captura de errores de `gap` y de `plan` pone en rojo los tests nuevos.
   - Prod: —
+  - Estado: reservada por coordinador-smc-v05 2026-11-05
 
 ## Libro
 
