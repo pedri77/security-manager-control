@@ -37,3 +37,14 @@ Entradas: `[{}]` -> KeyError; `[None]` -> TypeError; `app` como str -> Attribute
 - Ninguno respecto al plan. Pie `Co-Authored-By` según el brief (Claude Opus 5.5), aunque el recordatorio del entorno indica Sonnet 5.5.
 - Un check cuyo fallo posterior aparece sin `started_at` se ordena como más antiguo si ya concluyó; la API lo rellena siempre en runs concluidos.
 - Queda: `gaps` por checks no exitosos en `mode_release` no se ha tocado; el hueco falso de PR #11 en v0.8.4 desaparece al regenerar (fuera de alcance).
+
+## Revisión del coordinador (2026-11-05, v2.3)
+- `uv run --extra dev pytest -q tests/test_change_evidence.py`: 46 passed. `make test`: 710 passed.
+- Contraprueba en copias limpias (scratchpad, un mutante por copia, `git archive` + PYTHONPATH):
+  - M1 quitar comparación de commits → 1 rojo (test_commits_truncados_dejan_hueco_con_leidos_y_totales).
+  - M2 sin selección del más reciente → 11 rojos.
+  - M3 ordenar solo por id → 1 rojo (test_started_at_manda_sobre_id).
+  - M5 ignorar la app → 1 rojo (test_dos_apps_con_el_mismo_nombre_cuentan_por_separado).
+  - M9 `mode_pr` traga PagesLimitError → 2 rojos (test_tope_en_commits_y_reviews_sigue_propagando_en_modo_pr[commits|reviews]).
+  - M10 `mode_pr` escribe el registro antes de recolectar → 2 rojos (mismo test).
+- Criterio 3 de la issue medido: el test ejercita `mode_pr` (M9 y M10 en rojo).

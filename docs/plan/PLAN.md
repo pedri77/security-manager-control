@@ -456,7 +456,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 
 ## Ola 20 (SMC-005)
 
-- [~] **T43** — Huecos fiables en `change_evidence`: commits truncados y checks repetidos
+- [x] **T43** — Huecos fiables en `change_evidence`: commits truncados y checks repetidos
   - Issue: SMC-005 https://github.com/pedri77/security-manager-control/issues/17
   - Hace: en `scripts/change_evidence.py`, `collect_pr` anota un hueco si `pr["commits"]` es mayor que los commits leídos (la API corta en 250 sin error). `collect_pr` se queda con el check-run más reciente de cada par nombre y app, por `started_at` e `id`, sin fiarse del orden de la lista y sin dar por bueno un check que sigue en curso: un fallo superado por un verde no deja hueco, y un verde superado por un fallo o por un check en curso sí. En `tests/test_change_evidence.py`, añade el test con `blind-review` en `success` en la primera página y fallo de lectura en la segunda: el estado se descarta y queda hueco. Corrige la aserción de hueco que hoy no puede fallar. El test del modo PR con tope de páginas ejercita `mode_pr`, o se renombra a lo que prueba. Cumple los criterios de aceptación de la issue.
   - No hace: no toca `is_release_pr`, los workflows ni la plantilla de enjambre-agentes. No cambia el formato del registro de cambio. No regenera el evidence pack de v0.8.4. No toca versión ni CHANGELOG (los lleva release-please).
@@ -464,7 +464,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Depende: T38, T42
   - Verifica: `uv run --extra dev pytest -q tests/test_change_evidence.py` y `make test` en verde. Un test por criterio de la issue, con `gh` simulado. Hay test con los check-runs en los dos órdenes de lista, y con dos apps distintas que comparten nombre de check. Contraprueba en una copia temporal, con resultado medido test a test en el informe: quitar la comparación de `pr["commits"]`, quitar la selección del check-run más reciente, ordenar solo por `id` o solo por `started_at` si el test lo distingue, e ignorar la app deben poner en rojo al menos un test cada uno.
   - Prod: —
-  - Estado: reservada por coordinador-smc-f2p 2026-11-05
+  - Estado: hecha en 946b4fedd4b61d7d1a55d99520f9e5e9753a481c · evidencia informes/T43-dev-proyecto.md
 
 ## Libro
 
@@ -488,6 +488,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 - 2026-11-05 · T39 (SMC-004): `smc gap` y `smc plan` capturan `_ERRORES_DATOS` y dan `ERROR: <ruta>: <motivo>` rc=2; `gap -o` no crea fichero si falla. 654 tests; contraprueba (quitar la captura) = 6 de 9 tests nuevos en rojo, los 3 de evaluación válida siguen verdes. Un ValueError interno de `analyse` también sale ahora como ERROR rc=2.
 - 2026-11-05 · T40 (SMC-004): `gap` y `plan` capturan también `RecursionError` (YAML con 500 `[` da rc=2 sin traceback); `_ERRORES_DATOS` intacto. Referencias `tests/golden/{gap,gap_o,plan}.md` regeneradas por el coordinador desde `0c1a5be` y idénticas (cmp). 677 tests; 5 mutantes en copia limpia, todos en rojo.
 - 2026-11-05 · T41 (SMC-004): `_load` de `gap.py` convierte KeyError/IndexError/AttributeError de `yaml.safe_load` (tags explícitos rotos) en ValueError; `try` solo sobre `safe_load`. Cambia también `evidencias`, `compare` y `soa` (decisión de David). 690 tests; 4 mutantes en copia limpia, todos en rojo (4, 6, 3 y 13 tests).
+- 2026-11-05 · T43 (SMC-005): `collect_pr` anota hueco si `pr["commits"]` supera los leídos y `latest_check_runs` deja un check-run por (nombre, app) por (started_at, id); un en curso sin `started_at` supera al verde. Aserción de hueco con `blind-review` real; test del modo PR ejercita `mode_pr`. 710 tests; 6 mutantes en copia limpia, todos en rojo (incluidos 2 sobre `mode_pr`).
 - 2026-11-05 · T42 (SMC-004): `_load` convierte también `TypeError` (`a: !!timestamp {=}`); caso `tag-timestamp-mapa` en `MALAS`, 693 tests. Contraprueba en copia (quitar TypeError) = 3 en rojo: gap 2 (error_limpio, salida), plan 1 (error_limpio).
 
 ### Supuestos
