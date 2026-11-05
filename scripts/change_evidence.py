@@ -65,6 +65,8 @@ def run(cmd: list[str]) -> str:
 # `gh` escribe dos formas en stderr: «gh: <mensaje> (HTTP 503)» si el cuerpo es JSON con `message`, y
 # «gh: HTTP 503» (sin paréntesis, línea propia) si es HTML, vacío o JSON sin `message`.
 HTTP_STATUS_RE = re.compile(r"\(HTTP (\d{3})\)|^gh: HTTP (\d{3})[ \t]*$", re.MULTILINE)
+# Con cuerpo vacío y `Content-Type: application/json`, `gh` escribe solo esta línea, sin código de estado.
+EMPTY_BODY_LINE = "unexpected end of JSON input"
 RETRIES = 2  # reintentos tras el primer intento: 3 llamadas como máximo
 RETRY_DELAY = 1.0  # segundos; se multiplica por el número de reintento
 
@@ -80,14 +82,25 @@ def http_status(e: subprocess.CalledProcessError) -> int | None:
     return int(found[-1]) if found else None
 
 
+def is_transient(e: subprocess.CalledProcessError) -> bool:
+    """5xx con código en stderr, o, sin código, una línea que es exactamente el aviso de cuerpo vacío.
+
+    Sin código no se distingue un 5xx de otro estado (un 403 con cuerpo vacío también se reintenta; es un GET).
+    Con código manda el código: un 403 que cita el texto en su mensaje no se reintenta.
+    """
+    status = http_status(e)
+    if status is not None:
+        return 500 <= status <= 599
+    return EMPTY_BODY_LINE in (e.stderr or "").splitlines()
+
+
 def gh_json(path: str) -> object:
     cmd = ["gh", "api", "-H", "Accept: application/vnd.github+json", path]
     for attempt in range(RETRIES + 1):
         try:
             return json.loads(run(cmd))
         except subprocess.CalledProcessError as e:
-            status = http_status(e)
-            if attempt == RETRIES or status is None or not 500 <= status <= 599:
+            if attempt == RETRIES or not is_transient(e):
                 raise
             time.sleep(RETRY_DELAY * (attempt + 1))
     raise AssertionError("inalcanzable")
