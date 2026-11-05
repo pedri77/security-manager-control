@@ -26,7 +26,7 @@ Revisión de ola: 3
 |---|---|---|
 | smc | coordinador | T01, T02, T03, T04, T05, T06, T07, T08 |
 | smc-v05 | coordinador | T09, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28, T29, T30, T31, T32, T33, T34, T35, T36 |
-| smc-f2p | coordinador | T37, T38, T39, T40, T41, T42 |
+| smc-f2p | coordinador | T37, T38, T39, T40, T41, T42, T43, T44 |
 
 ## Ola 1
 
@@ -454,6 +454,28 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en 21109a944fdd166f1c898ecfa2707ade595a732b · evidencia informes/T42-dev-proyecto.md
 
+## Ola 20 (SMC-005)
+
+- [x] **T43** — Huecos fiables en `change_evidence`: commits truncados y checks repetidos
+  - Issue: SMC-005 https://github.com/pedri77/security-manager-control/issues/17
+  - Hace: en `scripts/change_evidence.py`, `collect_pr` anota un hueco si `pr["commits"]` es mayor que los commits leídos (la API corta en 250 sin error). `collect_pr` se queda con el check-run más reciente de cada par nombre y app, por `started_at` e `id`, sin fiarse del orden de la lista y sin dar por bueno un check que sigue en curso: un fallo superado por un verde no deja hueco, y un verde superado por un fallo o por un check en curso sí. En `tests/test_change_evidence.py`, añade el test con `blind-review` en `success` en la primera página y fallo de lectura en la segunda: el estado se descarta y queda hueco. Corrige la aserción de hueco que hoy no puede fallar. El test del modo PR con tope de páginas ejercita `mode_pr`, o se renombra a lo que prueba. Cumple los criterios de aceptación de la issue.
+  - No hace: no toca `is_release_pr`, los workflows ni la plantilla de enjambre-agentes. No cambia el formato del registro de cambio. No regenera el evidence pack de v0.8.4. No toca versión ni CHANGELOG (los lleva release-please).
+  - Toca: `scripts/change_evidence.py`, `tests/test_change_evidence.py`, `docs/plan/informes/T43-dev-proyecto.md`
+  - Depende: T38, T42
+  - Verifica: `uv run --extra dev pytest -q tests/test_change_evidence.py` y `make test` en verde. Un test por criterio de la issue, con `gh` simulado. Hay test con los check-runs en los dos órdenes de lista, y con dos apps distintas que comparten nombre de check. Contraprueba en una copia temporal, con resultado medido test a test en el informe: quitar la comparación de `pr["commits"]`, quitar la selección del check-run más reciente, ordenar solo por `id` o solo por `started_at` si el test lo distingue, e ignorar la app deben poner en rojo al menos un test cada uno.
+  - Prod: —
+  - Estado: hecha en 946b4fedd4b61d7d1a55d99520f9e5e9753a481c · evidencia informes/T43-dev-proyecto.md
+
+- [x] **T44** — Cerrar el FAIL de revisión ciega del PR #19
+  - Issue: SMC-005 https://github.com/pedri77/security-manager-control/issues/17
+  - Hace: añade en `tests/test_change_evidence.py` un test de `mode_release`, parametrizado con los dos órdenes, que comprueba en `rec["gaps"]` que un fallo superado por un verde no deja «checks no exitosos» y que un verde superado por un fallo sí lo deja; incluye el caso real de PR #11 como regresión. En `latest_check_runs` de `scripts/change_evidence.py`, dentro de cada grupo de nombre y app: si todos los runs tienen `started_at`, gana el mayor (`started_at`, `id`); si alguno no lo tiene, gana el mayor `id`. Así un fallo sin `started_at` no queda tapado por un verde anterior, y un verde antiguo sin `started_at` no tapa un fallo más nuevo.
+  - No hace: no compara con `merged_at`. No cambia la clave nombre y app. No toca `is_release_pr`, los workflows ni la plantilla de enjambre-agentes. No cambia el formato del registro.
+  - Toca: `scripts/change_evidence.py`, `tests/test_change_evidence.py`, `docs/plan/informes/T44-dev-proyecto.md`
+  - Depende: T43
+  - Verifica: `uv run --extra dev pytest -q tests/test_change_evidence.py` y `make test` en verde. Contraprueba en copia temporal, un mutante por copia, con resultado medido test a test en el informe: `failed = []` en `mode_release`, quitar el `gaps.append` de checks no exitosos, comparar por `started_at` con centinela en vez de por `id` cuando falta `started_at`, y comparar siempre solo por `id` deben poner en rojo al menos un test cada uno. Hay test con verde sin `started_at` e id 1 frente a fallo con `started_at` e id 2, en los dos órdenes: gana el fallo.
+  - Prod: —
+  - Estado: hecha en 72e33a6677b5d42074e8ddc6da6892ce2cc62fbc · evidencia informes/T44-dev-proyecto.md
+
 ## Libro
 
 ### Hechos
@@ -476,6 +498,8 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 - 2026-11-05 · T39 (SMC-004): `smc gap` y `smc plan` capturan `_ERRORES_DATOS` y dan `ERROR: <ruta>: <motivo>` rc=2; `gap -o` no crea fichero si falla. 654 tests; contraprueba (quitar la captura) = 6 de 9 tests nuevos en rojo, los 3 de evaluación válida siguen verdes. Un ValueError interno de `analyse` también sale ahora como ERROR rc=2.
 - 2026-11-05 · T40 (SMC-004): `gap` y `plan` capturan también `RecursionError` (YAML con 500 `[` da rc=2 sin traceback); `_ERRORES_DATOS` intacto. Referencias `tests/golden/{gap,gap_o,plan}.md` regeneradas por el coordinador desde `0c1a5be` y idénticas (cmp). 677 tests; 5 mutantes en copia limpia, todos en rojo.
 - 2026-11-05 · T41 (SMC-004): `_load` de `gap.py` convierte KeyError/IndexError/AttributeError de `yaml.safe_load` (tags explícitos rotos) en ValueError; `try` solo sobre `safe_load`. Cambia también `evidencias`, `compare` y `soa` (decisión de David). 690 tests; 4 mutantes en copia limpia, todos en rojo (4, 6, 3 y 13 tests).
+- 2026-11-05 · T44 (SMC-005): `latest_check_runs` decide por grupo (nombre, app): con `started_at` en todos gana (`started_at`, `id`); si falta en alguno, el mayor `id`, sin centinela. 724 tests; 4 mutantes en copia limpia, todos en rojo (m3 centinela: 8, no 4 como decía el informe). Los 3 casos de orden dan el fallo. `dev-proyecto` 1.7 sin evals en verde: cifras del informe no avaladas.
+- 2026-11-05 · T43 (SMC-005): `collect_pr` anota hueco si `pr["commits"]` supera los leídos y `latest_check_runs` deja un check-run por (nombre, app) por (started_at, id); un en curso sin `started_at` supera al verde. Aserción de hueco con `blind-review` real; test del modo PR ejercita `mode_pr`. 710 tests; 6 mutantes en copia limpia, todos en rojo (incluidos 2 sobre `mode_pr`).
 - 2026-11-05 · T42 (SMC-004): `_load` convierte también `TypeError` (`a: !!timestamp {=}`); caso `tag-timestamp-mapa` en `MALAS`, 693 tests. Contraprueba en copia (quitar TypeError) = 3 en rojo: gap 2 (error_limpio, salida), plan 1 (error_limpio).
 
 ### Supuestos

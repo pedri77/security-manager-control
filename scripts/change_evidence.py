@@ -108,6 +108,24 @@ def latest_status(statuses: list[dict], context: str) -> dict | None:
     return max(mine, key=lambda s: (s.get("created_at") or "", s.get("id") or 0), default=None)
 
 
+def latest_check_runs(runs: list[dict]) -> list[dict]:
+    """Un check-run por (nombre, app): el más reciente; no se fía del orden de la lista.
+
+    Por grupo: si todos los runs tienen started_at, gana el mayor (started_at, id); si alguno no lo
+    tiene, gana el mayor id (sin centinela: un run sin fecha no gana por faltarle).
+    """
+    groups: dict[tuple, list[dict]] = {}
+    for r in runs:
+        groups.setdefault((r["name"], (r.get("app") or {}).get("id")), []).append(r)
+    best = []
+    for group in groups.values():
+        if all(r.get("started_at") for r in group):
+            best.append(max(group, key=lambda r: (r["started_at"], r.get("id") or 0)))
+        else:
+            best.append(max(group, key=lambda r: r.get("id") or 0))
+    return best
+
+
 def repo_slug() -> str:
     slug = os.environ.get("GITHUB_REPOSITORY")
     if slug:
@@ -185,6 +203,9 @@ def collect_pr(repo: str, number: int) -> dict:
         maint = False
         gaps.append(f"PR #{number}: no se pudo comprobar si es PR de release ({(e.stderr or '').strip() or e})")
     body = pr.get("body") or ""
+    total = pr.get("commits")
+    if isinstance(total, int) and total > len(commits):  # la API corta en 250 sin error
+        gaps.append(f"PR #{number}: commits truncados por la API (leídos {len(commits)} de {total} totales)")
     messages = [c["commit"]["message"] for c in commits]
     tasks = extract_tasks(body, *messages) or (["MAINT"] if maint else [])
     approvals = sorted({r["user"]["login"] for r in reviews if r.get("state") == "APPROVED"})
@@ -211,7 +232,7 @@ def collect_pr(repo: str, number: int) -> dict:
         "merge_sha": pr.get("merge_commit_sha"),
         "commits": [c["sha"] for c in commits],
         "checks": sorted(
-            ({"name": c["name"], "conclusion": c.get("conclusion") or c.get("status")} for c in checks),
+            ({"name": c["name"], "conclusion": c.get("conclusion") or c.get("status")} for c in latest_check_runs(checks)),
             key=lambda c: c["name"],
         ),
     }
