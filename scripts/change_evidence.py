@@ -108,6 +108,24 @@ def latest_status(statuses: list[dict], context: str) -> dict | None:
     return max(mine, key=lambda s: (s.get("created_at") or "", s.get("id") or 0), default=None)
 
 
+def latest_check_runs(runs: list[dict]) -> list[dict]:
+    """Un check-run por (nombre, app): el más reciente por started_at e id; no se fía del orden de la lista.
+
+    Un run sin concluir y sin started_at se tiene por el más reciente: no se da por bueno un verde anterior.
+    """
+    best: dict[tuple, dict] = {}
+    for r in runs:
+        key = (r["name"], (r.get("app") or {}).get("id"))
+        if key not in best or _run_order(r) > _run_order(best[key]):
+            best[key] = r
+    return list(best.values())
+
+
+def _run_order(r: dict) -> tuple:
+    started = r.get("started_at") or ("\uffff" if not r.get("conclusion") else "")
+    return (started, r.get("id") or 0)
+
+
 def repo_slug() -> str:
     slug = os.environ.get("GITHUB_REPOSITORY")
     if slug:
@@ -185,6 +203,9 @@ def collect_pr(repo: str, number: int) -> dict:
         maint = False
         gaps.append(f"PR #{number}: no se pudo comprobar si es PR de release ({(e.stderr or '').strip() or e})")
     body = pr.get("body") or ""
+    total = pr.get("commits")
+    if isinstance(total, int) and total > len(commits):  # la API corta en 250 sin error
+        gaps.append(f"PR #{number}: commits truncados por la API (leídos {len(commits)} de {total} totales)")
     messages = [c["commit"]["message"] for c in commits]
     tasks = extract_tasks(body, *messages) or (["MAINT"] if maint else [])
     approvals = sorted({r["user"]["login"] for r in reviews if r.get("state") == "APPROVED"})
@@ -211,7 +232,7 @@ def collect_pr(repo: str, number: int) -> dict:
         "merge_sha": pr.get("merge_commit_sha"),
         "commits": [c["sha"] for c in commits],
         "checks": sorted(
-            ({"name": c["name"], "conclusion": c.get("conclusion") or c.get("status")} for c in checks),
+            ({"name": c["name"], "conclusion": c.get("conclusion") or c.get("status")} for c in latest_check_runs(checks)),
             key=lambda c: c["name"],
         ),
     }
