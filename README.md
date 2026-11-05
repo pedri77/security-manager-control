@@ -9,7 +9,7 @@
 Qué exige la normativa a cada cliente, qué tiene ya implantado, con qué evidencias y qué falta, priorizado.<br>
 NIS2 · ENS · ISO 27001 · SOC · verticales · tecnologías · vulnerabilidades por protocolo · mapa de red · pentest y purple team · IA (RIA) · PMO · evolución entre evaluaciones · salida para auditor. En local, sin servidor y sin que los datos salgan de tu equipo.
 
-[![versión](https://img.shields.io/static/v1?label=versión&message=0.8.3&color=3cf58a&style=for-the-badge&labelColor=07090c)](CHANGELOG.md) <!-- x-release-please-version -->
+[![versión](https://img.shields.io/static/v1?label=versión&message=0.8.4&color=3cf58a&style=for-the-badge&labelColor=07090c)](CHANGELOG.md) <!-- x-release-please-version -->
 [![CI](https://github.com/pedri77/security-manager-control/actions/workflows/tests.yml/badge.svg)](https://github.com/pedri77/security-manager-control/actions/workflows/tests.yml)
 [![tests](https://img.shields.io/badge/tests-645%20en%20verde-3cf58a?style=for-the-badge&labelColor=07090c)](tests/)
 [![python](https://img.shields.io/badge/python-3.10+-3cf58a?style=for-the-badge&logo=python&logoColor=3cf58a&labelColor=07090c)](pyproject.toml)

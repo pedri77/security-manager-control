@@ -2,6 +2,15 @@
 
 Formato basado en Keep a Changelog. Versionado semántico.
 
+## [0.8.4](https://github.com/pedri77/security-manager-control/compare/v0.8.3...v0.8.4) (2026-11-05)
+
+
+### Correcciones
+
+* **ci:** descartar como PR de release el que llena la página de ficheros ([#9](https://github.com/pedri77/security-manager-control/issues/9)) ([559a456](https://github.com/pedri77/security-manager-control/commit/559a45634d3ca37a5e3188199b73d230ffee793a))
+* **cli:** error limpio en smc gap y smc plan ([#16](https://github.com/pedri77/security-manager-control/issues/16)) ([8e12bc8](https://github.com/pedri77/security-manager-control/commit/8e12bc8b361dadc8dc35551f2d7c3dbe5a1d1b8d))
+* **f2p:** paginar las lecturas de la API en collect_pr ([#15](https://github.com/pedri77/security-manager-control/issues/15)) ([8adfcc8](https://github.com/pedri77/security-manager-control/commit/8adfcc838bacd70712244f973000ff78e03c08de))
+
 ## [0.8.3](https://github.com/pedri77/security-manager-control/compare/v0.8.2...v0.8.3) (2026-11-04)
 
 
