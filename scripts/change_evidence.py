@@ -62,17 +62,21 @@ def run(cmd: list[str]) -> str:
     return subprocess.run(cmd, check=True, capture_output=True, text=True).stdout.strip()
 
 
-HTTP_STATUS_RE = re.compile(r"\(HTTP (\d{3})\)")
+# `gh` escribe dos formas en stderr: «gh: <mensaje> (HTTP 503)» si el cuerpo es JSON con `message`, y
+# «gh: HTTP 503» (sin paréntesis, línea propia) si es HTML, vacío o JSON sin `message`.
+HTTP_STATUS_RE = re.compile(r"\(HTTP (\d{3})\)|^gh: HTTP (\d{3})[ \t]*$", re.MULTILINE)
 RETRIES = 2  # reintentos tras el primer intento: 3 llamadas como máximo
 RETRY_DELAY = 1.0  # segundos; se multiplica por el número de reintento
 
 
 def http_status(e: subprocess.CalledProcessError) -> int | None:
-    """Código que `gh` escribe al final del error (`gh: <mensaje> (HTTP <código>)`); el último gana.
+    """Código de estado que `gh` escribe en stderr: `gh: <mensaje> (HTTP <código>)` o `gh: HTTP <código>`.
+
+    Cuenta la última aparición. Sin código reconocible devuelve None.
 
     No se busca un número suelto: un 403 puede citar «HTTP 500» en su mensaje.
     """
-    found = HTTP_STATUS_RE.findall(e.stderr or "")
+    found = [m.group(1) or m.group(2) for m in HTTP_STATUS_RE.finditer(e.stderr or "")]
     return int(found[-1]) if found else None
 
 
