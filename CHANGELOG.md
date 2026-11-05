@@ -2,6 +2,13 @@
 
 Formato basado en Keep a Changelog. Versionado semántico.
 
+## [0.8.5](https://github.com/pedri77/security-manager-control/compare/v0.8.4...v0.8.5) (2026-11-05)
+
+
+### Correcciones
+
+* **f2p:** huecos fiables en change_evidence ([#19](https://github.com/pedri77/security-manager-control/issues/19)) ([e56a2f3](https://github.com/pedri77/security-manager-control/commit/e56a2f346221009d61fd4782c2742fe4a765362d))
+
 ## [0.8.4](https://github.com/pedri77/security-manager-control/compare/v0.8.3...v0.8.4) (2026-11-05)
 
 
