@@ -26,7 +26,7 @@ Revisión de ola: 3
 |---|---|---|
 | smc | coordinador | T01, T02, T03, T04, T05, T06, T07, T08 |
 | smc-v05 | coordinador | T09, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28, T29, T30, T31, T32, T33, T34, T35, T36 |
-| smc-f2p | coordinador | T37, T38, T39, T40, T41, T42, T43 |
+| smc-f2p | coordinador | T37, T38, T39, T40, T41, T42, T43, T44 |
 
 ## Ola 1
 
@@ -465,6 +465,15 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Verifica: `uv run --extra dev pytest -q tests/test_change_evidence.py` y `make test` en verde. Un test por criterio de la issue, con `gh` simulado. Hay test con los check-runs en los dos órdenes de lista, y con dos apps distintas que comparten nombre de check. Contraprueba en una copia temporal, con resultado medido test a test en el informe: quitar la comparación de `pr["commits"]`, quitar la selección del check-run más reciente, ordenar solo por `id` o solo por `started_at` si el test lo distingue, e ignorar la app deben poner en rojo al menos un test cada uno.
   - Prod: —
   - Estado: hecha en 946b4fedd4b61d7d1a55d99520f9e5e9753a481c · evidencia informes/T43-dev-proyecto.md
+
+- [ ] **T44** — Cerrar el FAIL de revisión ciega del PR #19
+  - Issue: SMC-005 https://github.com/pedri77/security-manager-control/issues/17
+  - Hace: añade en `tests/test_change_evidence.py` un test de `mode_release`, parametrizado con los dos órdenes, que comprueba en `rec["gaps"]` que un fallo superado por un verde no deja «checks no exitosos» y que un verde superado por un fallo sí lo deja; incluye el caso real de PR #11 como regresión. En `latest_check_runs` de `scripts/change_evidence.py`, un run sin `started_at` cuenta como el más reciente aunque ya haya concluido, de modo que un fallo concluido sin `started_at` no queda tapado por un verde anterior.
+  - No hace: no compara con `merged_at`. No cambia la clave nombre y app. No toca `is_release_pr`, los workflows ni la plantilla de enjambre-agentes. No cambia el formato del registro.
+  - Toca: `scripts/change_evidence.py`, `tests/test_change_evidence.py`, `docs/plan/informes/T44-dev-proyecto.md`
+  - Depende: T43
+  - Verifica: `uv run --extra dev pytest -q tests/test_change_evidence.py` y `make test` en verde. Contraprueba en copia temporal, un mutante por copia, con resultado medido test a test en el informe: `failed = []` en `mode_release`, quitar el `gaps.append` de checks no exitosos, y aplicar el centinela solo a runs en curso deben poner en rojo al menos un test cada uno.
+  - Prod: —
 
 ## Libro
 
