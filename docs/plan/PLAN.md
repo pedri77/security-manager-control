@@ -402,7 +402,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en 97e4d3c546382d4be9c9140d02658174b4047f82 · evidencia informes/T37-dev-proyecto.md
 
-- [~] **T38** — Tope de páginas como hueco (FAIL de revisión ciega del PR #15)
+- [x] **T38** — Tope de páginas como hueco (FAIL de revisión ciega del PR #15)
   - Issue: SMC-003 https://github.com/pedri77/security-manager-control/issues/13
   - Hace: el error que lanza `gh_pages` al superar `MAX_PAGES` se trata igual que un error de lectura: en `collect_pr` queda como hueco al leer checks o estados, y `mode_release` no aborta y escribe el pack con el hueco anotado, también si el tope salta en commits o reviews. Añade test del desempate por `id` de `latest_status`: dos estados con el mismo `created_at` y distinto resultado.
   - No hace: no cambia `PER_PAGE`, `MAX_PAGES`, `is_release_pr`, los workflows ni la plantilla. No cambia el comportamiento ante errores en modo PR para commits y reviews.
@@ -410,7 +410,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Depende: T37
   - Verifica: `uv run --extra dev pytest -q tests/test_change_evidence.py` y `make test` en verde; test del tope en checks, en estados y en modo release; contraprueba anotada: si el tope corta en silencio, o si el `except` no lo captura, esos tests fallan; si `latest_status` ordena solo por `created_at`, el test de desempate falla.
   - Prod: —
-  - Estado: reservada por coordinador-smc-f2p 2026-11-05
+  - Estado: hecha en 08fba06dab59fb502ed46caa1470ca942ad8a79b · evidencia informes/T38-dev-proyecto.md
 
 ## Libro
 
@@ -430,6 +430,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 - 2026-11-03 · T13: 8 casos de uso con `deteccion`, `playbook`, `vertical`; 7 playbooks nuevos PB-UC-002..008; `smc.mitre` (niveles 1-5, export Navigator, ATT&CK "16"). 9 tests nuevos.
 - 2026-11-03 · Main tras fusionar T09-T13 (sin conflictos, en orden T09, T10, T11, T12, T13): 151 tests verdes (78 + 28 + 11 + 16 + 9 + 9).
 - 2026-11-05 · T37: `collect_pr` pagina con `gh_pages` (per_page=100, tope 50 páginas que falla como hueco); `blind-review` se lee de `commits/<sha>/statuses` y cuenta el más reciente por (created_at, id). `/status` vs `/statuses` no contrastado en vivo con repetidos. Límite GitHub: 250 commits por PR. 654 tests verdes.
+- 2026-11-05 · T38: `PagesLimitError` (subclase de RuntimeError) capturada con `READ_ERRORS` en checks, estados y `mode_release`: el tope es hueco, no aborta; commits y reviews siguen propagando en modo PR. Desempate por `id` con test. 665 tests; contraprueba (except sin PagesLimitError en release) = 2 en rojo.
 
 ### Supuestos
 - La tabla del Anexo II del RD 311/2022 se puede reconstruir con fiabilidad suficiente; lo dudoso va con `verificar: true`.
