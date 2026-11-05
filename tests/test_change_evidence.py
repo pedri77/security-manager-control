@@ -629,3 +629,122 @@ def test_error_con_stderr_none_no_rompe_ni_se_reintenta(ce, monkeypatch):
 def test_exito_a_la_primera_no_espera(ce, monkeypatch):
     llamadas, esperas = _gh_simulado(ce, monkeypatch, ['{"ok": 1}'])
     assert ce.gh_json("x") == {"ok": 1} and len(llamadas) == 1 and esperas == []
+
+
+# --- T47: formatos reales de stderr de gh 2.89.0 (copiados de la salida medida contra un servidor local) ---
+# Con cuerpo JSON con `message`: «gh: Server Error (HTTP 500)». Con HTML, vacío o JSON sin `message`: «gh: HTTP 502».
+@pytest.mark.parametrize("stderr,esperado", [
+    ("gh: Server Error (HTTP 500)\n", 500),
+    ("gh: HTTP 500\n", 500),   # cuerpo JSON `{}` sin message
+    ("gh: HTTP 502\n", 502),   # cuerpo HTML
+    ("gh: HTTP 503\n", 503),   # cuerpo HTML
+    ("gh: HTTP 504\n", 504),   # cuerpo vacío
+    ("gh: HTTP 404\n", 404),
+    ("gh: HTTP 403\n", 403),
+    ("gh: connection reset", None),
+    ("", None),
+])
+def test_http_status_reconoce_los_dos_formatos_de_gh(ce, stderr, esperado):
+    e = subprocess.CalledProcessError(1, "gh", stderr=stderr)
+    assert ce.http_status(e) == esperado
+
+
+@pytest.mark.parametrize("stderr", ["gh: HTTP 502\n", "gh: HTTP 503\n", "gh: HTTP 504\n", "gh: HTTP 500\n"])
+def test_5xx_sin_parentesis_se_reintenta_hasta_tres_llamadas(ce, monkeypatch, stderr):
+    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err(stderr), _err(stderr), _err(stderr), '{"no": 0}'])
+    with pytest.raises(subprocess.CalledProcessError) as ei:
+        ce.gh_json("x")
+    assert len(llamadas) == 3 and len(esperas) == 2 and ei.value.stderr == stderr
+
+
+def test_502_sin_parentesis_y_luego_exito(ce, monkeypatch):
+    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err("gh: HTTP 502\n"), '{"ok": 1}'])
+    assert ce.gh_json("x") == {"ok": 1} and len(llamadas) == 2 and len(esperas) == 1
+
+
+def test_503_sin_parentesis_y_luego_502_y_exito(ce, monkeypatch):
+    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err("gh: HTTP 503\n"), _err("gh: HTTP 502\n"), '[1]'])
+    assert ce.gh_json("x") == [1] and len(llamadas) == 3 and len(esperas) == 2
+
+
+@pytest.mark.parametrize("stderr", ["gh: HTTP 404\n", "gh: HTTP 403\n"])
+def test_404_y_403_sin_parentesis_fallan_a_la_primera(ce, monkeypatch, stderr):
+    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err(stderr), '{"ok": 1}'])
+    with pytest.raises(subprocess.CalledProcessError):
+        ce.gh_json("x")
+    assert len(llamadas) == 1 and esperas == []
+
+
+def test_dos_codigos_en_stderr_cuenta_el_ultimo(ce, monkeypatch):
+    e = subprocess.CalledProcessError(1, "gh", stderr="gh: HTTP 500\ngh: Not Found (HTTP 404)\n")
+    assert ce.http_status(e) == 404
+    e = subprocess.CalledProcessError(1, "gh", stderr="gh: Not Found (HTTP 404)\ngh: HTTP 502\n")
+    assert ce.http_status(e) == 502
+    e = subprocess.CalledProcessError(1, "gh", stderr="gh: cita HTTP 500 antes (HTTP 403)\n")
+    assert ce.http_status(e) == 403
+
+
+def test_dos_codigos_el_ultimo_404_no_se_reintenta_aunque_el_primero_sea_5xx(ce, monkeypatch):
+    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err("gh: HTTP 500\ngh: Not Found (HTTP 404)\n"), '{"ok": 1}'])
+    with pytest.raises(subprocess.CalledProcessError):
+        ce.gh_json("x")
+    assert len(llamadas) == 1 and esperas == []
+
+
+def test_dos_codigos_el_ultimo_5xx_se_reintenta_aunque_el_primero_sea_404(ce, monkeypatch):
+    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err("gh: Not Found (HTTP 404)\ngh: HTTP 502\n"), '{"ok": 1}'])
+    assert ce.gh_json("x") == {"ok": 1} and len(llamadas) == 2 and len(esperas) == 1
+
+
+def test_502_sin_parentesis_en_collect_pr_deja_hueco_tras_tres_llamadas(ce, monkeypatch):
+    esperas, llamadas = [], []
+    monkeypatch.setattr(ce.time, "sleep", lambda s: esperas.append(s))
+    fake = FakeGh({})
+
+    def run(cmd):
+        path = cmd[-1]
+        if "/check-runs" in path:
+            llamadas.append(path)
+            raise subprocess.CalledProcessError(1, cmd, stderr="gh: HTTP 502\n")
+        return json.dumps(fake(path))
+    monkeypatch.setattr(ce, "run", run)
+    p = ce.collect_pr("o/r", 7)
+    assert any("no se pudieron leer los checks" in g and "HTTP 502" in g for g in p["gaps"])
+    assert len(llamadas) == 3 and len(esperas) == 2
+
+
+# --- T47: corte en merged_at por instante, no por texto ---
+def test_corte_con_merged_at_en_otro_huso_cuenta_el_instante(ce, monkeypatch):
+    # 20:44+01:00 = 19:44Z. El run de 19:45Z es posterior (como texto «19:45» < «20:44+01:00» se quedaría).
+    runs = [_run(1, "ci", "failure", "2026-11-04T19:41:00Z"), _run(2, "ci", "success", "2026-11-04T19:45:00Z")]
+    p = _collect_merged(ce, monkeypatch, runs, merged_at="2026-11-04T20:44:00+01:00")
+    assert _conclusiones(p) == [("ci", "failure")] and p["gaps"] == []
+
+
+def test_corte_con_started_at_en_otro_huso_cuenta_el_instante(ce, monkeypatch):
+    # started 20:30+01:00 = 19:30Z, anterior al merge 19:44Z; como texto «20:30» > «19:44» se descartaría.
+    runs = [_run(1, "ci", "failure", "2026-11-04T20:30:00+01:00"), _run(2, "ci", "success", "2026-11-04T19:50:00Z")]
+    p = _collect_merged(ce, monkeypatch, runs, merged_at="2026-11-04T19:44:00Z")
+    assert _conclusiones(p) == [("ci", "failure")] and p["gaps"] == []
+
+
+def test_corte_en_otro_huso_igual_al_merged_at_se_queda(ce, monkeypatch):
+    runs = [_run(1, "ci", "failure", "2026-11-04T19:44:00Z"), _run(2, "ci", "success", "2026-11-04T20:44:00+01:00")]
+    p = _collect_merged(ce, monkeypatch, runs, merged_at="2026-11-04T19:44:00Z")
+    assert _conclusiones(p) == [("ci", "success")]
+
+
+# --- T47: dos apps con el mismo nombre de check ---
+def test_dos_apps_homonimas_solo_la_que_se_queda_sin_runs_deja_hueco(ce, monkeypatch):
+    runs = [_run(1, "ci", "success", T41, app=1), _run(2, "ci", "success", T45, app=2)]
+    p = _collect_merged(ce, monkeypatch, runs)
+    assert _conclusiones(p) == [("ci", "success")]
+    assert len(p["gaps"]) == 1 and "PR #7" in p["gaps"][0] and "ci" in p["gaps"][0]
+
+
+def test_dos_apps_homonimas_ambas_con_runs_previos_no_dejan_hueco(ce, monkeypatch):
+    runs = [_run(1, "ci", "success", T41, app=1), _run(2, "ci", "failure", T41, app=2),
+            _run(3, "ci", "success", T45, app=2)]
+    p = _collect_merged(ce, monkeypatch, runs)
+    assert sorted(_conclusiones(p)) == [("ci", "failure"), ("ci", "success")]
+    assert p["gaps"] == []
