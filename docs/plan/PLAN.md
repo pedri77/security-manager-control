@@ -500,7 +500,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en 2889c5b · evidencia informes/T46-dev-proyecto.md
 
-- [ ] **T47** — Cerrar el FAIL de revisión ciega del PR #24
+- [~] **T47** — Cerrar el FAIL de revisión ciega del PR #24
   - Issue: SMC-007 https://github.com/pedri77/security-manager-control/issues/21
   - Hace: en `scripts/change_evidence.py`, `http_status` reconoce los dos formatos reales de `gh` en stderr: `gh: <mensaje> (HTTP 503)` y `gh: HTTP 503`, este último cuando el cuerpo no es JSON con `message`. Cuenta la última aparición del código, para que un 403 cuyo mensaje cita `HTTP 500` no se reintente. Corrige la docstring. En `tests/test_change_evidence.py`, añade tests de: `gh: HTTP 502` y `gh: HTTP 503` con reintento; `gh: HTTP 404` sin reintento; stderr con dos códigos, donde cuenta el último; corte en `merged_at` con fechas en otro huso (`+01:00`), donde cuenta el instante y no el texto; y dos apps con el mismo nombre de check, donde solo la que se queda sin runs por el corte deja hueco.
   - No hace: no corta por `completed_at` ni toca `latest_status`. No cambia `is_release_pr`, `latest_check_runs` ni los workflows. No cambia el formato del registro. No toca la plantilla de enjambre-agentes, versión ni CHANGELOG.
@@ -508,7 +508,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Depende: T46
   - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde. Prueba con el binario real de `gh` contra un servidor local, contando peticiones en el servidor: 500 con JSON, 502 con HTML, 503 con HTML y 504 con cuerpo vacío dan 3 peticiones cada uno; 403 y 404, con JSON y con HTML, dan 1. Resultado en el informe. Contraprueba en copia temporal, un mutante por copia, con resultado medido test a test: volver a `r"\(HTTP (\d{3})\)"`; tomar la primera aparición en vez de la última; comparar el corte como texto; `_utc` sin zona; quitar la app de la clave de runs conservados. Cada uno debe poner en rojo al menos un test.
   - Prod: —
-  - Estado: libre
+  - Estado: reservada por coordinador-smc-f2p 2026-11-05
 
 ## Libro
 
