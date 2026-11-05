@@ -26,7 +26,7 @@ Revisión de ola: 3
 |---|---|---|
 | smc | coordinador | T01, T02, T03, T04, T05, T06, T07, T08 |
 | smc-v05 | coordinador | T09, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28, T29, T30, T31, T32, T33, T34, T35, T36 |
-| smc-f2p | coordinador | T37, T38, T39, T40, T41, T42 |
+| smc-f2p | coordinador | T37, T38, T39, T40, T41, T42, T43 |
 
 ## Ola 1
 
@@ -453,6 +453,17 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde. `a: !!timestamp {=}` está en `MALAS`, para `gap` y para `plan`. `git diff` no toca `tests/golden/`. Contraprueba en una copia temporal, con `PYTHONPATH` apuntando a esa copia y lanzando desde ella: quitar `TypeError` de la tupla debe poner en rojo al menos un test de `tests/test_cli_errores.py`, para `gap` y para `plan`. El informe da el resultado medido, test a test.
   - Prod: —
   - Estado: hecha en 21109a944fdd166f1c898ecfa2707ade595a732b · evidencia informes/T42-dev-proyecto.md
+
+## Ola 20 (SMC-005)
+
+- [ ] **T43** — Huecos fiables en `change_evidence`: commits truncados y checks repetidos
+  - Issue: SMC-005 https://github.com/pedri77/security-manager-control/issues/17
+  - Hace: en `scripts/change_evidence.py`, `collect_pr` anota un hueco si `pr["commits"]` es mayor que los commits leídos (la API corta en 250 sin error). `collect_pr` se queda con el check-run más reciente de cada par nombre y app, por `started_at` e `id`, sin fiarse del orden de la lista y sin dar por bueno un check que sigue en curso: un fallo superado por un verde no deja hueco, y un verde superado por un fallo o por un check en curso sí. En `tests/test_change_evidence.py`, añade el test con `blind-review` en `success` en la primera página y fallo de lectura en la segunda: el estado se descarta y queda hueco. Corrige la aserción de hueco que hoy no puede fallar. El test del modo PR con tope de páginas ejercita `mode_pr`, o se renombra a lo que prueba. Cumple los criterios de aceptación de la issue.
+  - No hace: no toca `is_release_pr`, los workflows ni la plantilla de enjambre-agentes. No cambia el formato del registro de cambio. No regenera el evidence pack de v0.8.4. No toca versión ni CHANGELOG (los lleva release-please).
+  - Toca: `scripts/change_evidence.py`, `tests/test_change_evidence.py`, `docs/plan/informes/T43-dev-proyecto.md`
+  - Depende: T38, T42
+  - Verifica: `uv run --extra dev pytest -q tests/test_change_evidence.py` y `make test` en verde. Un test por criterio de la issue, con `gh` simulado. Hay test con los check-runs en los dos órdenes de lista, y con dos apps distintas que comparten nombre de check. Contraprueba en una copia temporal, con resultado medido test a test en el informe: quitar la comparación de `pr["commits"]`, quitar la selección del check-run más reciente, ordenar solo por `id` o solo por `started_at` si el test lo distingue, e ignorar la app deben poner en rojo al menos un test cada uno.
+  - Prod: —
 
 ## Libro
 
