@@ -65,6 +65,19 @@ def gh_json(path: str) -> object:
     return json.loads(run(["gh", "api", "-H", "Accept: application/vnd.github+json", path]))
 
 
+class PagesLimitError(RuntimeError):
+    """Se alcanzó MAX_PAGES sin página corta: la lectura quedó incompleta (se trata como hueco)."""
+
+
+def reason(e: Exception) -> str:
+    """Motivo legible de un fallo de lectura; no depende de que el error traiga stderr."""
+    if isinstance(e, subprocess.CalledProcessError):
+        return (e.stderr or "").strip() or str(e)
+    return str(e)
+
+
+READ_ERRORS = (subprocess.CalledProcessError, PagesLimitError)
+
 PER_PAGE = 100
 MAX_PAGES = 50  # tope de seguridad: si se alcanza, error (hueco) en vez de cortar en silencio
 
@@ -86,7 +99,7 @@ def gh_pages(path: str, key: str | None = None) -> list:
         items.extend(chunk)
         if len(chunk) < PER_PAGE:
             return items
-    raise RuntimeError(f"{path}: más de {MAX_PAGES} páginas de {PER_PAGE}; lectura incompleta")
+    raise PagesLimitError(f"{path}: más de {MAX_PAGES} páginas de {PER_PAGE}; lectura incompleta")
 
 
 def latest_status(statuses: list[dict], context: str) -> dict | None:
@@ -154,14 +167,14 @@ def collect_pr(repo: str, number: int) -> dict:
     gaps: list[str] = []
     try:
         checks = gh_pages(f"repos/{repo}/commits/{head_sha}/check-runs", "check_runs")
-    except subprocess.CalledProcessError as e:
+    except READ_ERRORS as e:
         checks = []
-        gaps.append(f"PR #{number}: no se pudieron leer los checks ({(e.stderr or '').strip() or e})")
+        gaps.append(f"PR #{number}: no se pudieron leer los checks ({reason(e)})")
     try:
         statuses = gh_pages(f"repos/{repo}/commits/{head_sha}/statuses")
-    except subprocess.CalledProcessError as e:
+    except READ_ERRORS as e:
         statuses = []
-        gaps.append(f"PR #{number}: no se pudo leer el estado blind-review ({(e.stderr or '').strip() or e})")
+        gaps.append(f"PR #{number}: no se pudo leer el estado blind-review ({reason(e)})")
     blind = latest_status(statuses, BLIND_REVIEW_CONTEXT)
 
     author = pr["user"]["login"]
@@ -319,10 +332,10 @@ def mode_release(args: argparse.Namespace) -> int:
             seen.add(n)
             try:
                 p = collect_pr(repo, n)
-            except subprocess.CalledProcessError as e:
+            except READ_ERRORS as e:
                 # La release ya existe: un fallo aquí no puede dejarla sin SBOM ni evidencias.
                 changes.append(c)
-                gaps.append(f"PR #{n} no se pudo leer ({(e.stderr or '').strip() or e})")
+                gaps.append(f"PR #{n} no se pudo leer ({reason(e)})")
                 continue
             failed = [ch["name"] for ch in p["checks"] if ch["conclusion"] not in ("success", "skipped", "neutral")]
             p["ci_status"] = "✅" if not failed else "❌ " + ", ".join(failed)
