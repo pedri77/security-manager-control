@@ -424,7 +424,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en 2877f634a68b028cad5cb174960f0f6cbf1441b8 · evidencia informes/T39-dev-proyecto.md
 
-- [ ] **T40** — Cerrar el FAIL de revisión ciega del PR #16
+- [~] **T40** — Cerrar el FAIL de revisión ciega del PR #16
   - Issue: SMC-004 https://github.com/pedri77/security-manager-control/issues/14
   - Hace: (1) `smc gap` y `smc plan` capturan también `RecursionError`, que PyYAML lanza con anidamiento profundo: un YAML con 500 corchetes sin cerrar da `ERROR: <ruta>: <motivo>` y rc=2, sin traceback. (2) Tests de referencia para el criterio 5 de la issue: la salida de `smc gap`, de `smc gap -o` y de `smc plan` con una evaluación válida y `--hoy` fijo se compara con ficheros de referencia generados con el código de `0c1a5be`, anterior a este cambio, nunca con el código nuevo. El test `test_evaluacion_valida_sigue_igual` deja de comparar dos ejecuciones entre sí.
   - No hace: no añade `RecursionError` a `_ERRORES_DATOS`: cambiaría otros comandos, fuera de alcance. No toca `smc evidencias`, `smc/gap.py` ni `smc/plan.py`. No reordena la captura de `ValueError` y `OSError`.
@@ -432,6 +432,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Depende: T39
   - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde. Contraprueba en una copia temporal, no en el worktree, y con `PYTHONPATH` apuntando a esa copia (la instalación editable importa `smc` de otro sitio): cada mutante por separado debe poner en rojo al menos un test de `tests/test_cli_errores.py`: quitar `RecursionError` de `gap`, quitarlo de `plan`, `print(report + "X")`, `write_text(report + "X")`, y añadir una línea a `run_plan`. El informe da el resultado medido de cada mutante, test a test.
   - Prod: —
+  - Estado: reservada por coordinador-smc-f2p 2026-11-05
 
 ## Libro
 
