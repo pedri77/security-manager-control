@@ -109,21 +109,21 @@ def latest_status(statuses: list[dict], context: str) -> dict | None:
 
 
 def latest_check_runs(runs: list[dict]) -> list[dict]:
-    """Un check-run por (nombre, app): el más reciente por started_at e id; no se fía del orden de la lista.
+    """Un check-run por (nombre, app): el más reciente; no se fía del orden de la lista.
 
-    Un run sin concluir y sin started_at se tiene por el más reciente: no se da por bueno un verde anterior.
+    Por grupo: si todos los runs tienen started_at, gana el mayor (started_at, id); si alguno no lo
+    tiene, gana el mayor id (sin centinela: un run sin fecha no gana por faltarle).
     """
-    best: dict[tuple, dict] = {}
+    groups: dict[tuple, list[dict]] = {}
     for r in runs:
-        key = (r["name"], (r.get("app") or {}).get("id"))
-        if key not in best or _run_order(r) > _run_order(best[key]):
-            best[key] = r
-    return list(best.values())
-
-
-def _run_order(r: dict) -> tuple:
-    started = r.get("started_at") or ("\uffff" if not r.get("conclusion") else "")
-    return (started, r.get("id") or 0)
+        groups.setdefault((r["name"], (r.get("app") or {}).get("id")), []).append(r)
+    best = []
+    for group in groups.values():
+        if all(r.get("started_at") for r in group):
+            best.append(max(group, key=lambda r: (r["started_at"], r.get("id") or 0)))
+        else:
+            best.append(max(group, key=lambda r: r.get("id") or 0))
+    return best
 
 
 def repo_slug() -> str:
