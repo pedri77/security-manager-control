@@ -444,7 +444,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en 05ff66c809bf361e6eda3003733c1d4801300115 · evidencia informes/T41-dev-proyecto.md
 
-- [~] **T42** — `_load` convierte también `TypeError` de tags YAML
+- [x] **T42** — `_load` convierte también `TypeError` de tags YAML
   - Issue: SMC-004 https://github.com/pedri77/security-manager-control/issues/14
   - Hace: añade `TypeError` a la tupla de `_load` en `smc/gap.py`. Con `a: !!timestamp {=}`, `yaml.safe_load` lanza `TypeError`, y `smc gap` y `smc plan` dan traceback y rc=1. Tras el cambio dan `ERROR: <ruta>: <motivo>` y rc=2. Hueco medido antes del push de T41, sobre `2ee27ba`.
   - No hace: no toca `smc/cli.py` ni `_ERRORES_DATOS`. No toca `tests/golden/`. No captura `Exception`. No cambia el mensaje de error.
@@ -452,7 +452,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Depende: T41
   - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde. `a: !!timestamp {=}` está en `MALAS`, para `gap` y para `plan`. `git diff` no toca `tests/golden/`. Contraprueba en una copia temporal, con `PYTHONPATH` apuntando a esa copia y lanzando desde ella: quitar `TypeError` de la tupla debe poner en rojo al menos un test de `tests/test_cli_errores.py`, para `gap` y para `plan`. El informe da el resultado medido, test a test.
   - Prod: —
-  - Estado: reservada por coordinador-smc-f2p 2026-11-05
+  - Estado: hecha en 21109a944fdd166f1c898ecfa2707ade595a732b · evidencia informes/T42-dev-proyecto.md
 
 ## Libro
 
@@ -476,6 +476,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 - 2026-11-05 · T39 (SMC-004): `smc gap` y `smc plan` capturan `_ERRORES_DATOS` y dan `ERROR: <ruta>: <motivo>` rc=2; `gap -o` no crea fichero si falla. 654 tests; contraprueba (quitar la captura) = 6 de 9 tests nuevos en rojo, los 3 de evaluación válida siguen verdes. Un ValueError interno de `analyse` también sale ahora como ERROR rc=2.
 - 2026-11-05 · T40 (SMC-004): `gap` y `plan` capturan también `RecursionError` (YAML con 500 `[` da rc=2 sin traceback); `_ERRORES_DATOS` intacto. Referencias `tests/golden/{gap,gap_o,plan}.md` regeneradas por el coordinador desde `0c1a5be` y idénticas (cmp). 677 tests; 5 mutantes en copia limpia, todos en rojo.
 - 2026-11-05 · T41 (SMC-004): `_load` de `gap.py` convierte KeyError/IndexError/AttributeError de `yaml.safe_load` (tags explícitos rotos) en ValueError; `try` solo sobre `safe_load`. Cambia también `evidencias`, `compare` y `soa` (decisión de David). 690 tests; 4 mutantes en copia limpia, todos en rojo (4, 6, 3 y 13 tests).
+- 2026-11-05 · T42 (SMC-004): `_load` convierte también `TypeError` (`a: !!timestamp {=}`); caso `tag-timestamp-mapa` en `MALAS`, 693 tests. Contraprueba en copia (quitar TypeError) = 3 en rojo: gap 2 (error_limpio, salida), plan 1 (error_limpio).
 
 ### Supuestos
 - La tabla del Anexo II del RD 311/2022 se puede reconstruir con fiabilidad suficiente; lo dudoso va con `verificar: true`.
