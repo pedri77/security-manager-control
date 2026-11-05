@@ -444,7 +444,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en 05ff66c809bf361e6eda3003733c1d4801300115 · evidencia informes/T41-dev-proyecto.md
 
-- [ ] **T42** — `_load` convierte también `TypeError` de tags YAML
+- [~] **T42** — `_load` convierte también `TypeError` de tags YAML
   - Issue: SMC-004 https://github.com/pedri77/security-manager-control/issues/14
   - Hace: añade `TypeError` a la tupla de `_load` en `smc/gap.py`. Con `a: !!timestamp {=}`, `yaml.safe_load` lanza `TypeError`, y `smc gap` y `smc plan` dan traceback y rc=1. Tras el cambio dan `ERROR: <ruta>: <motivo>` y rc=2. Hueco medido antes del push de T41, sobre `2ee27ba`.
   - No hace: no toca `smc/cli.py` ni `_ERRORES_DATOS`. No toca `tests/golden/`. No captura `Exception`. No cambia el mensaje de error.
@@ -452,6 +452,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Depende: T41
   - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde. `a: !!timestamp {=}` está en `MALAS`, para `gap` y para `plan`. `git diff` no toca `tests/golden/`. Contraprueba en una copia temporal, con `PYTHONPATH` apuntando a esa copia y lanzando desde ella: quitar `TypeError` de la tupla debe poner en rojo al menos un test de `tests/test_cli_errores.py`, para `gap` y para `plan`. El informe da el resultado medido, test a test.
   - Prod: —
+  - Estado: reservada por coordinador-smc-f2p 2026-11-05
 
 ## Libro
 
