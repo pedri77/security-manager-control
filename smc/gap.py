@@ -375,7 +375,12 @@ def render_markdown(an: Analisis | dict, results=None, warnings=None, registry=N
 
 
 def _load(path: Path) -> dict:
-    return yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    texto = Path(path).read_text(encoding="utf-8")
+    try:
+        return yaml.safe_load(texto)
+    except (KeyError, IndexError, AttributeError) as exc:
+        # Un escalar que no cumple su tag explicito (a: !!bool abc) escapa de PyYAML sin ser YAMLError.
+        raise ValueError("el YAML no es válido (valor que no cumple su tag explícito)") from exc
 
 
 def run(path: Path, hoy: date | None = None, registry=None) -> str:

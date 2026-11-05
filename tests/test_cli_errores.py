@@ -26,10 +26,22 @@ def _profundo(tmp_path):
     return p
 
 
+def _tag(contenido, nombre):
+    def fabrica(tmp_path):
+        p = tmp_path / nombre
+        p.write_text(contenido, encoding="utf-8")
+        return p
+    return fabrica
+
+
 MALAS = [
     pytest.param(_inexistente, id="inexistente"),
     pytest.param(_roto, id="yaml-roto"),
     pytest.param(_profundo, id="yaml-profundo"),
+    pytest.param(_tag("a: !!bool abc\n", "t1.yaml"), id="tag-bool"),
+    pytest.param(_tag('a: !!int ""\n', "t2.yaml"), id="tag-int-vacio"),
+    pytest.param(_tag('a: !!float ""\n', "t3.yaml"), id="tag-float-vacio"),
+    pytest.param(_tag("a: !!timestamp abc\n", "t4.yaml"), id="tag-timestamp"),
 ]
 GOLDEN = Path(__file__).resolve().parent / "golden"
 
@@ -81,3 +93,10 @@ def test_gap_con_salida_valida_igual_que_referencia(tmp_path, capsys):
     assert out.err == ""
     assert out.out == f"Informe escrito en {salida}\n"
     assert salida.read_bytes().decode("utf-8") == _golden("gap_o.md")
+
+
+def test_tag_roto_mensaje_una_linea(tmp_path, capsys):
+    ruta = _tag("a: !!bool abc\n", "t.yaml")(tmp_path)
+    assert main(["gap", str(ruta)]) == 2
+    err = capsys.readouterr().err
+    assert err.count("\n") == 1 and "no es válido" in err
