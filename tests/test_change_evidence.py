@@ -155,6 +155,7 @@ def test_blind_review_repetido_cuenta_el_mas_reciente(ce, monkeypatch, orden):
 @pytest.mark.parametrize("que,suf", [("checks", "check-runs"), ("estados", "statuses")])
 def test_fallo_en_pagina_posterior_queda_como_hueco(ce, monkeypatch, que, suf):
     items = [{"name": str(i), "context": str(i), "id": i, "state": "success"} for i in range(5)]
+    items[0]["context"] = ce.BLIND_REVIEW_CONTEXT  # blind-review en success en la primera página
     fail = lambda path, page: path.endswith(suf) and page == 2
     p = _collect(ce, monkeypatch, {f"/commits/H/{suf}": items}, fail)
     assert any("HTTP 502" in g for g in p["gaps"])
@@ -176,7 +177,9 @@ def _llena(n=6):
 @pytest.mark.parametrize("que,suf", [("checks", "check-runs"), ("estados", "statuses")])
 def test_tope_de_paginas_en_checks_y_estados_es_hueco(ce, monkeypatch, que, suf):
     monkeypatch.setattr(ce, "MAX_PAGES", 3)
-    p = _collect(ce, monkeypatch, {f"/commits/H/{suf}": _llena(6)})  # 3 páginas llenas de 2: sin página corta
+    items = _llena(6)
+    items[0]["context"] = ce.BLIND_REVIEW_CONTEXT  # blind-review en success que debe descartarse
+    p = _collect(ce, monkeypatch, {f"/commits/H/{suf}": items})  # 3 páginas llenas de 2: sin página corta
     assert len(p["gaps"]) == 1
     g = p["gaps"][0]
     assert "más de 3 páginas" in g and "lectura incompleta" in g and "PR #7" in g  # dice qué pasó sin stderr
@@ -190,12 +193,17 @@ def test_justo_en_el_tope_con_pagina_corta_no_es_hueco(ce, monkeypatch):
 
 
 @pytest.mark.parametrize("suf", ["commits", "reviews"])
-def test_tope_en_commits_y_reviews_sigue_propagando_en_modo_pr(ce, monkeypatch, suf):
+def test_tope_en_commits_y_reviews_sigue_propagando_en_modo_pr(ce, monkeypatch, tmp_path, suf):
+    import argparse
     monkeypatch.setattr(ce, "MAX_PAGES", 3)
+    monkeypatch.setattr(ce, "PER_PAGE", 2)
+    monkeypatch.setattr(ce, "repo_slug", lambda: "o/r")
     items = [_commit(i, "x") if suf == "commits" else {"user": {"login": "a"}, "state": "COMMENTED"}
              for i in range(6)]
+    monkeypatch.setattr(ce, "gh_json", FakeGh({f"/pulls/7/{suf}": items}))
     with pytest.raises(ce.PagesLimitError):
-        _collect(ce, monkeypatch, {f"/pulls/7/{suf}": items})
+        ce.mode_pr(argparse.Namespace(pr=7, out=str(tmp_path)))
+    assert not (tmp_path / "change-record.json").exists()
 
 
 def test_mensaje_de_hueco_sin_stderr(ce, monkeypatch):
@@ -235,3 +243,111 @@ def test_desempate_de_latest_status_por_id_con_mismo_created_at(ce):
     b = {"id": 11, "context": ctx, "state": "success", "created_at": t}
     assert ce.latest_status([a, b], ctx)["state"] == "success"
     assert ce.latest_status([b, a], ctx)["state"] == "success"
+
+
+# ───────────── huecos fiables (SMC-005, T43) ─────────────
+def _run(i, name, concl, started, app=1, **kw):
+    r = {"id": i, "name": name, "conclusion": concl, "status": "completed" if concl else "in_progress",
+         "started_at": started, "app": {"id": app}}
+    r.update(kw)
+    return r
+
+
+def _collect_runs(ce, monkeypatch, runs):
+    return _collect(ce, monkeypatch, {"/commits/H/check-runs": runs}, per=100)
+
+
+def _conclusiones(p):
+    return [(c["name"], c["conclusion"]) for c in p["checks"]]  # lista: un duplicado no se esconde
+
+
+def _con_commits_totales(ce, monkeypatch, total, leidos, **extra):
+    commits = [_commit(i, "x") for i in range(leidos)]
+    gh = FakeGh({"/pulls/7/commits": commits})
+    if total is not None:
+        gh.pr["commits"] = total
+    monkeypatch.setattr(ce, "gh_json", gh)
+    monkeypatch.setattr(ce, "PER_PAGE", 100)
+    return ce.collect_pr("o/r", 7)
+
+
+def test_commits_truncados_dejan_hueco_con_leidos_y_totales(ce, monkeypatch):
+    p = _con_commits_totales(ce, monkeypatch, 300, 250)
+    assert len(p["gaps"]) == 1
+    g = p["gaps"][0]
+    assert "PR #7" in g and "250" in g and "300" in g
+
+
+@pytest.mark.parametrize("total", [250, 3, None])
+def test_commits_completos_o_sin_total_no_dejan_hueco(ce, monkeypatch, total):
+    leidos = 250 if total == 250 else 3
+    p = _con_commits_totales(ce, monkeypatch, total, leidos)
+    assert p["gaps"] == []
+
+
+ORDENES = ["nuevo_primero", "viejo_primero"]
+
+
+def _ordena(lst, orden):
+    return lst if orden == "viejo_primero" else list(reversed(lst))
+
+
+@pytest.mark.parametrize("orden", ORDENES)
+def test_fallo_superado_por_verde_no_deja_check_fallido(ce, monkeypatch, orden):
+    runs = _ordena([_run(1, "ci", "failure", "2026-11-04T20:41:00Z"),
+                    _run(2, "ci", "success", "2026-11-04T20:43:00Z")], orden)
+    assert _conclusiones(_collect_runs(ce, monkeypatch, runs)) == [("ci", "success")]
+
+
+@pytest.mark.parametrize("orden", ORDENES)
+def test_verde_superado_por_fallo_cuenta_el_fallo(ce, monkeypatch, orden):
+    runs = _ordena([_run(1, "ci", "success", "2026-11-04T20:41:00Z"),
+                    _run(2, "ci", "failure", "2026-11-04T20:43:00Z")], orden)
+    assert _conclusiones(_collect_runs(ce, monkeypatch, runs)) == [("ci", "failure")]
+
+
+@pytest.mark.parametrize("orden", ORDENES)
+def test_verde_superado_por_check_en_curso_no_se_da_por_bueno(ce, monkeypatch, orden):
+    runs = _ordena([_run(1, "ci", "success", "2026-11-04T20:41:00Z"),
+                    _run(2, "ci", None, "2026-11-04T20:43:00Z")], orden)
+    assert _conclusiones(_collect_runs(ce, monkeypatch, runs)) == [("ci", "in_progress")]
+
+
+def test_started_at_manda_sobre_id(ce, monkeypatch):
+    # el id mayor es el más antiguo: solo started_at lo distingue
+    runs = [_run(9, "ci", "failure", "2026-11-04T20:41:00Z"), _run(2, "ci", "success", "2026-11-04T20:43:00Z")]
+    assert _conclusiones(_collect_runs(ce, monkeypatch, runs)) == [("ci", "success")]
+
+
+def test_id_desempata_con_mismo_started_at(ce, monkeypatch):
+    t = "2026-11-04T20:41:00Z"
+    for runs in ([_run(1, "ci", "failure", t), _run(2, "ci", "success", t)],
+                 [_run(2, "ci", "success", t), _run(1, "ci", "failure", t)]):
+        assert _conclusiones(_collect_runs(ce, monkeypatch, runs)) == [("ci", "success")]
+
+
+def test_dos_apps_con_el_mismo_nombre_cuentan_por_separado(ce, monkeypatch):
+    runs = [_run(1, "ci", "failure", "2026-11-04T20:41:00Z", app=10),
+            _run(2, "ci", "success", "2026-11-04T20:43:00Z", app=20)]
+    p = _collect_runs(ce, monkeypatch, runs)
+    assert sorted((c["name"], c["conclusion"]) for c in p["checks"]) == [("ci", "failure"), ("ci", "success")]
+
+
+def test_check_run_sin_app_no_rompe_y_se_deduplica(ce, monkeypatch):
+    a = _run(1, "ci", "failure", "2026-11-04T20:41:00Z")
+    b = _run(2, "ci", "success", "2026-11-04T20:43:00Z")
+    del a["app"]
+    b["app"] = None
+    assert _conclusiones(_collect_runs(ce, monkeypatch, [a, b])) == [("ci", "success")]
+
+
+def test_formato_de_checks_sin_campos_nuevos_y_ordenado_por_nombre(ce, monkeypatch):
+    runs = [_run(1, "b", "success", "2026-11-04T20:41:00Z"), _run(2, "a", "failure", "2026-11-04T20:41:00Z")]
+    p = _collect_runs(ce, monkeypatch, runs)
+    assert p["checks"] == [{"name": "a", "conclusion": "failure"}, {"name": "b", "conclusion": "success"}]
+
+
+@pytest.mark.parametrize("orden", ORDENES)
+def test_check_en_curso_sin_started_at_supera_al_verde(ce, monkeypatch, orden):
+    runs = _ordena([_run(1, "ci", "success", "2026-11-04T20:41:00Z"), _run(2, "ci", None, None)], orden)
+    assert _conclusiones(_collect_runs(ce, monkeypatch, runs)) == [("ci", "in_progress")]
