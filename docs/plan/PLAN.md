@@ -26,7 +26,7 @@ Revisión de ola: 3
 |---|---|---|
 | smc | coordinador | T01, T02, T03, T04, T05, T06, T07, T08 |
 | smc-v05 | coordinador | T09, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28, T29, T30, T31, T32, T33, T34, T35, T36 |
-| smc-f2p | coordinador | T37, T38, T39, T40 |
+| smc-f2p | coordinador | T37, T38, T39, T40, T41 |
 
 ## Ola 1
 
@@ -433,6 +433,15 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde. Contraprueba en una copia temporal, no en el worktree, y con `PYTHONPATH` apuntando a esa copia (la instalación editable importa `smc` de otro sitio): cada mutante por separado debe poner en rojo al menos un test de `tests/test_cli_errores.py`: quitar `RecursionError` de `gap`, quitarlo de `plan`, `print(report + "X")`, `write_text(report + "X")`, y añadir una línea a `run_plan`. El informe da el resultado medido de cada mutante, test a test.
   - Prod: —
   - Estado: hecha en 11a2e6fb41cb4e36960b7b32288ae8090d032749 · evidencia informes/T40-dev-proyecto.md
+
+- [ ] **T41** — Cerrar el segundo FAIL de revisión ciega del PR #16
+  - Issue: SMC-004 https://github.com/pedri77/security-manager-control/issues/14
+  - Hace: `_load` de `smc/gap.py` convierte en `ValueError` las excepciones `KeyError`, `IndexError` y `AttributeError` que `yaml.safe_load` lanza con un escalar que no cumple su tag explícito, como `a: !!bool abc`, `a: !!int ""`, `a: !!float ""` y `a: !!timestamp abc`. El `try` envuelve solo `yaml.safe_load`, no `read_text`. El mensaje es de una línea y dice que el YAML no es válido. Con eso, `smc gap` y `smc plan` dan `ERROR: <ruta>: <motivo>` y rc=2, sin traceback. Decisión de David (05-11): el arreglo va en `_load` aunque también cambie `evidencias`, `compare` y `soa`, que comparten esa función.
+  - No hace: no toca `smc/cli.py` ni `_ERRORES_DATOS`: ampliar el `except` ocultaría fallos internos de `analyse`. No toca `tests/golden/`. No captura `Exception`. No cambia los `yaml.safe_load` de otros módulos.
+  - Toca: `smc/gap.py`, `tests/test_cli_errores.py`, `docs/plan/informes/T41-dev-proyecto.md`
+  - Depende: T40
+  - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde. Los cuatro documentos de «Hace» están en `MALAS` o en un test equivalente, para `gap` y para `plan`. `git diff` no toca `tests/golden/`. Contraprueba en una copia temporal, con `PYTHONPATH` apuntando a esa copia y lanzando desde ella: cada mutante por separado debe poner en rojo al menos un test de `tests/test_cli_errores.py`: quitar `KeyError` de la tupla, quitar `IndexError`, quitar `AttributeError` y borrar el `try` entero. El informe da el resultado medido de cada mutante, test a test.
+  - Prod: —
 
 ## Libro
 
