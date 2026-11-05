@@ -520,6 +520,16 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en 39e7d37 · evidencia informes/T48-dev-proyecto.md
 
+- [ ] **T49** — Cerrar el segundo FAIL de revisión ciega del PR #24
+  - Issue: SMC-007 https://github.com/pedri77/security-manager-control/issues/21
+  - Hace: en `scripts/change_evidence.py`, `collect_pr` pide `commits/<sha>/check-runs?filter=all`: sin ese filtro la API solo devuelve el último run de cada check, y el corte en `merged_at` se queda sin el run que había al fusionar. En `tests/test_change_evidence.py`, el simulador de `gh` imita a la API: sin `filter=all` solo sirve el run más reciente de cada check. Con ese simulador, un rojo al fusionar y repetición verde posterior deja el rojo y ningún hueco; un verde al fusionar y repetición posterior deja el verde y ningún hueco; un check que solo corrió tras el merge deja hueco. Añade tests de: `gh: HTTP 404` seguido de `unexpected end of JSON input` en stderr (1 llamada, manda el código), y un 403 con una cita de `HTTP 500` detrás del código real (1 llamada). La docstring recoge que un 403 o 404 con cuerpo vacío y JSON se reintenta, según el criterio acotado de la issue.
+  - No hace: no pasa a `gh api -i`. No corta por `completed_at` ni toca `latest_status`, `is_release_pr` ni `latest_check_runs`. No cambia `mode_release` ni el formato del registro. No toca workflows, plantilla de enjambre-agentes, versión ni CHANGELOG.
+  - Toca: `scripts/change_evidence.py`, `tests/test_change_evidence.py`, `docs/plan/informes/T49-dev-proyecto.md`
+  - Depende: T48
+  - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde. Prueba en solo lectura contra GitHub real: `scripts/change_evidence.py pr` de esta rama y de `origin/main` sobre los PR #11, #19, #20 y #22, con `GITHUB_REPOSITORY=pedri77/security-manager-control`, salida en carpeta temporal; el informe da las diferencias de `checks` y `gaps` y explica cada una. Contraprueba en copia temporal, un mutante por copia, con resultado medido test a test: quitar `filter=all`; simulador que sirva todos los runs sin mirar el filtro (el test de rojo al fusionar debe dejar de distinguir el mutante anterior, y el informe lo dice); regex `HTTP (\d{3})` suelto; dejar que un código que no es 5xx caiga a la comprobación de cuerpo vacío. Los mutantes de código deben poner en rojo al menos un test.
+  - Prod: —
+  - Estado: libre
+
 ## Libro
 
 ### Hechos
