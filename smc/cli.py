@@ -340,7 +340,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "plan":
         try:
             texto = run_plan(args.assessment, args.hoy)
-        except _ERRORES_DATOS as exc:
+        except _ERRORES_DATOS + (RecursionError,) as exc:
             return _error(args.assessment, exc)
         print(texto)
         return 0
@@ -375,7 +375,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "gap":
         try:
             report = run(args.assessment, args.hoy)
-        except _ERRORES_DATOS as exc:
+        except _ERRORES_DATOS + (RecursionError,) as exc:
             return _error(args.assessment, exc)
         if args.output:
             args.output.write_text(report, encoding="utf-8")

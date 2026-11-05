@@ -20,7 +20,18 @@ def _inexistente(tmp_path):
     return tmp_path / "no-existe.yaml"
 
 
-MALAS = [pytest.param(_inexistente, id="inexistente"), pytest.param(_roto, id="yaml-roto")]
+def _profundo(tmp_path):
+    p = tmp_path / "profundo.yaml"
+    p.write_text("[" * 500, encoding="utf-8")   # PyYAML lanza RecursionError
+    return p
+
+
+MALAS = [
+    pytest.param(_inexistente, id="inexistente"),
+    pytest.param(_roto, id="yaml-roto"),
+    pytest.param(_profundo, id="yaml-profundo"),
+]
+GOLDEN = Path(__file__).resolve().parent / "golden"
 
 
 @pytest.mark.parametrize("cmd", ["gap", "plan"])
@@ -44,16 +55,29 @@ def test_gap_con_salida_no_crea_fichero(fabrica, tmp_path, capsys):
     assert capsys.readouterr().err.startswith("ERROR: ")
 
 
-@pytest.mark.parametrize("cmd", ["gap", "plan"])
-def test_evaluacion_valida_sigue_igual(cmd, capsys):
-    assert main([cmd, str(EJEMPLO), "--hoy", HOY]) == 0
+def _golden(nombre):
+    # Referencias generadas con el codigo de 0c1a5be (anterior a SMC-004), nunca con el nuevo.
+    return (GOLDEN / nombre).read_bytes().decode("utf-8")
+
+
+def test_gap_valido_igual_que_referencia(capsys):
+    assert main(["gap", str(EJEMPLO), "--hoy", HOY]) == 0
     out = capsys.readouterr()
-    assert out.err == "" and out.out.strip()
-    assert main([cmd, str(EJEMPLO), "--hoy", HOY]) == 0
-    assert capsys.readouterr().out == out.out
+    assert out.err == ""
+    assert out.out == _golden("gap.md")
 
 
-def test_gap_con_salida_valida_escribe(tmp_path, capsys):
+def test_plan_valido_igual_que_referencia(capsys):
+    assert main(["plan", str(EJEMPLO), "--hoy", HOY]) == 0
+    out = capsys.readouterr()
+    assert out.err == ""
+    assert out.out == _golden("plan.md")
+
+
+def test_gap_con_salida_valida_igual_que_referencia(tmp_path, capsys):
     salida = tmp_path / "salida.md"
     assert main(["gap", str(EJEMPLO), "--hoy", HOY, "-o", str(salida)]) == 0
-    assert salida.read_text(encoding="utf-8").strip()
+    out = capsys.readouterr()
+    assert out.err == ""
+    assert out.out == f"Informe escrito en {salida}\n"
+    assert salida.read_bytes().decode("utf-8") == _golden("gap_o.md")
