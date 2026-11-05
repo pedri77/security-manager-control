@@ -488,6 +488,18 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en 5b1b59b · evidencia informes/T45-dev-proyecto.md
 
+## Ola 22 (SMC-007)
+
+- [ ] **T46** — `change_evidence`: elección de check-run, corte en `merged_at` y reintento ante 5xx
+  - Issue: SMC-007 https://github.com/pedri77/security-manager-control/issues/21
+  - Hace: en `scripts/change_evidence.py`, tres cambios. (1) `latest_check_runs`, por grupo de nombre y app: elige entre los runs con `started_at` por el mayor (`started_at`, `id`); un run sin `started_at` solo sustituye a ese ganador si su `id` es mayor que el de todos los runs con fecha del grupo; sin ningún run con fecha gana el mayor `id`. (2) `collect_pr`, en un PR con `merged_at`: descarta antes de elegir los check-runs con `started_at` posterior a `merged_at` (uno con `started_at` igual a `merged_at` o sin `started_at` se queda); si un check se queda sin ningún run por ese corte, sale de `checks` y se anota un hueco que nombra el PR y el check. Sin `merged_at`, nada cambia. (3) `gh_json`: ante `CalledProcessError` con 5xx hace hasta 2 reintentos (3 intentos en total) con `time.sleep` corto; el 5xx se reconoce por el código de estado que `gh` escribe en stderr, `(HTTP 5xx)`, no por un número suelto en el mensaje. Otros errores, 403 y 404 incluidos, se propagan a la primera; agotados los reintentos se propaga el último error y el hueco se anota como hoy. En `tests/test_change_evidence.py`, un test por criterio de la issue, con `gh` simulado y `time.sleep` simulado.
+  - No hace: no cambia la clave nombre y app ni el borde 251/250. No toca `latest_status`, `is_release_pr`, `mode_release` ni los workflows. No cambia el formato del registro. No regenera evidence packs. No toca la plantilla de enjambre-agentes. No toca versión ni CHANGELOG.
+  - Toca: `scripts/change_evidence.py`, `tests/test_change_evidence.py`, `docs/plan/informes/T46-dev-proyecto.md`
+  - Depende: T44
+  - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde. Hay test con el caso de la issue (id 9 `success` 20:41, id 2 `failure` 20:43, id 1 sin `started_at`: gana el `failure`) en los órdenes de lista posibles; con verde sin `started_at` frente a fallo más nuevo; con fallo sin `started_at` e `id` mayor frente a verde anterior; con PR fusionado y repetición verde posterior a `merged_at`: queda el rojo; con check solo posterior al merge: hueco; con PR sin fusionar y la misma repetición: gana la repetición; con 500 y luego éxito, con 3 veces 500 (3 llamadas y error propagado, y hueco en `collect_pr`), con 403 y 404 (1 llamada y sin `sleep`), y con un 403 cuyo mensaje contiene `HTTP 500` (1 llamada). Contraprueba en copia temporal, un mutante por copia, con resultado medido test a test en el informe: volver a la regla de T44 (si falta `started_at` en alguno, mayor `id`); dejar que un run sin fecha gane con `id` mayor que el ganador pero no que todos; ignorar del todo los runs sin fecha; quitar el corte por `merged_at`; usar `>=` en ese corte; quitar el hueco del check sin runs; quitar el reintento; reintentar cualquier `CalledProcessError`; reintentar 3 veces en vez de 2; reconocer el 5xx con `"HTTP 500" in stderr`. Cada uno debe poner en rojo al menos un test.
+  - Prod: —
+  - Estado: libre
+
 ## Libro
 
 ### Hechos
