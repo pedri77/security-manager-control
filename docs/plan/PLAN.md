@@ -392,7 +392,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 
 ## Ola 18 (SMC-003)
 
-- [ ] **T37** — Paginar las lecturas de la API en `collect_pr`
+- [~] **T37** — Paginar las lecturas de la API en `collect_pr`
   - Issue: SMC-003 https://github.com/pedri77/security-manager-control/issues/13
   - Hace: `collect_pr` de `scripts/change_evidence.py` lee todas las páginas de commits, reviews, check-runs y estados del commit, y cumple los criterios de aceptación de la issue. Si `blind-review` se publicó varias veces sobre el mismo SHA, cuenta el estado más reciente. Un error de lectura de checks o estados, también en una página posterior, sigue anotándose como hueco.
   - No hace: no toca `is_release_pr`, los workflows ni la plantilla de enjambre-agentes. No cambia el formato del registro de cambio. No toca versión ni CHANGELOG (los lleva release-please).
@@ -400,6 +400,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Depende: T36
   - Verifica: `uv run --extra dev pytest -q tests/test_change_evidence.py` y `make test` en verde; un test por criterio de la issue, con `gh` simulado y varias páginas; contraprueba anotada en el informe: con la lectura de una sola página, cada test nuevo falla.
   - Prod: —
+  - Estado: reservada por coordinador-smc-f2p 2026-11-05
 
 ## Libro
 
