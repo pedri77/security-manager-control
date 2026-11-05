@@ -26,7 +26,7 @@ Revisión de ola: 3
 |---|---|---|
 | smc | coordinador | T01, T02, T03, T04, T05, T06, T07, T08 |
 | smc-v05 | coordinador | T09, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28, T29, T30, T31, T32, T33, T34, T35, T36 |
-| smc-f2p | coordinador | T37, T38 |
+| smc-f2p | coordinador | T37, T38, T39, T40, T41, T42 |
 
 ## Ola 1
 
@@ -412,6 +412,48 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en 08fba06dab59fb502ed46caa1470ca942ad8a79b · evidencia informes/T38-dev-proyecto.md
 
+## Ola 19 (SMC-004, prueba real del enjambre con F2P)
+
+- [x] **T39** — Error limpio en `smc gap` y `smc plan`
+  - Issue: SMC-004 https://github.com/pedri77/security-manager-control/issues/14
+  - Hace: `smc gap` y `smc plan` con fichero inexistente o YAML mal formado escriben `ERROR: <ruta>: <motivo>` en stderr y salen con rc=2, sin traceback, igual que `smc evidencias` y `smc compare`. Reutiliza `_ERRORES_DATOS` y `_error` de `smc/cli.py`. Si falla, `smc gap -o` no crea el fichero de salida.
+  - No hace: no cambia el YAML válido que no es un mapa (sigue rc=0 con aviso), ni los fallos al escribir en `-o`, ni `smc report`, `smc dashboard` u otros comandos. No toca `smc/gap.py`, `smc/plan.py`, README ni CHANGELOG (lo genera release-please).
+  - Toca: `smc/cli.py`, `tests/test_cli_errores.py`, `docs/plan/informes/T39-dev-proyecto.md`
+  - Depende: T36
+  - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde, con un test por criterio de aceptación de la issue. Contraprueba en una copia temporal, no en el worktree: quitar la captura de errores de `gap` y de `plan` pone en rojo los tests nuevos.
+  - Prod: —
+  - Estado: hecha en 2877f634a68b028cad5cb174960f0f6cbf1441b8 · evidencia informes/T39-dev-proyecto.md
+
+- [x] **T40** — Cerrar el FAIL de revisión ciega del PR #16
+  - Issue: SMC-004 https://github.com/pedri77/security-manager-control/issues/14
+  - Hace: (1) `smc gap` y `smc plan` capturan también `RecursionError`, que PyYAML lanza con anidamiento profundo: un YAML con 500 corchetes sin cerrar da `ERROR: <ruta>: <motivo>` y rc=2, sin traceback. (2) Tests de referencia para el criterio 5 de la issue: la salida de `smc gap`, de `smc gap -o` y de `smc plan` con una evaluación válida y `--hoy` fijo se compara con ficheros de referencia generados con el código de `0c1a5be`, anterior a este cambio, nunca con el código nuevo. El test `test_evaluacion_valida_sigue_igual` deja de comparar dos ejecuciones entre sí.
+  - No hace: no añade `RecursionError` a `_ERRORES_DATOS`: cambiaría otros comandos, fuera de alcance. No toca `smc evidencias`, `smc/gap.py` ni `smc/plan.py`. No reordena la captura de `ValueError` y `OSError`.
+  - Toca: `smc/cli.py`, `tests/test_cli_errores.py`, `tests/golden/`, `docs/plan/informes/T40-dev-proyecto.md`
+  - Depende: T39
+  - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde. Contraprueba en una copia temporal, no en el worktree, y con `PYTHONPATH` apuntando a esa copia (la instalación editable importa `smc` de otro sitio): cada mutante por separado debe poner en rojo al menos un test de `tests/test_cli_errores.py`: quitar `RecursionError` de `gap`, quitarlo de `plan`, `print(report + "X")`, `write_text(report + "X")`, y añadir una línea a `run_plan`. El informe da el resultado medido de cada mutante, test a test.
+  - Prod: —
+  - Estado: hecha en 11a2e6fb41cb4e36960b7b32288ae8090d032749 · evidencia informes/T40-dev-proyecto.md
+
+- [x] **T41** — Cerrar el segundo FAIL de revisión ciega del PR #16
+  - Issue: SMC-004 https://github.com/pedri77/security-manager-control/issues/14
+  - Hace: `_load` de `smc/gap.py` convierte en `ValueError` las excepciones `KeyError`, `IndexError` y `AttributeError` que `yaml.safe_load` lanza con un escalar que no cumple su tag explícito, como `a: !!bool abc`, `a: !!int ""`, `a: !!float ""` y `a: !!timestamp abc`. El `try` envuelve solo `yaml.safe_load`, no `read_text`. El mensaje es de una línea y dice que el YAML no es válido. Con eso, `smc gap` y `smc plan` dan `ERROR: <ruta>: <motivo>` y rc=2, sin traceback. Decisión de David (05-11): el arreglo va en `_load` aunque también cambie `evidencias`, `compare` y `soa`, que comparten esa función.
+  - No hace: no toca `smc/cli.py` ni `_ERRORES_DATOS`: ampliar el `except` ocultaría fallos internos de `analyse`. No toca `tests/golden/`. No captura `Exception`. No cambia los `yaml.safe_load` de otros módulos.
+  - Toca: `smc/gap.py`, `tests/test_cli_errores.py`, `docs/plan/informes/T41-dev-proyecto.md`
+  - Depende: T40
+  - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde. Los cuatro documentos de «Hace» están en `MALAS` o en un test equivalente, para `gap` y para `plan`. `git diff` no toca `tests/golden/`. Contraprueba en una copia temporal, con `PYTHONPATH` apuntando a esa copia y lanzando desde ella: cada mutante por separado debe poner en rojo al menos un test de `tests/test_cli_errores.py`: quitar `KeyError` de la tupla, quitar `IndexError`, quitar `AttributeError` y borrar el `try` entero. El informe da el resultado medido de cada mutante, test a test.
+  - Prod: —
+  - Estado: hecha en 05ff66c809bf361e6eda3003733c1d4801300115 · evidencia informes/T41-dev-proyecto.md
+
+- [x] **T42** — `_load` convierte también `TypeError` de tags YAML
+  - Issue: SMC-004 https://github.com/pedri77/security-manager-control/issues/14
+  - Hace: añade `TypeError` a la tupla de `_load` en `smc/gap.py`. Con `a: !!timestamp {=}`, `yaml.safe_load` lanza `TypeError`, y `smc gap` y `smc plan` dan traceback y rc=1. Tras el cambio dan `ERROR: <ruta>: <motivo>` y rc=2. Hueco medido antes del push de T41, sobre `2ee27ba`.
+  - No hace: no toca `smc/cli.py` ni `_ERRORES_DATOS`. No toca `tests/golden/`. No captura `Exception`. No cambia el mensaje de error.
+  - Toca: `smc/gap.py`, `tests/test_cli_errores.py`, `docs/plan/informes/T42-dev-proyecto.md`
+  - Depende: T41
+  - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde. `a: !!timestamp {=}` está en `MALAS`, para `gap` y para `plan`. `git diff` no toca `tests/golden/`. Contraprueba en una copia temporal, con `PYTHONPATH` apuntando a esa copia y lanzando desde ella: quitar `TypeError` de la tupla debe poner en rojo al menos un test de `tests/test_cli_errores.py`, para `gap` y para `plan`. El informe da el resultado medido, test a test.
+  - Prod: —
+  - Estado: hecha en 21109a944fdd166f1c898ecfa2707ade595a732b · evidencia informes/T42-dev-proyecto.md
+
 ## Libro
 
 ### Hechos
@@ -431,6 +473,10 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 - 2026-11-03 · Main tras fusionar T09-T13 (sin conflictos, en orden T09, T10, T11, T12, T13): 151 tests verdes (78 + 28 + 11 + 16 + 9 + 9).
 - 2026-11-05 · T37: `collect_pr` pagina con `gh_pages` (per_page=100, tope 50 páginas que falla como hueco); `blind-review` se lee de `commits/<sha>/statuses` y cuenta el más reciente por (created_at, id). `/status` vs `/statuses` no contrastado en vivo con repetidos. Límite GitHub: 250 commits por PR. 654 tests verdes.
 - 2026-11-05 · T38: `PagesLimitError` (subclase de RuntimeError) capturada con `READ_ERRORS` en checks, estados y `mode_release`: el tope es hueco, no aborta; commits y reviews siguen propagando en modo PR. Desempate por `id` con test. 665 tests; contraprueba (except sin PagesLimitError en release) = 2 en rojo.
+- 2026-11-05 · T39 (SMC-004): `smc gap` y `smc plan` capturan `_ERRORES_DATOS` y dan `ERROR: <ruta>: <motivo>` rc=2; `gap -o` no crea fichero si falla. 654 tests; contraprueba (quitar la captura) = 6 de 9 tests nuevos en rojo, los 3 de evaluación válida siguen verdes. Un ValueError interno de `analyse` también sale ahora como ERROR rc=2.
+- 2026-11-05 · T40 (SMC-004): `gap` y `plan` capturan también `RecursionError` (YAML con 500 `[` da rc=2 sin traceback); `_ERRORES_DATOS` intacto. Referencias `tests/golden/{gap,gap_o,plan}.md` regeneradas por el coordinador desde `0c1a5be` y idénticas (cmp). 677 tests; 5 mutantes en copia limpia, todos en rojo.
+- 2026-11-05 · T41 (SMC-004): `_load` de `gap.py` convierte KeyError/IndexError/AttributeError de `yaml.safe_load` (tags explícitos rotos) en ValueError; `try` solo sobre `safe_load`. Cambia también `evidencias`, `compare` y `soa` (decisión de David). 690 tests; 4 mutantes en copia limpia, todos en rojo (4, 6, 3 y 13 tests).
+- 2026-11-05 · T42 (SMC-004): `_load` convierte también `TypeError` (`a: !!timestamp {=}`); caso `tag-timestamp-mapa` en `MALAS`, 693 tests. Contraprueba en copia (quitar TypeError) = 3 en rojo: gap 2 (error_limpio, salida), plan 1 (error_limpio).
 
 ### Supuestos
 - La tabla del Anexo II del RD 311/2022 se puede reconstruir con fiabilidad suficiente; lo dudoso va con `verificar: true`.
@@ -502,3 +548,4 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 - Ola 16: 0
 - Ola 17: 0
 - Ola 18: 0
+- Ola 19: 0
