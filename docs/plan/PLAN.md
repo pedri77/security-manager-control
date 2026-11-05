@@ -26,7 +26,7 @@ Revisión de ola: 3
 |---|---|---|
 | smc | coordinador | T01, T02, T03, T04, T05, T06, T07, T08 |
 | smc-v05 | coordinador | T09, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28, T29, T30, T31, T32, T33, T34, T35, T36 |
-| smc-f2p | coordinador | T37, T38, T39, T40, T41 |
+| smc-f2p | coordinador | T37, T38, T39, T40, T41, T42 |
 
 ## Ola 1
 
@@ -443,6 +443,15 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde. Los cuatro documentos de «Hace» están en `MALAS` o en un test equivalente, para `gap` y para `plan`. `git diff` no toca `tests/golden/`. Contraprueba en una copia temporal, con `PYTHONPATH` apuntando a esa copia y lanzando desde ella: cada mutante por separado debe poner en rojo al menos un test de `tests/test_cli_errores.py`: quitar `KeyError` de la tupla, quitar `IndexError`, quitar `AttributeError` y borrar el `try` entero. El informe da el resultado medido de cada mutante, test a test.
   - Prod: —
   - Estado: hecha en 05ff66c809bf361e6eda3003733c1d4801300115 · evidencia informes/T41-dev-proyecto.md
+
+- [ ] **T42** — `_load` convierte también `TypeError` de tags YAML
+  - Issue: SMC-004 https://github.com/pedri77/security-manager-control/issues/14
+  - Hace: añade `TypeError` a la tupla de `_load` en `smc/gap.py`. Con `a: !!timestamp {=}`, `yaml.safe_load` lanza `TypeError`, y `smc gap` y `smc plan` dan traceback y rc=1. Tras el cambio dan `ERROR: <ruta>: <motivo>` y rc=2. Hueco medido antes del push de T41, sobre `2ee27ba`.
+  - No hace: no toca `smc/cli.py` ni `_ERRORES_DATOS`. No toca `tests/golden/`. No captura `Exception`. No cambia el mensaje de error.
+  - Toca: `smc/gap.py`, `tests/test_cli_errores.py`, `docs/plan/informes/T42-dev-proyecto.md`
+  - Depende: T41
+  - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde. `a: !!timestamp {=}` está en `MALAS`, para `gap` y para `plan`. `git diff` no toca `tests/golden/`. Contraprueba en una copia temporal, con `PYTHONPATH` apuntando a esa copia y lanzando desde ella: quitar `TypeError` de la tupla debe poner en rojo al menos un test de `tests/test_cli_errores.py`, para `gap` y para `plan`. El informe da el resultado medido, test a test.
+  - Prod: —
 
 ## Libro
 
