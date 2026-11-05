@@ -26,7 +26,7 @@ Revisión de ola: 3
 |---|---|---|
 | smc | coordinador | T01, T02, T03, T04, T05, T06, T07, T08 |
 | smc-v05 | coordinador | T09, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28, T29, T30, T31, T32, T33, T34, T35, T36 |
-| smc-f2p | coordinador | T37, T38, T39, T40, T41, T42, T43, T44 |
+| smc-f2p | coordinador | T37, T38, T39, T40, T41, T42, T43, T44, T45 |
 
 ## Ola 1
 
@@ -476,6 +476,18 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en 72e33a6677b5d42074e8ddc6da6892ce2cc62fbc · evidencia informes/T44-dev-proyecto.md
 
+## Ola 21 (SMC-006)
+
+- [x] **T45** — `estado` que no es escalar en `smc gap` y `smc plan`
+  - Issue: SMC-006 https://github.com/pedri77/security-manager-control/issues/18
+  - Hace: en `smc/gap.py`, un `estado` que no es texto, como `estado: []` o `estado: {}`, sigue el camino de un estado no válido: aviso `estado no válido` y cuenta como sin evaluar. `smc gap` y `smc plan` dejan de dar `TypeError: unhashable type`. Añade tests de esos dos valores en `gap` y en `plan`, y un test de que un YAML válido que no es un mapa (`42`, `- a`, `hola`, vacío) da rc=0 con su aviso en `smc gap`.
+  - No hace: no toca `smc/cli.py`, `_ERRORES_DATOS`, `_load` ni `smc/compare.py`. No toca `tests/golden/`. No cambia el texto de ningún aviso. Nada de `smc report`, `smc dashboard` ni `smc verticals`.
+  - Toca: `smc/gap.py`, `tests/test_cli_errores.py`, `docs/plan/informes/T45-dev-proyecto.md`
+  - Depende: T42
+  - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde y `git diff` sin cambios en `tests/golden/`. Contraprueba en una copia temporal, lanzando desde ella y con `PYTHONPATH` a esa copia, un mutante por copia: volver a `estado not in VALID_STATES` sin la comprobación de tipo debe poner en rojo tests de `gap` y de `plan`; hacer que `_load` lance `ValueError` si el resultado no es un mapa debe poner en rojo el test de YAML no mapa. El informe da cada resultado medido, test a test.
+  - Prod: —
+  - Estado: hecha en 5b1b59b · evidencia informes/T45-dev-proyecto.md
+
 ## Libro
 
 ### Hechos
@@ -501,6 +513,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 - 2026-11-05 · T44 (SMC-005): `latest_check_runs` decide por grupo (nombre, app): con `started_at` en todos gana (`started_at`, `id`); si falta en alguno, el mayor `id`, sin centinela. 724 tests; 4 mutantes en copia limpia, todos en rojo (m3 centinela: 8, no 4 como decía el informe). Los 3 casos de orden dan el fallo. `dev-proyecto` 1.7 sin evals en verde: cifras del informe no avaladas.
 - 2026-11-05 · T43 (SMC-005): `collect_pr` anota hueco si `pr["commits"]` supera los leídos y `latest_check_runs` deja un check-run por (nombre, app) por (started_at, id); un en curso sin `started_at` supera al verde. Aserción de hueco con `blind-review` real; test del modo PR ejercita `mode_pr`. 710 tests; 6 mutantes en copia limpia, todos en rojo (incluidos 2 sobre `mode_pr`).
 - 2026-11-05 · T42 (SMC-004): `_load` convierte también `TypeError` (`a: !!timestamp {=}`); caso `tag-timestamp-mapa` en `MALAS`, 693 tests. Contraprueba en copia (quitar TypeError) = 3 en rojo: gap 2 (error_limpio, salida), plan 1 (error_limpio).
+- 2026-11-05 · T45 (SMC-006): en `gap.py`, `analyse` y `_heredado` comprueban `isinstance(estado, str)` antes de `in VALID_STATES`/`in SCORES`; `estado: []`/`{}` da aviso `estado no válido` y cuenta sin evaluar, sin TypeError en gap ni plan. Test de YAML no mapa (`42`, `- a`, `hola`, vacío) con rc=0 y aviso. 735 tests; contraprueba en copias: mutante tipo = 6 rojos (gap y plan), mutante `_load` = 4 rojos.
 
 ### Supuestos
 - La tabla del Anexo II del RD 311/2022 se puede reconstruir con fiabilidad suficiente; lo dudoso va con `verificar: true`.
