@@ -96,7 +96,7 @@ def _heredado(control: Control, evals: dict) -> list[tuple[str, str]]:
     out = []
     for eq in sorted(_mapping.equivalentes(control.id)):
         estado = _estado_de(evals.get(eq))
-        if estado in SCORES:
+        if isinstance(estado, str) and estado in SCORES:
             out.append((eq, estado))
     return out
 
@@ -144,7 +144,7 @@ def analyse(assessment: dict, hoy: date | None = None) -> Analisis:
             if ev is not None and not isinstance(ev, dict):
                 warnings.append(f"{c.id}: evaluación mal formada (no es un mapa); cuenta como sin evaluar")
                 ev = None
-            elif ev is not None and estado not in VALID_STATES:
+            elif ev is not None and not (isinstance(estado, str) and estado in VALID_STATES):
                 warnings.append(f"{c.id}: estado no válido '{estado}'; cuenta como sin evaluar")
                 ev = None
             if ev is None:
