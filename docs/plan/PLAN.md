@@ -468,11 +468,11 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 
 - [~] **T44** — Cerrar el FAIL de revisión ciega del PR #19
   - Issue: SMC-005 https://github.com/pedri77/security-manager-control/issues/17
-  - Hace: añade en `tests/test_change_evidence.py` un test de `mode_release`, parametrizado con los dos órdenes, que comprueba en `rec["gaps"]` que un fallo superado por un verde no deja «checks no exitosos» y que un verde superado por un fallo sí lo deja; incluye el caso real de PR #11 como regresión. En `latest_check_runs` de `scripts/change_evidence.py`, un run sin `started_at` cuenta como el más reciente aunque ya haya concluido, de modo que un fallo concluido sin `started_at` no queda tapado por un verde anterior.
+  - Hace: añade en `tests/test_change_evidence.py` un test de `mode_release`, parametrizado con los dos órdenes, que comprueba en `rec["gaps"]` que un fallo superado por un verde no deja «checks no exitosos» y que un verde superado por un fallo sí lo deja; incluye el caso real de PR #11 como regresión. En `latest_check_runs` de `scripts/change_evidence.py`, dentro de cada grupo de nombre y app: si todos los runs tienen `started_at`, gana el mayor (`started_at`, `id`); si alguno no lo tiene, gana el mayor `id`. Así un fallo sin `started_at` no queda tapado por un verde anterior, y un verde antiguo sin `started_at` no tapa un fallo más nuevo.
   - No hace: no compara con `merged_at`. No cambia la clave nombre y app. No toca `is_release_pr`, los workflows ni la plantilla de enjambre-agentes. No cambia el formato del registro.
   - Toca: `scripts/change_evidence.py`, `tests/test_change_evidence.py`, `docs/plan/informes/T44-dev-proyecto.md`
   - Depende: T43
-  - Verifica: `uv run --extra dev pytest -q tests/test_change_evidence.py` y `make test` en verde. Contraprueba en copia temporal, un mutante por copia, con resultado medido test a test en el informe: `failed = []` en `mode_release`, quitar el `gaps.append` de checks no exitosos, y aplicar el centinela solo a runs en curso deben poner en rojo al menos un test cada uno.
+  - Verifica: `uv run --extra dev pytest -q tests/test_change_evidence.py` y `make test` en verde. Contraprueba en copia temporal, un mutante por copia, con resultado medido test a test en el informe: `failed = []` en `mode_release`, quitar el `gaps.append` de checks no exitosos, comparar por `started_at` con centinela en vez de por `id` cuando falta `started_at`, y comparar siempre solo por `id` deben poner en rojo al menos un test cada uno. Hay test con verde sin `started_at` e id 1 frente a fallo con `started_at` e id 2, en los dos órdenes: gana el fallo.
   - Prod: —
   - Estado: reservada por coordinador-smc-f2p 2026-11-05
 
