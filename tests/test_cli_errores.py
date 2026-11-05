@@ -42,6 +42,7 @@ MALAS = [
     pytest.param(_tag('a: !!int ""\n', "t2.yaml"), id="tag-int-vacio"),
     pytest.param(_tag('a: !!float ""\n', "t3.yaml"), id="tag-float-vacio"),
     pytest.param(_tag("a: !!timestamp abc\n", "t4.yaml"), id="tag-timestamp"),
+    pytest.param(_tag("a: !!timestamp {=}\n", "t5.yaml"), id="tag-timestamp-mapa"),
 ]
 GOLDEN = Path(__file__).resolve().parent / "golden"
 

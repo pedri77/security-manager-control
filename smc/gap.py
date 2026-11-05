@@ -378,7 +378,7 @@ def _load(path: Path) -> dict:
     texto = Path(path).read_text(encoding="utf-8")
     try:
         return yaml.safe_load(texto)
-    except (KeyError, IndexError, AttributeError) as exc:
+    except (KeyError, IndexError, AttributeError, TypeError) as exc:
         # Un escalar que no cumple su tag explicito (a: !!bool abc) escapa de PyYAML sin ser YAMLError.
         raise ValueError("el YAML no es válido (valor que no cumple su tag explícito)") from exc
 
