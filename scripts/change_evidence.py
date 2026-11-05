@@ -30,6 +30,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 TASK_RE = re.compile(r"^\s*Task:\s*([A-Z][A-Z0-9]{1,9}-\d{1,5})\s*$", re.MULTILINE)
@@ -61,8 +62,31 @@ def run(cmd: list[str]) -> str:
     return subprocess.run(cmd, check=True, capture_output=True, text=True).stdout.strip()
 
 
+HTTP_STATUS_RE = re.compile(r"\(HTTP (\d{3})\)")
+RETRIES = 2  # reintentos tras el primer intento: 3 llamadas como máximo
+RETRY_DELAY = 1.0  # segundos; se multiplica por el número de reintento
+
+
+def http_status(e: subprocess.CalledProcessError) -> int | None:
+    """Código que `gh` escribe al final del error (`gh: <mensaje> (HTTP <código>)`); el último gana.
+
+    No se busca un número suelto: un 403 puede citar «HTTP 500» en su mensaje.
+    """
+    found = HTTP_STATUS_RE.findall(e.stderr or "")
+    return int(found[-1]) if found else None
+
+
 def gh_json(path: str) -> object:
-    return json.loads(run(["gh", "api", "-H", "Accept: application/vnd.github+json", path]))
+    cmd = ["gh", "api", "-H", "Accept: application/vnd.github+json", path]
+    for attempt in range(RETRIES + 1):
+        try:
+            return json.loads(run(cmd))
+        except subprocess.CalledProcessError as e:
+            status = http_status(e)
+            if attempt == RETRIES or status is None or not 500 <= status <= 599:
+                raise
+            time.sleep(RETRY_DELAY * (attempt + 1))
+    raise AssertionError("inalcanzable")
 
 
 class PagesLimitError(RuntimeError):
@@ -111,19 +135,47 @@ def latest_status(statuses: list[dict], context: str) -> dict | None:
 def latest_check_runs(runs: list[dict]) -> list[dict]:
     """Un check-run por (nombre, app): el más reciente; no se fía del orden de la lista.
 
-    Por grupo: si todos los runs tienen started_at, gana el mayor (started_at, id); si alguno no lo
-    tiene, gana el mayor id (sin centinela: un run sin fecha no gana por faltarle).
+    Por grupo: entre los runs con started_at gana el mayor (started_at, id). Un run sin started_at
+    solo lo sustituye si su id supera al de todos los runs con fecha del grupo (el mayor de ellos
+    si son varios). Sin ningún run con fecha gana el mayor id. Un run sin fecha ajeno al par no
+    cambia la elección entre los fechados.
     """
     groups: dict[tuple, list[dict]] = {}
     for r in runs:
         groups.setdefault((r["name"], (r.get("app") or {}).get("id")), []).append(r)
     best = []
     for group in groups.values():
-        if all(r.get("started_at") for r in group):
-            best.append(max(group, key=lambda r: (r["started_at"], r.get("id") or 0)))
-        else:
-            best.append(max(group, key=lambda r: r.get("id") or 0))
+        dated = [r for r in group if r.get("started_at")]
+        undated = [r for r in group if not r.get("started_at")]
+        winner = max(dated, key=lambda r: (r["started_at"], r.get("id") or 0)) if dated else None
+        newest_undated = max(undated, key=lambda r: r.get("id") or 0) if undated else None
+        if winner is None:
+            winner = newest_undated
+        elif newest_undated is not None and (newest_undated.get("id") or 0) > max(r.get("id") or 0 for r in dated):
+            winner = newest_undated
+        best.append(winner)
     return best
+
+
+def _utc(ts: str) -> dt.datetime | None:
+    try:
+        d = dt.datetime.fromisoformat(ts.replace("Z", "+00:00"))
+    except (ValueError, AttributeError):
+        return None
+    return d if d.tzinfo else d.replace(tzinfo=dt.timezone.utc)
+
+
+def cut_at_merge(runs: list[dict], merged_at: str) -> list[dict]:
+    """Descarta los check-runs iniciados después de merged_at (igual o sin started_at se quedan)."""
+    cut = _utc(merged_at)
+    if cut is None:
+        return runs
+    kept = []
+    for r in runs:
+        started = _utc(r["started_at"]) if r.get("started_at") else None
+        if started is None or started <= cut:
+            kept.append(r)
+    return kept
 
 
 def repo_slug() -> str:
@@ -188,6 +240,13 @@ def collect_pr(repo: str, number: int) -> dict:
     except READ_ERRORS as e:
         checks = []
         gaps.append(f"PR #{number}: no se pudieron leer los checks ({reason(e)})")
+    if pr.get("merged_at"):
+        kept = cut_at_merge(checks, pr["merged_at"])
+        kept_keys = {(r["name"], (r.get("app") or {}).get("id")) for r in kept}
+        lost = sorted({r["name"] for r in checks if (r["name"], (r.get("app") or {}).get("id")) not in kept_keys})
+        for name in lost:
+            gaps.append(f"PR #{number}: el check {name} no tenía ningún run al fusionar (merged_at {pr['merged_at']})")
+        checks = kept
     try:
         statuses = gh_pages(f"repos/{repo}/commits/{head_sha}/statuses")
     except READ_ERRORS as e:

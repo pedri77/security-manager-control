@@ -416,3 +416,216 @@ def test_release_fallo_sin_started_at_tras_verde_deja_hueco(ce, monkeypatch, tmp
     runs = _ordena([_run(1, "ci", "success", "2026-11-04T20:41:00Z"), _run(2, "ci", "failure", None)], orden)
     _, huecos = _release_con_runs(ce, monkeypatch, tmp_path, runs)
     assert huecos == ["PR #7 con checks no exitosos: ci"]
+
+
+# ───────────── elección de check-run, corte en merged_at y reintento ante 5xx (SMC-007, T46) ─────────────
+T41, T43, T45, MERGE = ("2026-11-04T20:41:00Z", "2026-11-04T20:43:00Z", "2026-11-04T20:45:00Z",
+                        "2026-11-04T20:44:00Z")
+
+
+def _elige(ce, runs):
+    return [(r["name"], r["conclusion"]) for r in ce.latest_check_runs(runs)]
+
+
+def _todos_los_ordenes(runs):
+    import itertools
+    return list(itertools.permutations(runs))
+
+
+def test_caso_de_la_issue_run_sin_fecha_ajeno_no_cambia_la_eleccion(ce):
+    # id 9 success 20:41, id 2 failure 20:43, id 1 sin started_at: gana el failure, en los 6 órdenes
+    runs = [_run(9, "ci", "success", T41), _run(2, "ci", "failure", T43), _run(1, "ci", "success", None)]
+    for orden in _todos_los_ordenes(runs):
+        assert _elige(ce, list(orden)) == [("ci", "failure")]
+    # y sin el tercero da lo mismo
+    for orden in _todos_los_ordenes(runs[:2]):
+        assert _elige(ce, list(orden)) == [("ci", "failure")]
+
+
+def test_run_sin_fecha_con_id_mayor_que_algunos_pero_no_que_todos_no_gana(ce):
+    # fechado id 9 viejo, fechado id 2 nuevo (ganador), sin fecha id 5: 5 > 2 pero < 9
+    runs = [_run(9, "ci", "success", T41), _run(2, "ci", "failure", T43), _run(5, "ci", "success", None)]
+    for orden in _todos_los_ordenes(runs):
+        assert _elige(ce, list(orden)) == [("ci", "failure")]
+
+
+def test_run_sin_fecha_con_id_mayor_que_todos_los_fechados_gana(ce):
+    runs = [_run(9, "ci", "failure", T41), _run(2, "ci", "failure", T43), _run(10, "ci", "success", None)]
+    for orden in _todos_los_ordenes(runs):
+        assert _elige(ce, list(orden)) == [("ci", "success")]
+
+
+def test_si_ninguno_tiene_fecha_gana_el_mayor_id(ce):
+    runs = [_run(3, "ci", "failure", None), _run(7, "ci", "success", None), _run(5, "ci", "failure", None)]
+    for orden in _todos_los_ordenes(runs):
+        assert _elige(ce, list(orden)) == [("ci", "success")]
+
+
+def test_varios_sin_fecha_con_id_mayor_gana_el_mayor_de_ellos(ce):
+    runs = [_run(1, "ci", "failure", T43), _run(4, "ci", "failure", None), _run(6, "ci", "success", None)]
+    for orden in _todos_los_ordenes(runs):
+        assert _elige(ce, list(orden)) == [("ci", "success")]
+
+
+def test_run_sin_fecha_de_otro_grupo_no_afecta(ce):
+    runs = [_run(1, "a", "success", T41), _run(2, "a", "failure", T43), _run(99, "b", None, None, status="queued")]
+    assert sorted(_elige(ce, runs)) == [("a", "failure"), ("b", None)]
+
+
+# --- corte en merged_at ---
+def _collect_merged(ce, monkeypatch, runs, merged_at=MERGE):
+    gh = FakeGh({"/commits/H/check-runs": runs})
+    if merged_at:
+        gh.pr["merged_at"] = merged_at
+    monkeypatch.setattr(ce, "gh_json", gh)
+    monkeypatch.setattr(ce, "PER_PAGE", 100)
+    return ce.collect_pr("o/r", 7)
+
+
+@pytest.mark.parametrize("orden", ORDENES)
+def test_pr_fusionado_la_repeticion_verde_posterior_no_sustituye_al_rojo(ce, monkeypatch, orden):
+    runs = _ordena([_run(1, "ci", "failure", T41), _run(2, "ci", "success", T45)], orden)
+    p = _collect_merged(ce, monkeypatch, runs)
+    assert _conclusiones(p) == [("ci", "failure")] and p["gaps"] == []
+
+
+@pytest.mark.parametrize("orden", ORDENES)
+def test_pr_sin_fusionar_la_misma_repeticion_gana(ce, monkeypatch, orden):
+    runs = _ordena([_run(1, "ci", "failure", T41), _run(2, "ci", "success", T45)], orden)
+    p = _collect_merged(ce, monkeypatch, runs, merged_at=None)
+    assert _conclusiones(p) == [("ci", "success")] and p["gaps"] == []
+
+
+def test_run_iniciado_justo_en_merged_at_se_queda(ce, monkeypatch):
+    runs = [_run(1, "ci", "failure", T41), _run(2, "ci", "success", MERGE)]
+    assert _conclusiones(_collect_merged(ce, monkeypatch, runs)) == [("ci", "success")]
+
+
+def test_run_sin_started_at_se_queda_en_pr_fusionado(ce, monkeypatch):
+    runs = [_run(1, "ci", "success", T41), _run(2, "ci", "failure", None)]
+    assert _conclusiones(_collect_merged(ce, monkeypatch, runs)) == [("ci", "failure")]
+
+
+def test_check_solo_posterior_al_merge_sale_de_checks_y_deja_hueco(ce, monkeypatch):
+    runs = [_run(1, "ci", "success", T41), _run(2, "tardio", "success", T45)]
+    p = _collect_merged(ce, monkeypatch, runs)
+    assert _conclusiones(p) == [("ci", "success")]
+    assert len(p["gaps"]) == 1 and "PR #7" in p["gaps"][0] and "tardio" in p["gaps"][0]
+
+
+def test_hueco_por_corte_aparece_en_el_pack_de_release(ce, monkeypatch, tmp_path):
+    runs = [_run(2, "tardio", "success", T45)]
+    gh = FakeGh({"/commits/H/check-runs": runs})
+    gh.pr["merged_at"] = MERGE
+    import argparse
+    monkeypatch.setattr(ce, "PER_PAGE", 100)
+    monkeypatch.setattr(ce, "previous_tag", lambda tag: "v0")
+    monkeypatch.setattr(ce, "repo_slug", lambda: "o/r")
+    monkeypatch.setattr(ce, "git_range_commits", lambda rng: [
+        {"sha": "a" * 40, "subject": "feat: algo (#7)", "author": "x", "tasks": []}])
+    monkeypatch.setattr(ce, "gh_json", gh)
+    ce.mode_release(argparse.Namespace(tag="v1", out=str(tmp_path), offline=False))
+    rec = json.loads((tmp_path / "change-record.json").read_text(encoding="utf-8"))
+    assert any("tardio" in g and "PR #7" in g for g in rec["gaps"])
+
+
+def test_pr_fusionado_sin_checks_no_inventa_hueco(ce, monkeypatch):
+    p = _collect_merged(ce, monkeypatch, [])
+    assert p["checks"] == [] and p["gaps"] == []
+
+
+# --- reintento ante 5xx en gh_json ---
+def _gh_simulado(ce, monkeypatch, resultados):
+    """Parchea run(): cada llamada consume un resultado (str = salida, str 'gh: ...' en Exception = fallo)."""
+    llamadas, esperas = [], []
+
+    def run(cmd):
+        llamadas.append(cmd)
+        r = resultados[len(llamadas) - 1]
+        if isinstance(r, str):
+            return r
+        raise subprocess.CalledProcessError(1, cmd, stderr=r.args[0])
+    monkeypatch.setattr(ce, "run", run)
+    monkeypatch.setattr(ce.time, "sleep", lambda s: esperas.append(s))
+    return llamadas, esperas
+
+
+def _err(msg):
+    return Exception(msg)
+
+
+def test_500_y_luego_exito_reintenta_una_vez(ce, monkeypatch):
+    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err("gh: Server Error (HTTP 500)"), '{"ok": 1}'])
+    assert ce.gh_json("x") == {"ok": 1}
+    assert len(llamadas) == 2 and len(esperas) == 1 and 0 < esperas[0] <= 5
+
+
+def test_dos_500_y_luego_exito(ce, monkeypatch):
+    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err("gh: Bad Gateway (HTTP 502)"),
+                                                       _err("gh: Unavailable (HTTP 503)"), '[1]'])
+    assert ce.gh_json("x") == [1] and len(llamadas) == 3 and len(esperas) == 2
+
+
+def test_tres_500_son_tres_llamadas_y_propaga_el_ultimo_error(ce, monkeypatch):
+    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err("gh: a (HTTP 500)"), _err("gh: b (HTTP 502)"),
+                                                       _err("gh: c (HTTP 503)"), '{"no": 0}'])
+    with pytest.raises(subprocess.CalledProcessError) as ei:
+        ce.gh_json("x")
+    assert len(llamadas) == 3 and len(esperas) == 2 and "(HTTP 503)" in ei.value.stderr
+
+
+def test_tres_500_en_collect_pr_dejan_hueco(ce, monkeypatch):
+    esperas = []
+    monkeypatch.setattr(ce.time, "sleep", lambda s: esperas.append(s))
+    fake = FakeGh({})
+
+    def run(cmd):
+        path = cmd[-1]
+        if "/check-runs" in path:
+            raise subprocess.CalledProcessError(1, cmd, stderr="gh: Server Error (HTTP 500)")
+        return json.dumps(fake(path))
+    monkeypatch.setattr(ce, "run", run)
+    p = ce.collect_pr("o/r", 7)
+    assert any("no se pudieron leer los checks" in g and "HTTP 500" in g for g in p["gaps"])
+    assert len(esperas) == 2
+
+
+@pytest.mark.parametrize("msg", ["gh: Forbidden (HTTP 403)", "gh: Not Found (HTTP 404)", "gh: Gone (HTTP 410)"])
+def test_403_y_404_fallan_a_la_primera_sin_sleep(ce, monkeypatch, msg):
+    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err(msg), '{"ok": 1}'])
+    with pytest.raises(subprocess.CalledProcessError):
+        ce.gh_json("x")
+    assert len(llamadas) == 1 and esperas == []
+
+
+def test_403_cuyo_mensaje_contiene_http_500_no_se_reintenta(ce, monkeypatch):
+    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err("gh: upstream said HTTP 500 earlier (HTTP 403)"),
+                                                       '{"ok": 1}'])
+    with pytest.raises(subprocess.CalledProcessError):
+        ce.gh_json("x")
+    assert len(llamadas) == 1 and esperas == []
+
+
+def test_error_sin_codigo_http_no_se_reintenta(ce, monkeypatch):
+    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err("gh: connection reset"), '{"ok": 1}'])
+    with pytest.raises(subprocess.CalledProcessError):
+        ce.gh_json("x")
+    assert len(llamadas) == 1 and esperas == []
+
+
+def test_error_con_stderr_none_no_rompe_ni_se_reintenta(ce, monkeypatch):
+    llamadas = []
+
+    def run(cmd):
+        llamadas.append(cmd)
+        raise subprocess.CalledProcessError(1, cmd, stderr=None)
+    monkeypatch.setattr(ce, "run", run)
+    monkeypatch.setattr(ce.time, "sleep", lambda s: pytest.fail("no debe esperar"))
+    with pytest.raises(subprocess.CalledProcessError):
+        ce.gh_json("x")
+    assert len(llamadas) == 1
+
+
+def test_exito_a_la_primera_no_espera(ce, monkeypatch):
+    llamadas, esperas = _gh_simulado(ce, monkeypatch, ['{"ok": 1}'])
+    assert ce.gh_json("x") == {"ok": 1} and len(llamadas) == 1 and esperas == []
