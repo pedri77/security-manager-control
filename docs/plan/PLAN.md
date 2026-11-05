@@ -478,7 +478,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 
 ## Ola 21 (SMC-006)
 
-- [ ] **T45** — `estado` que no es escalar en `smc gap` y `smc plan`
+- [~] **T45** — `estado` que no es escalar en `smc gap` y `smc plan`
   - Issue: SMC-006 https://github.com/pedri77/security-manager-control/issues/18
   - Hace: en `smc/gap.py`, un `estado` que no es texto, como `estado: []` o `estado: {}`, sigue el camino de un estado no válido: aviso `estado no válido` y cuenta como sin evaluar. `smc gap` y `smc plan` dejan de dar `TypeError: unhashable type`. Añade tests de esos dos valores en `gap` y en `plan`, y un test de que un YAML válido que no es un mapa (`42`, `- a`, `hola`, vacío) da rc=0 con su aviso en `smc gap`.
   - No hace: no toca `smc/cli.py`, `_ERRORES_DATOS`, `_load` ni `smc/compare.py`. No toca `tests/golden/`. No cambia el texto de ningún aviso. Nada de `smc report`, `smc dashboard` ni `smc verticals`.
@@ -486,6 +486,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Depende: T42
   - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde y `git diff` sin cambios en `tests/golden/`. Contraprueba en una copia temporal, lanzando desde ella y con `PYTHONPATH` a esa copia, un mutante por copia: volver a `estado not in VALID_STATES` sin la comprobación de tipo debe poner en rojo tests de `gap` y de `plan`; hacer que `_load` lance `ValueError` si el resultado no es un mapa debe poner en rojo el test de YAML no mapa. El informe da cada resultado medido, test a test.
   - Prod: —
+  - Estado: reservada por coordinador-smc-f2p 2026-11-05
 
 ## Libro
 
