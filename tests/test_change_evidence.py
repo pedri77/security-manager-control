@@ -1,5 +1,6 @@
 """change_evidence.py: comentarios HTML, errores de API al leer la configuración e identidad de cosign."""
 import importlib.util
+import json
 import subprocess
 from pathlib import Path
 
@@ -164,3 +165,73 @@ def test_pagina_exacta_y_pagina_vacia_terminan(ce, monkeypatch):
     commits = [_commit(1, "Task: SMC-001"), _commit(2, "b")]  # justo una página llena
     p = _collect(ce, monkeypatch, {"/pulls/7/commits": commits})
     assert p["commits"] == ["sha1", "sha2"]
+
+
+# ───────────── tope de páginas como hueco (SMC-003, T38) ─────────────
+def _llena(n=6):
+    return [{"name": str(i), "context": str(i), "id": i, "state": "success", "conclusion": "success"}
+            for i in range(n)]
+
+
+@pytest.mark.parametrize("que,suf", [("checks", "check-runs"), ("estados", "statuses")])
+def test_tope_de_paginas_en_checks_y_estados_es_hueco(ce, monkeypatch, que, suf):
+    monkeypatch.setattr(ce, "MAX_PAGES", 3)
+    p = _collect(ce, monkeypatch, {f"/commits/H/{suf}": _llena(6)})  # 3 páginas llenas de 2: sin página corta
+    assert len(p["gaps"]) == 1
+    g = p["gaps"][0]
+    assert "más de 3 páginas" in g and "lectura incompleta" in g and "PR #7" in g  # dice qué pasó sin stderr
+    assert (p["checks"] == [] if que == "checks" else p["blind_review"] is None)
+
+
+def test_justo_en_el_tope_con_pagina_corta_no_es_hueco(ce, monkeypatch):
+    monkeypatch.setattr(ce, "MAX_PAGES", 3)
+    p = _collect(ce, monkeypatch, {"/commits/H/check-runs": _llena(5)})  # páginas 2+2+1
+    assert p["gaps"] == [] and len(p["checks"]) == 5
+
+
+@pytest.mark.parametrize("suf", ["commits", "reviews"])
+def test_tope_en_commits_y_reviews_sigue_propagando_en_modo_pr(ce, monkeypatch, suf):
+    monkeypatch.setattr(ce, "MAX_PAGES", 3)
+    items = [_commit(i, "x") if suf == "commits" else {"user": {"login": "a"}, "state": "COMMENTED"}
+             for i in range(6)]
+    with pytest.raises(ce.PagesLimitError):
+        _collect(ce, monkeypatch, {f"/pulls/7/{suf}": items})
+
+
+def test_mensaje_de_hueco_sin_stderr(ce, monkeypatch):
+    def gh_json(path):
+        if "/check-runs" in path:
+            raise subprocess.CalledProcessError(1, ["gh", "api"], stderr=None)
+        return FakeGh({})(path)
+    monkeypatch.setattr(ce, "gh_json", gh_json)
+    p = ce.collect_pr("o/r", 7)
+    assert "no se pudieron leer los checks" in p["gaps"][0] and "gh" in p["gaps"][0]
+
+
+@pytest.mark.parametrize("suf", ["commits", "reviews", "check-runs", "statuses"])
+def test_release_con_tope_escribe_el_pack_con_hueco(ce, monkeypatch, tmp_path, suf):
+    import argparse
+    monkeypatch.setattr(ce, "MAX_PAGES", 3)
+    monkeypatch.setattr(ce, "PER_PAGE", 2)
+    monkeypatch.setattr(ce, "previous_tag", lambda tag: "v0")
+    monkeypatch.setattr(ce, "repo_slug", lambda: "o/r")
+    monkeypatch.setattr(ce, "git_range_commits", lambda rng: [
+        {"sha": "a" * 40, "subject": "feat: algo (#7)", "author": "x", "tasks": []}])
+    key = ("/pulls/7/" if suf in ("commits", "reviews") else "/commits/H/") + suf
+    items = ([_commit(i, "x") for i in range(6)] if suf == "commits" else
+             [{"user": {"login": "a"}, "state": "COMMENTED"}] * 6 if suf == "reviews" else _llena(6))
+    monkeypatch.setattr(ce, "gh_json", FakeGh({key: items}))
+    rc = ce.mode_release(argparse.Namespace(tag="v1", out=str(tmp_path), offline=False))
+    assert rc == 0
+    rec = json.loads((tmp_path / "change-record.json").read_text(encoding="utf-8"))
+    assert any("más de 3 páginas" in g for g in rec["gaps"])
+    assert (tmp_path / "change-record.md").exists()
+
+
+def test_desempate_de_latest_status_por_id_con_mismo_created_at(ce):
+    ctx = ce.BLIND_REVIEW_CONTEXT
+    t = "2026-11-02T10:00:00Z"
+    a = {"id": 10, "context": ctx, "state": "failure", "created_at": t}
+    b = {"id": 11, "context": ctx, "state": "success", "created_at": t}
+    assert ce.latest_status([a, b], ctx)["state"] == "success"
+    assert ce.latest_status([b, a], ctx)["state"] == "success"
