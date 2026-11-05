@@ -424,7 +424,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en 2877f634a68b028cad5cb174960f0f6cbf1441b8 · evidencia informes/T39-dev-proyecto.md
 
-- [~] **T40** — Cerrar el FAIL de revisión ciega del PR #16
+- [x] **T40** — Cerrar el FAIL de revisión ciega del PR #16
   - Issue: SMC-004 https://github.com/pedri77/security-manager-control/issues/14
   - Hace: (1) `smc gap` y `smc plan` capturan también `RecursionError`, que PyYAML lanza con anidamiento profundo: un YAML con 500 corchetes sin cerrar da `ERROR: <ruta>: <motivo>` y rc=2, sin traceback. (2) Tests de referencia para el criterio 5 de la issue: la salida de `smc gap`, de `smc gap -o` y de `smc plan` con una evaluación válida y `--hoy` fijo se compara con ficheros de referencia generados con el código de `0c1a5be`, anterior a este cambio, nunca con el código nuevo. El test `test_evaluacion_valida_sigue_igual` deja de comparar dos ejecuciones entre sí.
   - No hace: no añade `RecursionError` a `_ERRORES_DATOS`: cambiaría otros comandos, fuera de alcance. No toca `smc evidencias`, `smc/gap.py` ni `smc/plan.py`. No reordena la captura de `ValueError` y `OSError`.
@@ -432,7 +432,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Depende: T39
   - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde. Contraprueba en una copia temporal, no en el worktree, y con `PYTHONPATH` apuntando a esa copia (la instalación editable importa `smc` de otro sitio): cada mutante por separado debe poner en rojo al menos un test de `tests/test_cli_errores.py`: quitar `RecursionError` de `gap`, quitarlo de `plan`, `print(report + "X")`, `write_text(report + "X")`, y añadir una línea a `run_plan`. El informe da el resultado medido de cada mutante, test a test.
   - Prod: —
-  - Estado: reservada por coordinador-smc-f2p 2026-11-05
+  - Estado: hecha en 11a2e6fb41cb4e36960b7b32288ae8090d032749 · evidencia informes/T40-dev-proyecto.md
 
 ## Libro
 
@@ -454,6 +454,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 - 2026-11-05 · T37: `collect_pr` pagina con `gh_pages` (per_page=100, tope 50 páginas que falla como hueco); `blind-review` se lee de `commits/<sha>/statuses` y cuenta el más reciente por (created_at, id). `/status` vs `/statuses` no contrastado en vivo con repetidos. Límite GitHub: 250 commits por PR. 654 tests verdes.
 - 2026-11-05 · T38: `PagesLimitError` (subclase de RuntimeError) capturada con `READ_ERRORS` en checks, estados y `mode_release`: el tope es hueco, no aborta; commits y reviews siguen propagando en modo PR. Desempate por `id` con test. 665 tests; contraprueba (except sin PagesLimitError en release) = 2 en rojo.
 - 2026-11-05 · T39 (SMC-004): `smc gap` y `smc plan` capturan `_ERRORES_DATOS` y dan `ERROR: <ruta>: <motivo>` rc=2; `gap -o` no crea fichero si falla. 654 tests; contraprueba (quitar la captura) = 6 de 9 tests nuevos en rojo, los 3 de evaluación válida siguen verdes. Un ValueError interno de `analyse` también sale ahora como ERROR rc=2.
+- 2026-11-05 · T40 (SMC-004): `gap` y `plan` capturan también `RecursionError` (YAML con 500 `[` da rc=2 sin traceback); `_ERRORES_DATOS` intacto. Referencias `tests/golden/{gap,gap_o,plan}.md` regeneradas por el coordinador desde `0c1a5be` y idénticas (cmp). 677 tests; 5 mutantes en copia limpia, todos en rojo.
 
 ### Supuestos
 - La tabla del Anexo II del RD 311/2022 se puede reconstruir con fiabilidad suficiente; lo dudoso va con `verificar: true`.
