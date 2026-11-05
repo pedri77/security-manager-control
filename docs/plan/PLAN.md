@@ -402,7 +402,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en 97e4d3c546382d4be9c9140d02658174b4047f82 · evidencia informes/T37-dev-proyecto.md
 
-- [ ] **T38** — Tope de páginas como hueco (FAIL de revisión ciega del PR #15)
+- [~] **T38** — Tope de páginas como hueco (FAIL de revisión ciega del PR #15)
   - Issue: SMC-003 https://github.com/pedri77/security-manager-control/issues/13
   - Hace: el error que lanza `gh_pages` al superar `MAX_PAGES` se trata igual que un error de lectura: en `collect_pr` queda como hueco al leer checks o estados, y `mode_release` no aborta y escribe el pack con el hueco anotado, también si el tope salta en commits o reviews. Añade test del desempate por `id` de `latest_status`: dos estados con el mismo `created_at` y distinto resultado.
   - No hace: no cambia `PER_PAGE`, `MAX_PAGES`, `is_release_pr`, los workflows ni la plantilla. No cambia el comportamiento ante errores en modo PR para commits y reviews.
@@ -410,6 +410,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Depende: T37
   - Verifica: `uv run --extra dev pytest -q tests/test_change_evidence.py` y `make test` en verde; test del tope en checks, en estados y en modo release; contraprueba anotada: si el tope corta en silencio, o si el `except` no lo captura, esos tests fallan; si `latest_status` ordena solo por `created_at`, el test de desempate falla.
   - Prod: —
+  - Estado: reservada por coordinador-smc-f2p 2026-11-05
 
 ## Libro
 
