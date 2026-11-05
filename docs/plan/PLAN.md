@@ -500,7 +500,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en 2889c5b · evidencia informes/T46-dev-proyecto.md
 
-- [~] **T47** — Cerrar el FAIL de revisión ciega del PR #24
+- [x] **T47** — Cerrar el FAIL de revisión ciega del PR #24
   - Issue: SMC-007 https://github.com/pedri77/security-manager-control/issues/21
   - Hace: en `scripts/change_evidence.py`, `http_status` reconoce los dos formatos reales de `gh` en stderr: `gh: <mensaje> (HTTP 503)` y `gh: HTTP 503`, este último cuando el cuerpo no es JSON con `message`. Cuenta la última aparición del código, para que un 403 cuyo mensaje cita `HTTP 500` no se reintente. Corrige la docstring. En `tests/test_change_evidence.py`, añade tests de: `gh: HTTP 502` y `gh: HTTP 503` con reintento; `gh: HTTP 404` sin reintento; stderr con dos códigos, donde cuenta el último; corte en `merged_at` con fechas en otro huso (`+01:00`), donde cuenta el instante y no el texto; y dos apps con el mismo nombre de check, donde solo la que se queda sin runs por el corte deja hueco.
   - No hace: no corta por `completed_at` ni toca `latest_status`. No cambia `is_release_pr`, `latest_check_runs` ni los workflows. No cambia el formato del registro. No toca la plantilla de enjambre-agentes, versión ni CHANGELOG.
@@ -508,7 +508,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Depende: T46
   - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde. Prueba con el binario real de `gh` contra un servidor local, contando peticiones en el servidor: 500 con JSON, 502 con HTML, 503 con HTML y 504 con cuerpo vacío dan 3 peticiones cada uno; 403 y 404, con JSON y con HTML, dan 1. Resultado en el informe. Contraprueba en copia temporal, un mutante por copia, con resultado medido test a test: volver a `r"\(HTTP (\d{3})\)"`; tomar la primera aparición en vez de la última; comparar el corte como texto; `_utc` sin zona; quitar la app de la clave de runs conservados. Cada uno debe poner en rojo al menos un test.
   - Prod: —
-  - Estado: reservada por coordinador-smc-f2p 2026-11-05
+  - Estado: hecha en 631e049 · evidencia informes/T47-dev-proyecto.md
 
 ## Libro
 
@@ -537,6 +537,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 - 2026-11-05 · T42 (SMC-004): `_load` convierte también `TypeError` (`a: !!timestamp {=}`); caso `tag-timestamp-mapa` en `MALAS`, 693 tests. Contraprueba en copia (quitar TypeError) = 3 en rojo: gap 2 (error_limpio, salida), plan 1 (error_limpio).
 - 2026-11-05 · T45 (SMC-006): en `gap.py`, `analyse` y `_heredado` comprueban `isinstance(estado, str)` antes de `in VALID_STATES`/`in SCORES`; `estado: []`/`{}` da aviso `estado no válido` y cuenta sin evaluar, sin TypeError en gap ni plan. Test de YAML no mapa (`42`, `- a`, `hola`, vacío) con rc=0 y aviso. 735 tests; contraprueba en copias: mutante tipo = 6 rojos (gap y plan), mutante `_load` = 4 rojos.
 - 2026-11-05 · T46 (SMC-007): `latest_check_runs` elige entre los fechados por (`started_at`, `id`) y un run sin fecha solo gana con `id` mayor que todos los fechados; `collect_pr` corta en `merged_at` (`>` estricto; igual o sin fecha se quedan) y anota hueco con PR y check si se queda sin runs (sin nombre de app: con dos apps homónimas es ambiguo, no falso); `gh_json` reintenta 2 veces ante `(HTTP 5xx)` en stderr. `merged_at` ilegible = sin corte. 761 tests; 10 mutantes en rojo (2, 1, 11, 4, 1, 2, 4, 6, 2, 3), lectura estricta de m3 = 15.
+- 2026-11-05 · T47 (SMC-007, FAIL ciego del PR #24): `gh` 2.89.0 escribe `gh: <mensaje> (HTTP 5xx)` solo si el cuerpo es JSON con `message`; con HTML, vacío o `{}` escribe `gh: HTTP 5xx` y T46 no reintentaba. `http_status` reconoce ambas formas (la segunda anclada a línea) y cuenta la última aparición. Medido con `gh` real y servidor local: 500/502/503/504 = 3 peticiones, 403/404 = 1. Un cuerpo vacío con content-type JSON da `unexpected end of JSON input` sin código (1 petición). Corte en `merged_at` por instante (huso) y hueco solo de la app que se queda sin runs, con test. 787 tests; mutantes 15, 3, 3, 3, 1. Pendiente fuera de alcance: `"HTTP 404" in stderr` en `collect_pr` (número suelto).
 
 ### Supuestos
 - La tabla del Anexo II del RD 311/2022 se puede reconstruir con fiabilidad suficiente; lo dudoso va con `verificar: true`.
