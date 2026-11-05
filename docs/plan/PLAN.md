@@ -392,7 +392,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 
 ## Ola 18 (SMC-003)
 
-- [~] **T37** — Paginar las lecturas de la API en `collect_pr`
+- [x] **T37** — Paginar las lecturas de la API en `collect_pr`
   - Issue: SMC-003 https://github.com/pedri77/security-manager-control/issues/13
   - Hace: `collect_pr` de `scripts/change_evidence.py` lee todas las páginas de commits, reviews, check-runs y estados del commit, y cumple los criterios de aceptación de la issue. Si `blind-review` se publicó varias veces sobre el mismo SHA, cuenta el estado más reciente. Un error de lectura de checks o estados, también en una página posterior, sigue anotándose como hueco.
   - No hace: no toca `is_release_pr`, los workflows ni la plantilla de enjambre-agentes. No cambia el formato del registro de cambio. No toca versión ni CHANGELOG (los lleva release-please).
@@ -400,7 +400,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Depende: T36
   - Verifica: `uv run --extra dev pytest -q tests/test_change_evidence.py` y `make test` en verde; un test por criterio de la issue, con `gh` simulado y varias páginas; contraprueba anotada en el informe: con la lectura de una sola página, cada test nuevo falla.
   - Prod: —
-  - Estado: reservada por coordinador-smc-f2p 2026-11-05
+  - Estado: hecha en 97e4d3c546382d4be9c9140d02658174b4047f82 · evidencia informes/T37-dev-proyecto.md
 
 ## Libro
 
@@ -419,6 +419,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 - 2026-11-03 · T12: 17 feeds RSS, 13 con `verificado: true` (comprobados con red por la sesión principal; CCN-CERT, ENISA, CISA KEV y NVD sin RSS, con alternativa en `nota`); ecosistema con 8 Pages, 2 repos públicos y 3 pendientes. OPML solo con feeds con `url_feed`. 9 tests.
 - 2026-11-03 · T13: 8 casos de uso con `deteccion`, `playbook`, `vertical`; 7 playbooks nuevos PB-UC-002..008; `smc.mitre` (niveles 1-5, export Navigator, ATT&CK "16"). 9 tests nuevos.
 - 2026-11-03 · Main tras fusionar T09-T13 (sin conflictos, en orden T09, T10, T11, T12, T13): 151 tests verdes (78 + 28 + 11 + 16 + 9 + 9).
+- 2026-11-05 · T37: `collect_pr` pagina con `gh_pages` (per_page=100, tope 50 páginas que falla como hueco); `blind-review` se lee de `commits/<sha>/statuses` y cuenta el más reciente por (created_at, id). `/status` vs `/statuses` no contrastado en vivo con repetidos. Límite GitHub: 250 commits por PR. 654 tests verdes.
 
 ### Supuestos
 - La tabla del Anexo II del RD 311/2022 se puede reconstruir con fiabilidad suficiente; lo dudoso va con `verificar: true`.
