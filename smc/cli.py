@@ -338,7 +338,11 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.cmd == "plan":
-        print(run_plan(args.assessment, args.hoy))
+        try:
+            texto = run_plan(args.assessment, args.hoy)
+        except _ERRORES_DATOS as exc:
+            return _error(args.assessment, exc)
+        print(texto)
         return 0
 
     if args.cmd == "report":
@@ -369,7 +373,10 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.cmd == "gap":
-        report = run(args.assessment, args.hoy)
+        try:
+            report = run(args.assessment, args.hoy)
+        except _ERRORES_DATOS as exc:
+            return _error(args.assessment, exc)
         if args.output:
             args.output.write_text(report, encoding="utf-8")
             print(f"Informe escrito en {args.output}")
