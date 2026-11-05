@@ -26,6 +26,7 @@ Revisión de ola: 3
 |---|---|---|
 | smc | coordinador | T01, T02, T03, T04, T05, T06, T07, T08 |
 | smc-v05 | coordinador | T09, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28, T29, T30, T31, T32, T33, T34, T35, T36 |
+| smc-f2p | coordinador | T37 |
 
 ## Ola 1
 
@@ -389,6 +390,17 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en c1e83b2 · evidencia informes/T36-dev-proyecto.md
 
+## Ola 18 (SMC-003)
+
+- [ ] **T37** — Paginar las lecturas de la API en `collect_pr`
+  - Issue: SMC-003 https://github.com/pedri77/security-manager-control/issues/13
+  - Hace: `collect_pr` de `scripts/change_evidence.py` lee todas las páginas de commits, reviews, check-runs y estados del commit, y cumple los criterios de aceptación de la issue. Si `blind-review` se publicó varias veces sobre el mismo SHA, cuenta el estado más reciente. Un error de lectura de checks o estados, también en una página posterior, sigue anotándose como hueco.
+  - No hace: no toca `is_release_pr`, los workflows ni la plantilla de enjambre-agentes. No cambia el formato del registro de cambio. No toca versión ni CHANGELOG (los lleva release-please).
+  - Toca: `scripts/change_evidence.py`, `tests/test_change_evidence.py`, `docs/plan/informes/T37-dev-proyecto.md`
+  - Depende: T36
+  - Verifica: `uv run --extra dev pytest -q tests/test_change_evidence.py` y `make test` en verde; un test por criterio de la issue, con `gh` simulado y varias páginas; contraprueba anotada en el informe: con la lectura de una sola página, cada test nuevo falla.
+  - Prod: —
+
 ## Libro
 
 ### Hechos
@@ -476,3 +488,4 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 - Ola 15: 0
 - Ola 16: 0
 - Ola 17: 0
+- Ola 18: 0
