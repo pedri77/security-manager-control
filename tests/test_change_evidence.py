@@ -351,3 +351,55 @@ def test_formato_de_checks_sin_campos_nuevos_y_ordenado_por_nombre(ce, monkeypat
 def test_check_en_curso_sin_started_at_supera_al_verde(ce, monkeypatch, orden):
     runs = _ordena([_run(1, "ci", "success", "2026-11-04T20:41:00Z"), _run(2, "ci", None, None)], orden)
     assert _conclusiones(_collect_runs(ce, monkeypatch, runs)) == [("ci", "in_progress")]
+
+
+# ───────────── cierre del FAIL de revisión ciega del PR #19 (SMC-005, T44) ─────────────
+@pytest.mark.parametrize("orden", ORDENES)
+def test_fallo_concluido_sin_started_at_supera_al_verde(ce, monkeypatch, orden):
+    runs = _ordena([_run(1, "ci", "success", "2026-11-04T20:41:00Z"), _run(2, "ci", "failure", None)], orden)
+    assert _conclusiones(_collect_runs(ce, monkeypatch, runs)) == [("ci", "failure")]
+
+
+@pytest.mark.parametrize("orden", ORDENES)
+def test_verde_concluido_sin_started_at_supera_al_fallo(ce, monkeypatch, orden):
+    runs = _ordena([_run(1, "ci", "failure", "2026-11-04T20:41:00Z"), _run(2, "ci", "success", None)], orden)
+    assert _conclusiones(_collect_runs(ce, monkeypatch, runs)) == [("ci", "success")]
+
+
+def _release_con_runs(ce, monkeypatch, tmp_path, runs):
+    import argparse
+    monkeypatch.setattr(ce, "PER_PAGE", 100)
+    monkeypatch.setattr(ce, "previous_tag", lambda tag: "v0")
+    monkeypatch.setattr(ce, "repo_slug", lambda: "o/r")
+    monkeypatch.setattr(ce, "git_range_commits", lambda rng: [
+        {"sha": "a" * 40, "subject": "feat: algo (#7)", "author": "x", "tasks": []}])
+    monkeypatch.setattr(ce, "gh_json", FakeGh({"/commits/H/check-runs": runs}))
+    assert ce.mode_release(argparse.Namespace(tag="v1", out=str(tmp_path), offline=False)) == 0
+    rec = json.loads((tmp_path / "change-record.json").read_text(encoding="utf-8"))
+    return rec, [g for g in rec["gaps"] if "checks no exitosos" in g]
+
+
+@pytest.mark.parametrize("orden", ORDENES)
+def test_release_fallo_superado_por_verde_no_deja_hueco_de_checks(ce, monkeypatch, tmp_path, orden):
+    # caso real del PR #11: el check falló y se relanzó en verde
+    runs = _ordena([_run(1, "ci", "failure", "2026-11-04T20:41:00Z"),
+                    _run(2, "ci", "success", "2026-11-04T20:43:00Z")], orden)
+    rec, huecos = _release_con_runs(ce, monkeypatch, tmp_path, runs)
+    assert huecos == []
+    assert rec["changes"][0]["ci_status"] == "✅"
+
+
+@pytest.mark.parametrize("orden", ORDENES)
+def test_release_verde_superado_por_fallo_deja_hueco_de_checks(ce, monkeypatch, tmp_path, orden):
+    runs = _ordena([_run(1, "ci", "success", "2026-11-04T20:41:00Z"),
+                    _run(2, "ci", "failure", "2026-11-04T20:43:00Z")], orden)
+    rec, huecos = _release_con_runs(ce, monkeypatch, tmp_path, runs)
+    assert huecos == ["PR #7 con checks no exitosos: ci"]
+    assert rec["changes"][0]["ci_status"] == "❌ ci"
+
+
+@pytest.mark.parametrize("orden", ORDENES)
+def test_release_fallo_sin_started_at_tras_verde_deja_hueco(ce, monkeypatch, tmp_path, orden):
+    runs = _ordena([_run(1, "ci", "success", "2026-11-04T20:41:00Z"), _run(2, "ci", "failure", None)], orden)
+    _, huecos = _release_con_runs(ce, monkeypatch, tmp_path, runs)
+    assert huecos == ["PR #7 con checks no exitosos: ci"]

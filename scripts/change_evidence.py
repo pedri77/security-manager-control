@@ -111,7 +111,8 @@ def latest_status(statuses: list[dict], context: str) -> dict | None:
 def latest_check_runs(runs: list[dict]) -> list[dict]:
     """Un check-run por (nombre, app): el más reciente por started_at e id; no se fía del orden de la lista.
 
-    Un run sin concluir y sin started_at se tiene por el más reciente: no se da por bueno un verde anterior.
+    Un run sin started_at (en curso o ya concluido) se tiene por el más reciente: ni un verde anterior
+    tapa su fallo, ni un fallo anterior tapa su verde.
     """
     best: dict[tuple, dict] = {}
     for r in runs:
@@ -122,7 +123,7 @@ def latest_check_runs(runs: list[dict]) -> list[dict]:
 
 
 def _run_order(r: dict) -> tuple:
-    started = r.get("started_at") or ("\uffff" if not r.get("conclusion") else "")
+    started = r.get("started_at") or "\uffff"
     return (started, r.get("id") or 0)
 
 
