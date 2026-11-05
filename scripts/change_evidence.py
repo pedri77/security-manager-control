@@ -65,6 +65,49 @@ def gh_json(path: str) -> object:
     return json.loads(run(["gh", "api", "-H", "Accept: application/vnd.github+json", path]))
 
 
+class PagesLimitError(RuntimeError):
+    """Se alcanzó MAX_PAGES sin página corta: la lectura quedó incompleta (se trata como hueco)."""
+
+
+def reason(e: Exception) -> str:
+    """Motivo legible de un fallo de lectura; no depende de que el error traiga stderr."""
+    if isinstance(e, subprocess.CalledProcessError):
+        return (e.stderr or "").strip() or str(e)
+    return str(e)
+
+
+READ_ERRORS = (subprocess.CalledProcessError, PagesLimitError)
+
+PER_PAGE = 100
+MAX_PAGES = 50  # tope de seguridad: si se alcanza, error (hueco) en vez de cortar en silencio
+
+
+def gh_pages(path: str, key: str | None = None) -> list:
+    """Lee todas las páginas de una lista de la API pidiendo page=N una a una.
+
+    No usa `gh api --paginate`: sin `--slurp` concatena las páginas una tras otra
+    (`[..][..]` o `{..}{..}`), que no es JSON válido, y con `--slurp` devuelve una
+    lista de páginas cuya forma depende de si la respuesta es lista u objeto.
+    `key` nombra la lista dentro de una respuesta objeto (p. ej. `check_runs`).
+    Termina con la primera página corta; cualquier error de una página se propaga.
+    """
+    sep = "&" if "?" in path else "?"
+    items: list = []
+    for page in range(1, MAX_PAGES + 1):
+        data = gh_json(f"{path}{sep}per_page={PER_PAGE}&page={page}")
+        chunk = data[key] if key else data
+        items.extend(chunk)
+        if len(chunk) < PER_PAGE:
+            return items
+    raise PagesLimitError(f"{path}: más de {MAX_PAGES} páginas de {PER_PAGE}; lectura incompleta")
+
+
+def latest_status(statuses: list[dict], context: str) -> dict | None:
+    """Estado más reciente de un contexto (por created_at e id; no se fía del orden de la lista)."""
+    mine = [s for s in statuses if s.get("context") == context]
+    return max(mine, key=lambda s: (s.get("created_at") or "", s.get("id") or 0), default=None)
+
+
 def repo_slug() -> str:
     slug = os.environ.get("GITHUB_REPOSITORY")
     if slug:
@@ -118,21 +161,21 @@ def is_release_pr(repo: str, number: int, head_ref: str, base_ref: str, same_rep
 # ───────────── recogida de datos ─────────────
 def collect_pr(repo: str, number: int) -> dict:
     pr = gh_json(f"repos/{repo}/pulls/{number}")
-    commits = gh_json(f"repos/{repo}/pulls/{number}/commits?per_page=100")
-    reviews = gh_json(f"repos/{repo}/pulls/{number}/reviews?per_page=100")
+    commits = gh_pages(f"repos/{repo}/pulls/{number}/commits")
+    reviews = gh_pages(f"repos/{repo}/pulls/{number}/reviews")
     head_sha = pr["head"]["sha"]
     gaps: list[str] = []
     try:
-        checks = gh_json(f"repos/{repo}/commits/{head_sha}/check-runs?per_page=100")["check_runs"]
-    except subprocess.CalledProcessError as e:
+        checks = gh_pages(f"repos/{repo}/commits/{head_sha}/check-runs", "check_runs")
+    except READ_ERRORS as e:
         checks = []
-        gaps.append(f"PR #{number}: no se pudieron leer los checks ({(e.stderr or '').strip() or e})")
+        gaps.append(f"PR #{number}: no se pudieron leer los checks ({reason(e)})")
     try:
-        statuses = gh_json(f"repos/{repo}/commits/{head_sha}/status")["statuses"]
-    except subprocess.CalledProcessError as e:
+        statuses = gh_pages(f"repos/{repo}/commits/{head_sha}/statuses")
+    except READ_ERRORS as e:
         statuses = []
-        gaps.append(f"PR #{number}: no se pudo leer el estado blind-review ({(e.stderr or '').strip() or e})")
-    blind = next((s for s in statuses if s.get("context") == BLIND_REVIEW_CONTEXT), None)
+        gaps.append(f"PR #{number}: no se pudo leer el estado blind-review ({reason(e)})")
+    blind = latest_status(statuses, BLIND_REVIEW_CONTEXT)
 
     author = pr["user"]["login"]
     head_repo = (pr["head"].get("repo") or {}).get("full_name")
@@ -289,10 +332,10 @@ def mode_release(args: argparse.Namespace) -> int:
             seen.add(n)
             try:
                 p = collect_pr(repo, n)
-            except subprocess.CalledProcessError as e:
+            except READ_ERRORS as e:
                 # La release ya existe: un fallo aquí no puede dejarla sin SBOM ni evidencias.
                 changes.append(c)
-                gaps.append(f"PR #{n} no se pudo leer ({(e.stderr or '').strip() or e})")
+                gaps.append(f"PR #{n} no se pudo leer ({reason(e)})")
                 continue
             failed = [ch["name"] for ch in p["checks"] if ch["conclusion"] not in ("success", "skipped", "neutral")]
             p["ci_status"] = "✅" if not failed else "❌ " + ", ".join(failed)

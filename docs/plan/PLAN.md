@@ -25,7 +25,8 @@ Revisión de ola: 3
 | Grupo | Coordinador | Tareas |
 |---|---|---|
 | smc | coordinador | T01, T02, T03, T04, T05, T06, T07, T08 |
-| smc-v05 | coordinador | T09, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28, T29, T30, T31, T32, T33, T34, T35, T36, T39 |
+| smc-v05 | coordinador | T09, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28, T29, T30, T31, T32, T33, T34, T35, T36 |
+| smc-f2p | coordinador | T37, T38, T39, T40 |
 
 ## Ola 1
 
@@ -389,6 +390,28 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en c1e83b2 · evidencia informes/T36-dev-proyecto.md
 
+## Ola 18 (SMC-003)
+
+- [x] **T37** — Paginar las lecturas de la API en `collect_pr`
+  - Issue: SMC-003 https://github.com/pedri77/security-manager-control/issues/13
+  - Hace: `collect_pr` de `scripts/change_evidence.py` lee todas las páginas de commits, reviews, check-runs y estados del commit, y cumple los criterios de aceptación de la issue. Si `blind-review` se publicó varias veces sobre el mismo SHA, cuenta el estado más reciente. Un error de lectura de checks o estados, también en una página posterior, sigue anotándose como hueco.
+  - No hace: no toca `is_release_pr`, los workflows ni la plantilla de enjambre-agentes. No cambia el formato del registro de cambio. No toca versión ni CHANGELOG (los lleva release-please).
+  - Toca: `scripts/change_evidence.py`, `tests/test_change_evidence.py`, `docs/plan/informes/T37-dev-proyecto.md`
+  - Depende: T36
+  - Verifica: `uv run --extra dev pytest -q tests/test_change_evidence.py` y `make test` en verde; un test por criterio de la issue, con `gh` simulado y varias páginas; contraprueba anotada en el informe: con la lectura de una sola página, cada test nuevo falla.
+  - Prod: —
+  - Estado: hecha en 97e4d3c546382d4be9c9140d02658174b4047f82 · evidencia informes/T37-dev-proyecto.md
+
+- [x] **T38** — Tope de páginas como hueco (FAIL de revisión ciega del PR #15)
+  - Issue: SMC-003 https://github.com/pedri77/security-manager-control/issues/13
+  - Hace: el error que lanza `gh_pages` al superar `MAX_PAGES` se trata igual que un error de lectura: en `collect_pr` queda como hueco al leer checks o estados, y `mode_release` no aborta y escribe el pack con el hueco anotado, también si el tope salta en commits o reviews. Añade test del desempate por `id` de `latest_status`: dos estados con el mismo `created_at` y distinto resultado.
+  - No hace: no cambia `PER_PAGE`, `MAX_PAGES`, `is_release_pr`, los workflows ni la plantilla. No cambia el comportamiento ante errores en modo PR para commits y reviews.
+  - Toca: `scripts/change_evidence.py`, `tests/test_change_evidence.py`, `docs/plan/informes/T38-dev-proyecto.md`
+  - Depende: T37
+  - Verifica: `uv run --extra dev pytest -q tests/test_change_evidence.py` y `make test` en verde; test del tope en checks, en estados y en modo release; contraprueba anotada: si el tope corta en silencio, o si el `except` no lo captura, esos tests fallan; si `latest_status` ordena solo por `created_at`, el test de desempate falla.
+  - Prod: —
+  - Estado: hecha en 08fba06dab59fb502ed46caa1470ca942ad8a79b · evidencia informes/T38-dev-proyecto.md
+
 ## Ola 19 (SMC-004, prueba real del enjambre con F2P)
 
 - [x] **T39** — Error limpio en `smc gap` y `smc plan`
@@ -400,6 +423,15 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde, con un test por criterio de aceptación de la issue. Contraprueba en una copia temporal, no en el worktree: quitar la captura de errores de `gap` y de `plan` pone en rojo los tests nuevos.
   - Prod: —
   - Estado: hecha en 2877f634a68b028cad5cb174960f0f6cbf1441b8 · evidencia informes/T39-dev-proyecto.md
+
+- [ ] **T40** — Cerrar el FAIL de revisión ciega del PR #16
+  - Issue: SMC-004 https://github.com/pedri77/security-manager-control/issues/14
+  - Hace: (1) `smc gap` y `smc plan` capturan también `RecursionError`, que PyYAML lanza con anidamiento profundo: un YAML con 500 corchetes sin cerrar da `ERROR: <ruta>: <motivo>` y rc=2, sin traceback. (2) Tests de referencia para el criterio 5 de la issue: la salida de `smc gap`, de `smc gap -o` y de `smc plan` con una evaluación válida y `--hoy` fijo se compara con ficheros de referencia generados con el código de `0c1a5be`, anterior a este cambio, nunca con el código nuevo. El test `test_evaluacion_valida_sigue_igual` deja de comparar dos ejecuciones entre sí.
+  - No hace: no añade `RecursionError` a `_ERRORES_DATOS`: cambiaría otros comandos, fuera de alcance. No toca `smc evidencias`, `smc/gap.py` ni `smc/plan.py`. No reordena la captura de `ValueError` y `OSError`.
+  - Toca: `smc/cli.py`, `tests/test_cli_errores.py`, `tests/golden/`, `docs/plan/informes/T40-dev-proyecto.md`
+  - Depende: T39
+  - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde. Contraprueba en una copia temporal, no en el worktree, y con `PYTHONPATH` apuntando a esa copia (la instalación editable importa `smc` de otro sitio): cada mutante por separado debe poner en rojo al menos un test de `tests/test_cli_errores.py`: quitar `RecursionError` de `gap`, quitarlo de `plan`, `print(report + "X")`, `write_text(report + "X")`, y añadir una línea a `run_plan`. El informe da el resultado medido de cada mutante, test a test.
+  - Prod: —
 
 ## Libro
 
@@ -418,6 +450,8 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 - 2026-11-03 · T12: 17 feeds RSS, 13 con `verificado: true` (comprobados con red por la sesión principal; CCN-CERT, ENISA, CISA KEV y NVD sin RSS, con alternativa en `nota`); ecosistema con 8 Pages, 2 repos públicos y 3 pendientes. OPML solo con feeds con `url_feed`. 9 tests.
 - 2026-11-03 · T13: 8 casos de uso con `deteccion`, `playbook`, `vertical`; 7 playbooks nuevos PB-UC-002..008; `smc.mitre` (niveles 1-5, export Navigator, ATT&CK "16"). 9 tests nuevos.
 - 2026-11-03 · Main tras fusionar T09-T13 (sin conflictos, en orden T09, T10, T11, T12, T13): 151 tests verdes (78 + 28 + 11 + 16 + 9 + 9).
+- 2026-11-05 · T37: `collect_pr` pagina con `gh_pages` (per_page=100, tope 50 páginas que falla como hueco); `blind-review` se lee de `commits/<sha>/statuses` y cuenta el más reciente por (created_at, id). `/status` vs `/statuses` no contrastado en vivo con repetidos. Límite GitHub: 250 commits por PR. 654 tests verdes.
+- 2026-11-05 · T38: `PagesLimitError` (subclase de RuntimeError) capturada con `READ_ERRORS` en checks, estados y `mode_release`: el tope es hueco, no aborta; commits y reviews siguen propagando en modo PR. Desempate por `id` con test. 665 tests; contraprueba (except sin PagesLimitError en release) = 2 en rojo.
 - 2026-11-05 · T39 (SMC-004): `smc gap` y `smc plan` capturan `_ERRORES_DATOS` y dan `ERROR: <ruta>: <motivo>` rc=2; `gap -o` no crea fichero si falla. 654 tests; contraprueba (quitar la captura) = 6 de 9 tests nuevos en rojo, los 3 de evaluación válida siguen verdes. Un ValueError interno de `analyse` también sale ahora como ERROR rc=2.
 
 ### Supuestos
@@ -489,4 +523,5 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 - Ola 15: 0
 - Ola 16: 0
 - Ola 17: 0
+- Ola 18: 0
 - Ola 19: 0
