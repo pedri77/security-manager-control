@@ -510,6 +510,16 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en 631e049 · evidencia informes/T47-dev-proyecto.md
 
+- [ ] **T48** — Reintentar el 5xx de cuerpo vacío que `gh` no identifica
+  - Issue: SMC-007 https://github.com/pedri77/security-manager-control/issues/21
+  - Hace: en `scripts/change_evidence.py`, `gh_json` trata también como fallo transitorio un `CalledProcessError` cuyo stderr tiene una línea que es exactamente `unexpected end of JSON input`: con cuerpo vacío y `Content-Type: application/json`, `gh` escribe solo eso, sin código de estado. Mismos 2 reintentos y misma espera que un 5xx; agotados, se propaga el error y queda el hueco. Es seguro porque `gh_json` solo hace GET. Sin código no se distingue un 5xx de otro estado: un 403 o 404 con ese mismo cuerpo también se reintenta, y se acepta. Un stderr con código `(HTTP 403)` o `gh: HTTP 404` que además cite ese texto dentro de otra línea sigue fallando a la primera. En `tests/test_change_evidence.py`, tests de esos casos, con el stderr copiado de `gh` real.
+  - No hace: no pasa a `gh api -i` ni cambia cómo se invoca `gh`. No reintenta otros errores de JSON ni un `json.loads` que falle sobre salida correcta. No toca `latest_status`, `is_release_pr`, `latest_check_runs` ni los workflows. No toca la plantilla de enjambre-agentes, versión ni CHANGELOG.
+  - Toca: `scripts/change_evidence.py`, `tests/test_change_evidence.py`, `docs/plan/informes/T48-dev-proyecto.md`
+  - Depende: T47
+  - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde. Prueba con el binario real de `gh` contra un servidor local, contando peticiones en el servidor: 500, 502 y 504 con cuerpo vacío y `Content-Type: application/json` dan 3 peticiones cada uno; siguen dando 3 los casos de T47 (500 JSON, 502 HTML, 504 `text/plain`) y 1 los 403 y 404 con cuerpo no vacío. Contraprueba en copia temporal, un mutante por copia, con resultado medido test a test: quitar el reconocimiento del texto; buscarlo como subcadena en vez de línea exacta; reintentar cualquier `CalledProcessError`; no propagar al agotar. Cada uno debe poner en rojo al menos un test.
+  - Prod: —
+  - Estado: libre
+
 ## Libro
 
 ### Hechos
