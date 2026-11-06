@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "security-manager-control"
-version = "0.8.5"
+version = "0.8.6"
 description = "Centro de control para el Security Manager: NIS2, ENS, transversal y red"
 requires-python = ">=3.10"
 license = "Apache-2.0"

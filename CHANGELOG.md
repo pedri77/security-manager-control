@@ -2,6 +2,14 @@
 
 Formato basado en Keep a Changelog. Versionado semántico.
 
+## [0.8.6](https://github.com/pedri77/security-manager-control/compare/v0.8.5...v0.8.6) (2026-11-06)
+
+
+### Correcciones
+
+* **evidence:** check-run por fecha, corte en merged_at y reintento ante 5xx ([#24](https://github.com/pedri77/security-manager-control/issues/24)) ([b8e4b25](https://github.com/pedri77/security-manager-control/commit/b8e4b257a325a732404173910d38c5f5b16a869b))
+* **gap:** estado no escalar no da traceback en gap y plan ([#22](https://github.com/pedri77/security-manager-control/issues/22)) ([8d04cfe](https://github.com/pedri77/security-manager-control/commit/8d04cfe764117b0e93254f1edfb9054fd5bf5b73))
+
 ## [0.8.5](https://github.com/pedri77/security-manager-control/compare/v0.8.4...v0.8.5) (2026-11-05)
 
 
