@@ -17,9 +17,58 @@ def ce():
     return mod
 
 
-def _falla_api(mod, monkeypatch, stderr):
+# ───────────── salida de `gh api -i` (gh 2.89.0), medida el 2026-11-06 contra un servidor local ─────────────
+# En bytes, `gh` termina la línea de estado con «\n», cada cabecera con «\r\n» y separa cabeceras y cuerpo con
+# «\r\n\r\n». `subprocess.run(text=True)` traduce todo «\r\n» a «\n»: el script lee «\n\n». Con cuerpo vacío la salida
+# termina en «\n\n», y `run()` la deja sin separador por su `.strip()`. En un fallo (código >= 400) el estado va en
+# stdout, junto al cuerpo (vacío si `gh` no lo pudo leer como JSON); stderr lleva el mensaje.
+RAZON = {200: "OK", 403: "Forbidden", 404: "Not Found", 500: "Internal Server Error", 502: "Bad Gateway",
+         503: "Service Unavailable", 504: "Gateway Timeout"}
+FECHA_Y_SERVIDOR = "Date: Fri, 06 Nov 2026 05:41:16 GMT\nServer: BaseHTTP Python/3.15.0\n"
+# tipo de cuerpo -> (Content-Type, cuerpo servido, cuerpo que `gh` deja en stdout, stderr medido; {c} = código)
+CUERPOS = {
+    "json": ("application/json", '{"message":"Server Error"}', '{"message":"Server Error"}', "gh: Server Error (HTTP {c})\n"),
+    "objeto": ("application/json", "{}", "{}", "gh: HTTP {c}\n"),
+    "errors": ("application/json", '{"errors":[]}', '{"errors":[]}', "gh: HTTP {c}\n"),
+    "html": ("text/html", "<html>Unicorn</html>", "<html>Unicorn</html>", "gh: HTTP {c}\n"),
+    "vacio_texto": ("text/plain", "", "", "gh: HTTP {c}\n"),
+    "vacio_json": ("application/json", "", "", "unexpected end of JSON input\n"),
+    "no_json": ("application/json", "not json at all", "",
+                "invalid character 'o' in literal null (expecting 'u')\n"),
+    "truncado": ("application/json", '{"message":"Ser', "", "unexpected end of JSON input\n"),
+    "espacios": ("application/json", "   ", "", "unexpected end of JSON input\n"),
+}
+ESTADOS_5XX = [500, 502, 503]
+ESTADOS_NO_5XX = [403, 404]
+
+
+def gh_i(codigo, tipo="json"):
+    """(stdout, stderr) de `gh api -i` con ese estado y ese cuerpo, como los lee subprocess con text=True."""
+    ct, servido, eco, stderr = CUERPOS[tipo]
+    cab = f"HTTP/1.1 {codigo} {RAZON[codigo]}\nContent-Length: {len(servido)}\nContent-Type: {ct}\n{FECHA_Y_SERVIDOR}\n"
+    return cab + eco, stderr.format(c=codigo)
+
+
+def exito(cuerpo):
+    """stdout de un 200 tal como lo devuelve `run()` (con `.strip()`)."""
+    cab = f"HTTP/1.1 200 OK\nContent-Length: {len(cuerpo)}\nContent-Type: application/json\n{FECHA_Y_SERVIDOR}\n"
+    return (cab + cuerpo).strip()
+
+
+def fallo(codigo, tipo="json", cmd="gh"):
+    out, err = gh_i(codigo, tipo)
+    return subprocess.CalledProcessError(1, cmd, output=out, stderr=err)
+
+
+def fallo_red(cmd="gh"):
+    """Sin respuesta HTTP (conexión rechazada): stdout vacío y el error de red en stderr (medido)."""
+    return subprocess.CalledProcessError(
+        1, cmd, output="", stderr='Get "http://127.0.0.1:1/refused": dial tcp 127.0.0.1:1: connect: connection refused\n')
+
+
+def _falla_api(mod, monkeypatch, error):
     def gh_json(path):
-        raise subprocess.CalledProcessError(1, "gh", stderr=stderr)
+        raise error
     monkeypatch.setattr(mod, "gh_json", gh_json)
 
 
@@ -29,13 +78,14 @@ def test_comentario_sin_cerrar_no_declara_issue(ce):
 
 
 def test_config_ausente_deja_solo_los_ficheros_fijos(ce, monkeypatch):
-    _falla_api(ce, monkeypatch, "gh: Not Found (HTTP 404)")
+    _falla_api(ce, monkeypatch, fallo(404))
     assert ce.allowed_release_files("o/r", "main") == ce.RELEASE_FILES
 
 
-@pytest.mark.parametrize("stderr", ["gh: Forbidden (HTTP 403)", "gh: API rate limit exceeded for ID 74045. (HTTP 403)"])
+@pytest.mark.parametrize("stderr", ["gh: Forbidden (HTTP 403)\n", "gh: API rate limit exceeded for ID 74045. (HTTP 403)\n"])
 def test_error_de_api_no_se_confunde_con_config_ausente(ce, monkeypatch, stderr):
-    _falla_api(ce, monkeypatch, stderr)
+    out, _ = gh_i(403)
+    _falla_api(ce, monkeypatch, subprocess.CalledProcessError(1, "gh", output=out, stderr=stderr))
     with pytest.raises(subprocess.CalledProcessError):
         ce.allowed_release_files("o/r", "main")
 
@@ -46,7 +96,7 @@ def test_error_al_detectar_pr_de_release_queda_como_hueco(ce, monkeypatch):
 
     def gh_json(path):
         if path.endswith("/files?per_page=100"):
-            raise subprocess.CalledProcessError(1, "gh", stderr="gh: Server Error (HTTP 502)")
+            raise fallo(502)
         if "check-runs" in path:
             return {"check_runs": []}
         if "/statuses?" in path:
@@ -63,7 +113,7 @@ def test_pr_de_release_con_pagina_llena_no_cuenta(ce, monkeypatch, n, esperado):
     def gh_json(path):
         if "/files?" in path:
             return [{"filename": "CHANGELOG.md"}] * min(n, ce.FILES_PAGE)
-        raise subprocess.CalledProcessError(1, "gh", stderr="gh: Not Found (HTTP 404)")
+        raise fallo(404)
     monkeypatch.setattr(ce, "gh_json", gh_json)
     assert ce.is_release_pr("o/r", 7, "release-please--branches--main", "main", True) is esperado
 
@@ -80,10 +130,11 @@ def _commit(i, msg):
 
 
 def _ultimos(runs):
-    """Lo que devuelve la API de check-runs sin `filter=all` (por defecto `latest`): un run por (nombre, app)."""
+    """Lo que devuelve la API de check-runs sin `filter=all` (por defecto `latest`): el último run de cada
+    (nombre, check suite). Medido con GET real en cli/cli: 19 suites con el mismo nombre y la misma app dan 19 runs."""
     best: dict = {}
     for r in runs:
-        k = (r["name"], (r.get("app") or {}).get("id"))
+        k = (r["name"], (r.get("check_suite") or {}).get("id"))
         if k not in best or (r.get("started_at") or "", r["id"]) > (best[k].get("started_at") or "", best[k]["id"]):
             best[k] = r
     return sorted(best.values(), key=lambda r: r["id"])
@@ -92,7 +143,7 @@ def _ultimos(runs):
 class FakeGh:
     """gh_json simulado: sirve cada lista troceada según per_page y page de la ruta.
 
-    Imita a la API en check-runs: sin `filter=all` solo sirve el último run de cada (nombre, app);
+    Imita a la API en check-runs: sin `filter=all` solo sirve el último run de cada (nombre, check suite);
     con `filter=all`, todos. Con `todo=True` ignora el filtro (simulador ingenuo, solo para la contraprueba).
     """
 
@@ -111,7 +162,7 @@ class FakeGh:
         q = parse_qs(u.query)
         per, page = int(q.get("per_page", ["30"])[0]), int(q.get("page", ["1"])[0])
         if self.fail(u.path, page):
-            raise subprocess.CalledProcessError(1, "gh", stderr="gh: Server Error (HTTP 502)")
+            raise fallo(502)
         if u.path.endswith("/pulls/7"):
             return self.pr
         for suf, lst in self.lists.items():
@@ -124,7 +175,7 @@ class FakeGh:
             return {"total_count": 0, "check_runs": []}
         if u.path.endswith(("/commits", "/reviews", "/statuses")):
             return []
-        raise subprocess.CalledProcessError(1, "gh", stderr="gh: Not Found (HTTP 404)")
+        raise fallo(404)
 
 
 def _collect(ce, monkeypatch, lists, fail=None, per=2):
@@ -267,7 +318,7 @@ def test_desempate_de_latest_status_por_id_con_mismo_created_at(ce):
 # ───────────── huecos fiables (SMC-005, T43) ─────────────
 def _run(i, name, concl, started, app=1, **kw):
     r = {"id": i, "name": name, "conclusion": concl, "status": "completed" if concl else "in_progress",
-         "started_at": started, "app": {"id": app}}
+         "started_at": started, "app": {"id": app}, "check_suite": {"id": app * 100}}
     r.update(kw)
     return r
 
@@ -553,9 +604,9 @@ def test_pr_fusionado_sin_checks_no_inventa_hueco(ce, monkeypatch):
     assert p["checks"] == [] and p["gaps"] == []
 
 
-# --- reintento ante 5xx en gh_json ---
+# --- reintento ante 5xx en gh_json: el estado sale de la línea de estado de `gh api -i` (T50) ---
 def _gh_simulado(ce, monkeypatch, resultados):
-    """Parchea run(): cada llamada consume un resultado (str = salida, str 'gh: ...' en Exception = fallo)."""
+    """Parchea run(): cada llamada consume un resultado (str = stdout de un 200, CalledProcessError = fallo)."""
     llamadas, esperas = [], []
 
     def run(cmd):
@@ -563,81 +614,137 @@ def _gh_simulado(ce, monkeypatch, resultados):
         r = resultados[len(llamadas) - 1]
         if isinstance(r, str):
             return r
-        raise subprocess.CalledProcessError(1, cmd, stderr=r.args[0])
+        raise r
     monkeypatch.setattr(ce, "run", run)
     monkeypatch.setattr(ce.time, "sleep", lambda s: esperas.append(s))
     return llamadas, esperas
 
 
-def _err(msg):
-    return Exception(msg)
+def _falla_a_la_primera(ce, monkeypatch, error):
+    llamadas, esperas = _gh_simulado(ce, monkeypatch, [error, exito('{"ok": 1}')])
+    with pytest.raises(subprocess.CalledProcessError) as ei:
+        ce.gh_json("x")
+    assert len(llamadas) == 1 and esperas == []
+    return ei.value
+
+
+def test_gh_json_llama_a_gh_api_con_i(ce, monkeypatch):
+    llamadas, _ = _gh_simulado(ce, monkeypatch, [exito("{}")])
+    ce.gh_json("repos/o/r/pulls/7")
+    assert llamadas[0][:3] == ["gh", "api", "-i"] and llamadas[0][-1] == "repos/o/r/pulls/7"
+
+
+@pytest.mark.parametrize("cuerpo", ['{"x": 1}', '[{"a": 1}, {"a": 2}]', '{"total_count": 1, "check_runs": [{"id": 1}]}', "[]"])
+def test_200_devuelve_el_json_sin_las_cabeceras(ce, monkeypatch, cuerpo):
+    _gh_simulado(ce, monkeypatch, [exito(cuerpo)])
+    assert ce.gh_json("x") == json.loads(cuerpo)
+
+
+def test_200_con_cabecera_link_de_paginacion_devuelve_solo_el_cuerpo(ce, monkeypatch):
+    out = ('HTTP/1.1 200 OK\nContent-Length: 17\nContent-Type: application/json\n'
+           'Date: Fri, 06 Nov 2026 05:41:16 GMT\nLink: <http://127.0.0.1:18778/200/list?page=2>; rel="next"\n'
+           'Server: BaseHTTP Python/3.15.0\n\n[{"a":1},{"a":2}]')
+    _gh_simulado(ce, monkeypatch, [out])
+    assert ce.gh_json("x") == [{"a": 1}, {"a": 2}]
 
 
 def test_500_y_luego_exito_reintenta_una_vez(ce, monkeypatch):
-    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err("gh: Server Error (HTTP 500)"), '{"ok": 1}'])
+    llamadas, esperas = _gh_simulado(ce, monkeypatch, [fallo(500), exito('{"ok": 1}')])
     assert ce.gh_json("x") == {"ok": 1}
     assert len(llamadas) == 2 and len(esperas) == 1 and 0 < esperas[0] <= 5
 
 
-def test_dos_500_y_luego_exito(ce, monkeypatch):
-    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err("gh: Bad Gateway (HTTP 502)"),
-                                                       _err("gh: Unavailable (HTTP 503)"), '[1]'])
+def test_dos_5xx_y_luego_exito(ce, monkeypatch):
+    llamadas, esperas = _gh_simulado(ce, monkeypatch, [fallo(502), fallo(503), exito("[1]")])
     assert ce.gh_json("x") == [1] and len(llamadas) == 3 and len(esperas) == 2
 
 
-def test_tres_500_son_tres_llamadas_y_propaga_el_ultimo_error(ce, monkeypatch):
-    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err("gh: a (HTTP 500)"), _err("gh: b (HTTP 502)"),
-                                                       _err("gh: c (HTTP 503)"), '{"no": 0}'])
+def test_tres_5xx_son_tres_llamadas_y_propaga_el_ultimo_error(ce, monkeypatch):
+    llamadas, esperas = _gh_simulado(ce, monkeypatch, [fallo(500), fallo(502), fallo(503), exito('{"no": 0}')])
     with pytest.raises(subprocess.CalledProcessError) as ei:
         ce.gh_json("x")
-    assert len(llamadas) == 3 and len(esperas) == 2 and "(HTTP 503)" in ei.value.stderr
+    assert len(llamadas) == 3 and len(esperas) == 2 and ce.http_status(ei.value) == 503
 
 
-def test_tres_500_en_collect_pr_dejan_hueco(ce, monkeypatch):
-    esperas = []
-    monkeypatch.setattr(ce.time, "sleep", lambda s: esperas.append(s))
-    fake = FakeGh({})
-
-    def run(cmd):
-        path = cmd[-1]
-        if "/check-runs" in path:
-            raise subprocess.CalledProcessError(1, cmd, stderr="gh: Server Error (HTTP 500)")
-        return json.dumps(fake(path))
-    monkeypatch.setattr(ce, "run", run)
-    p = ce.collect_pr("o/r", 7)
-    assert any("no se pudieron leer los checks" in g and "HTTP 500" in g for g in p["gaps"])
-    assert len(esperas) == 2
+def test_exito_a_la_primera_no_espera(ce, monkeypatch):
+    llamadas, esperas = _gh_simulado(ce, monkeypatch, [exito('{"ok": 1}')])
+    assert ce.gh_json("x") == {"ok": 1} and len(llamadas) == 1 and esperas == []
 
 
-@pytest.mark.parametrize("msg", ["gh: Forbidden (HTTP 403)", "gh: Not Found (HTTP 404)", "gh: Gone (HTTP 410)"])
-def test_403_y_404_fallan_a_la_primera_sin_sleep(ce, monkeypatch, msg):
-    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err(msg), '{"ok": 1}'])
+@pytest.mark.parametrize("tipo", list(CUERPOS))
+@pytest.mark.parametrize("codigo", ESTADOS_5XX)
+def test_5xx_se_reintenta_sea_cual_sea_el_cuerpo(ce, monkeypatch, codigo, tipo):
+    llamadas, esperas = _gh_simulado(ce, monkeypatch, [fallo(codigo, tipo)] * 3 + [exito("{}")])
     with pytest.raises(subprocess.CalledProcessError):
         ce.gh_json("x")
-    assert len(llamadas) == 1 and esperas == []
+    assert len(llamadas) == 3 and len(esperas) == 2
 
 
-def test_403_cuyo_mensaje_contiene_http_500_no_se_reintenta(ce, monkeypatch):
-    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err("gh: upstream said HTTP 500 earlier (HTTP 403)"),
-                                                       '{"ok": 1}'])
-    with pytest.raises(subprocess.CalledProcessError):
-        ce.gh_json("x")
-    assert len(llamadas) == 1 and esperas == []
+@pytest.mark.parametrize("tipo", list(CUERPOS))
+@pytest.mark.parametrize("codigo", ESTADOS_NO_5XX)
+def test_403_y_404_fallan_a_la_primera_sea_cual_sea_el_cuerpo(ce, monkeypatch, codigo, tipo):
+    _falla_a_la_primera(ce, monkeypatch, fallo(codigo, tipo))
 
 
-def test_error_sin_codigo_http_no_se_reintenta(ce, monkeypatch):
-    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err("gh: connection reset"), '{"ok": 1}'])
-    with pytest.raises(subprocess.CalledProcessError):
-        ce.gh_json("x")
-    assert len(llamadas) == 1 and esperas == []
+@pytest.mark.parametrize("tipo", list(CUERPOS))
+@pytest.mark.parametrize("codigo", ESTADOS_5XX + ESTADOS_NO_5XX)
+def test_http_status_lee_la_linea_de_estado_con_cualquier_cuerpo(ce, codigo, tipo):
+    assert ce.http_status(fallo(codigo, tipo)) == codigo
 
 
-def test_error_con_stderr_none_no_rompe_ni_se_reintenta(ce, monkeypatch):
+def test_5xx_vacio_json_y_luego_exito(ce, monkeypatch):
+    # antes (T48) se reconocía por el texto de stderr; ahora por el 503 de la línea de estado
+    llamadas, esperas = _gh_simulado(ce, monkeypatch, [fallo(503, "vacio_json"), fallo(502, "vacio_json"), exito("[1]")])
+    assert ce.gh_json("x") == [1] and len(llamadas) == 3
+
+
+def test_404_con_stderr_de_cuerpo_vacio_falla_a_la_primera(ce, monkeypatch):
+    err = _falla_a_la_primera(ce, monkeypatch, fallo(404, "vacio_json"))
+    assert err.stderr == "unexpected end of JSON input\n"
+
+
+def test_403_que_cita_el_texto_de_cuerpo_vacio_en_su_mensaje_falla_a_la_primera(ce, monkeypatch):
+    out, _ = gh_i(403)
+    err = subprocess.CalledProcessError(1, "gh", output=out, stderr="gh: unexpected end of JSON input (HTTP 403)\n")
+    _falla_a_la_primera(ce, monkeypatch, err)
+
+
+def test_403_que_cita_http_500_en_su_mensaje_falla_a_la_primera(ce, monkeypatch):
+    out, _ = gh_i(403)
+    err = subprocess.CalledProcessError(1, "gh", output=out, stderr="gh: upstream said HTTP 500 earlier (HTTP 403)\n")
+    _falla_a_la_primera(ce, monkeypatch, err)
+
+
+def test_403_cuyo_cuerpo_cita_un_estado_5xx_falla_a_la_primera(ce, monkeypatch):
+    cuerpo = '{"message":"el servidor dijo HTTP/1.1 502 Bad Gateway"}'
+    out = gh_i(403)[0].split("\n\n")[0] + "\n\n" + cuerpo
+    err = subprocess.CalledProcessError(1, "gh", output=out, stderr="gh: el servidor dijo HTTP/1.1 502 Bad Gateway (HTTP 403)\n")
+    _falla_a_la_primera(ce, monkeypatch, err)
+
+
+def test_sin_linea_de_estado_fallo_de_red_no_se_reintenta(ce, monkeypatch):
+    _falla_a_la_primera(ce, monkeypatch, fallo_red())
+
+
+def test_stderr_con_5xx_pero_sin_linea_de_estado_no_se_reintenta(ce, monkeypatch):
+    # el estado se lee de stdout: un «gh: HTTP 503» en stderr no basta (sería el formato de T47)
+    _falla_a_la_primera(ce, monkeypatch, subprocess.CalledProcessError(1, "gh", output="", stderr="gh: HTTP 503\n"))
+
+
+def test_el_estado_de_stdout_manda_sobre_el_de_stderr(ce, monkeypatch):
+    out, _ = gh_i(404)
+    _falla_a_la_primera(ce, monkeypatch, subprocess.CalledProcessError(1, "gh", output=out, stderr="gh: HTTP 503\n"))
+    out, _ = gh_i(503)
+    llamadas, esperas = _gh_simulado(ce, monkeypatch, [subprocess.CalledProcessError(1, "gh", output=out, stderr="gh: Not Found (HTTP 404)\n"), exito("{}")])
+    assert ce.gh_json("x") == {} and len(llamadas) == 2
+
+
+def test_error_con_stdout_y_stderr_none_no_rompe_ni_se_reintenta(ce, monkeypatch):
     llamadas = []
 
     def run(cmd):
         llamadas.append(cmd)
-        raise subprocess.CalledProcessError(1, cmd, stderr=None)
+        raise subprocess.CalledProcessError(1, cmd, output=None, stderr=None)
     monkeypatch.setattr(ce, "run", run)
     monkeypatch.setattr(ce.time, "sleep", lambda s: pytest.fail("no debe esperar"))
     with pytest.raises(subprocess.CalledProcessError):
@@ -645,77 +752,42 @@ def test_error_con_stderr_none_no_rompe_ni_se_reintenta(ce, monkeypatch):
     assert len(llamadas) == 1
 
 
-def test_exito_a_la_primera_no_espera(ce, monkeypatch):
-    llamadas, esperas = _gh_simulado(ce, monkeypatch, ['{"ok": 1}'])
-    assert ce.gh_json("x") == {"ok": 1} and len(llamadas) == 1 and esperas == []
+def test_json_loads_que_falla_sobre_salida_correcta_no_se_reintenta(ce, monkeypatch):
+    llamadas = []
 
-
-# --- T47: formatos reales de stderr de gh 2.89.0 (copiados de la salida medida contra un servidor local) ---
-# Con cuerpo JSON con `message`: «gh: Server Error (HTTP 500)». Con HTML, vacío o JSON sin `message`: «gh: HTTP 502».
-@pytest.mark.parametrize("stderr,esperado", [
-    ("gh: Server Error (HTTP 500)\n", 500),
-    ("gh: HTTP 500\n", 500),   # cuerpo JSON `{}` sin message
-    ("gh: HTTP 502\n", 502),   # cuerpo HTML
-    ("gh: HTTP 503\n", 503),   # cuerpo HTML
-    ("gh: HTTP 504\n", 504),   # cuerpo vacío
-    ("gh: HTTP 404\n", 404),
-    ("gh: HTTP 403\n", 403),
-    ("gh: connection reset", None),
-    ("", None),
-])
-def test_http_status_reconoce_los_dos_formatos_de_gh(ce, stderr, esperado):
-    e = subprocess.CalledProcessError(1, "gh", stderr=stderr)
-    assert ce.http_status(e) == esperado
-
-
-@pytest.mark.parametrize("stderr", ["gh: HTTP 502\n", "gh: HTTP 503\n", "gh: HTTP 504\n", "gh: HTTP 500\n"])
-def test_5xx_sin_parentesis_se_reintenta_hasta_tres_llamadas(ce, monkeypatch, stderr):
-    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err(stderr), _err(stderr), _err(stderr), '{"no": 0}'])
-    with pytest.raises(subprocess.CalledProcessError) as ei:
+    def run(cmd):
+        llamadas.append(cmd)
+        return exito("no es json")
+    monkeypatch.setattr(ce, "run", run)
+    monkeypatch.setattr(ce.time, "sleep", lambda s: pytest.fail("no debe esperar"))
+    with pytest.raises(json.JSONDecodeError):
         ce.gh_json("x")
-    assert len(llamadas) == 3 and len(esperas) == 2 and ei.value.stderr == stderr
+    assert len(llamadas) == 1
 
 
-def test_502_sin_parentesis_y_luego_exito(ce, monkeypatch):
-    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err("gh: HTTP 502\n"), '{"ok": 1}'])
-    assert ce.gh_json("x") == {"ok": 1} and len(llamadas) == 2 and len(esperas) == 1
-
-
-def test_503_sin_parentesis_y_luego_502_y_exito(ce, monkeypatch):
-    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err("gh: HTTP 503\n"), _err("gh: HTTP 502\n"), '[1]'])
-    assert ce.gh_json("x") == [1] and len(llamadas) == 3 and len(esperas) == 2
-
-
-@pytest.mark.parametrize("stderr", ["gh: HTTP 404\n", "gh: HTTP 403\n"])
-def test_404_y_403_sin_parentesis_fallan_a_la_primera(ce, monkeypatch, stderr):
-    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err(stderr), '{"ok": 1}'])
-    with pytest.raises(subprocess.CalledProcessError):
-        ce.gh_json("x")
-    assert len(llamadas) == 1 and esperas == []
-
-
-def test_dos_codigos_en_stderr_cuenta_el_ultimo(ce, monkeypatch):
-    e = subprocess.CalledProcessError(1, "gh", stderr="gh: HTTP 500\ngh: Not Found (HTTP 404)\n")
+def test_http_status_con_la_salida_real_de_github_http2(ce):
+    # `gh api -i repos/pedri77/security-manager-control/contents/nofile` real: estado «HTTP/2.0» (cabeceras recortadas)
+    out = ('HTTP/2.0 404 Not Found\nAccess-Control-Allow-Origin: *\nContent-Type: application/json; charset=utf-8\n'
+           'X-Ratelimit-Resource: core\nX-Xss-Protection: 0\n\n'
+           '{"message":"Not Found","documentation_url":"https://docs.github.com/rest/repos/contents#get-repository-content","status":"404"}')
+    e = subprocess.CalledProcessError(1, "gh", output=out, stderr="gh: Not Found (HTTP 404)\n")
     assert ce.http_status(e) == 404
-    e = subprocess.CalledProcessError(1, "gh", stderr="gh: Not Found (HTTP 404)\ngh: HTTP 502\n")
-    assert ce.http_status(e) == 502
-    e = subprocess.CalledProcessError(1, "gh", stderr="gh: cita HTTP 500 antes (HTTP 403)\n")
-    assert ce.http_status(e) == 403
 
 
-def test_dos_codigos_el_ultimo_404_no_se_reintenta_aunque_el_primero_sea_5xx(ce, monkeypatch):
-    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err("gh: HTTP 500\ngh: Not Found (HTTP 404)\n"), '{"ok": 1}'])
-    with pytest.raises(subprocess.CalledProcessError):
-        ce.gh_json("x")
-    assert len(llamadas) == 1 and esperas == []
+@pytest.mark.parametrize("out,esperado", [
+    ("HTTP/2.0 502 Bad Gateway\nServer: x\n\n", 502),
+    ("HTTP/1.1 503 Service Unavailable\nServer: x", 503),   # sin separador (run() lo dejó sin él)
+    ("HTTP/2 500\nServer: x\n\n", 500),
+    ("", None),
+    (None, None),
+    ("<html>HTTP/1.1 500 x</html>", None),                  # el estado es la primera línea, no una cita
+    ("gh: HTTP 500", None),
+])
+def test_http_status_solo_lee_la_primera_linea_de_stdout(ce, out, esperado):
+    assert ce.http_status(subprocess.CalledProcessError(1, "gh", output=out, stderr="")) == esperado
 
 
-def test_dos_codigos_el_ultimo_5xx_se_reintenta_aunque_el_primero_sea_404(ce, monkeypatch):
-    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err("gh: Not Found (HTTP 404)\ngh: HTTP 502\n"), '{"ok": 1}'])
-    assert ce.gh_json("x") == {"ok": 1} and len(llamadas) == 2 and len(esperas) == 1
-
-
-def test_502_sin_parentesis_en_collect_pr_deja_hueco_tras_tres_llamadas(ce, monkeypatch):
+def test_5xx_en_collect_pr_deja_hueco_tras_tres_llamadas(ce, monkeypatch):
     esperas, llamadas = [], []
     monkeypatch.setattr(ce.time, "sleep", lambda s: esperas.append(s))
     fake = FakeGh({})
@@ -724,13 +796,126 @@ def test_502_sin_parentesis_en_collect_pr_deja_hueco_tras_tres_llamadas(ce, monk
         path = cmd[-1]
         if "/check-runs" in path:
             llamadas.append(path)
-            raise subprocess.CalledProcessError(1, cmd, stderr="gh: HTTP 502\n")
-        return json.dumps(fake(path))
+            raise fallo(502, "html")
+        return exito(json.dumps(fake(path)))
     monkeypatch.setattr(ce, "run", run)
     p = ce.collect_pr("o/r", 7)
     assert any("no se pudieron leer los checks" in g and "HTTP 502" in g for g in p["gaps"])
     assert len(llamadas) == 3 and len(esperas) == 2
 
+
+def test_vacio_json_5xx_en_collect_pr_deja_hueco_tras_tres_llamadas(ce, monkeypatch):
+    esperas, llamadas = [], []
+    monkeypatch.setattr(ce.time, "sleep", lambda s: esperas.append(s))
+    fake = FakeGh({})
+
+    def run(cmd):
+        path = cmd[-1]
+        if "/check-runs" in path:
+            llamadas.append(path)
+            raise fallo(500, "vacio_json")
+        return exito(json.dumps(fake(path)))
+    monkeypatch.setattr(ce, "run", run)
+    p = ce.collect_pr("o/r", 7)
+    assert any("no se pudieron leer los checks" in g and "unexpected end of JSON input" in g for g in p["gaps"])
+    assert len(llamadas) == 3 and len(esperas) == 2
+
+
+# --- con un ejecutable `gh` que imprime los bytes medidos (separador «\r\n\r\n») ---
+def _bytes_de_gh(codigo, tipo):
+    """Los bytes que `gh` escribe: estado + «\n», cabeceras con «\r\n», «\r\n» y cuerpo."""
+    out, err = gh_i(codigo, tipo)
+    estado, resto = out.split("\n", 1)
+    return (estado + "\n" + resto.replace("\n", "\r\n")).encode(), err
+
+
+@pytest.fixture
+def gh_falso(tmp_path, monkeypatch):
+    """Pone un `gh` en el PATH que sirve la respuesta fijada y cuenta las llamadas."""
+    import os
+    import sys
+    d = tmp_path / "bin"
+    d.mkdir()
+    exe = d / "gh"
+    exe.write_text(
+        f"#!{sys.executable}\nimport os, sys\nd = os.path.dirname(os.path.abspath(__file__))\n"
+        "open(d + '/args', 'a').write(' '.join(sys.argv[1:]) + '\\n')\n"
+        "sys.stdout.buffer.write(open(d + '/out', 'rb').read())\n"
+        "sys.stderr.write(open(d + '/err').read())\nsys.exit(int(open(d + '/rc').read()))\n")
+    exe.chmod(0o755)
+    monkeypatch.setenv("PATH", f"{d}{os.pathsep}{os.environ['PATH']}")
+    esperas = []
+    monkeypatch.setattr("time.sleep", lambda s: esperas.append(s))
+
+    class G:
+        def pon(self, salida: bytes, stderr: str = "", rc: int = 0):
+            (d / "out").write_bytes(salida)
+            (d / "err").write_text(stderr)
+            (d / "rc").write_text(str(rc))
+
+        def llamadas(self):
+            f = d / "args"
+            return f.read_text().splitlines() if f.exists() else []
+    g = G()
+    g.esperas = esperas
+    return g
+
+
+@pytest.mark.parametrize("tipo", list(CUERPOS))
+@pytest.mark.parametrize("codigo", ESTADOS_5XX + ESTADOS_NO_5XX)
+def test_matriz_con_gh_falso_5xx_tres_peticiones_403_y_404_una(ce, gh_falso, codigo, tipo):
+    salida, err = _bytes_de_gh(codigo, tipo)
+    gh_falso.pon(salida, err, rc=1)
+    with pytest.raises(subprocess.CalledProcessError) as ei:
+        ce.gh_json("repos/o/r/x")
+    assert ce.http_status(ei.value) == codigo
+    assert len(gh_falso.llamadas()) == (3 if codigo in ESTADOS_5XX else 1)
+    assert len(gh_falso.esperas) == (2 if codigo in ESTADOS_5XX else 0)
+
+
+@pytest.mark.parametrize("cuerpo", ['{"x":1}', '[{"a":1},{"a":2}]', '{"total_count":1,"check_runs":[{"id":1}]}'])
+def test_200_con_gh_falso_devuelve_el_json(ce, gh_falso, cuerpo):
+    salida = (f"HTTP/1.1 200 OK\nContent-Length: {len(cuerpo)}\r\nContent-Type: application/json\r\n"
+              f"Date: Fri, 06 Nov 2026 05:41:16 GMT\r\nLink: <http://127.0.0.1:18778/200/list?page=2>; rel=\"next\"\r\n"
+              f"Server: BaseHTTP Python/3.15.0\r\n\r\n{cuerpo}").encode()
+    gh_falso.pon(salida)
+    assert ce.gh_json("repos/o/r/x") == json.loads(cuerpo)
+    assert gh_falso.llamadas() == ["api -i -H Accept: application/vnd.github+json repos/o/r/x"]
+
+
+def test_fallo_de_red_con_gh_falso_una_peticion(ce, gh_falso):
+    gh_falso.pon(b"", fallo_red().stderr, rc=1)
+    with pytest.raises(subprocess.CalledProcessError):
+        ce.gh_json("repos/o/r/x")
+    assert len(gh_falso.llamadas()) == 1
+
+
+# --- el 404 de allowed_release_files sale del estado, no del texto (T50) ---
+@pytest.mark.parametrize("tipo", list(CUERPOS))
+def test_config_ausente_404_con_cualquier_cuerpo_deja_los_ficheros_fijos(ce, monkeypatch, tipo):
+    _falla_api(ce, monkeypatch, fallo(404, tipo))
+    assert ce.allowed_release_files("o/r", "main") == ce.RELEASE_FILES
+
+
+def test_403_cuyo_mensaje_cita_http_404_no_es_config_ausente(ce, monkeypatch):
+    out, _ = gh_i(403)
+    err = subprocess.CalledProcessError(1, "gh", output=out, stderr="gh: ver HTTP 404 en la documentacion (HTTP 403)\n")
+    _falla_api(ce, monkeypatch, err)
+    with pytest.raises(subprocess.CalledProcessError):
+        ce.allowed_release_files("o/r", "main")
+
+
+def test_stderr_con_http_404_pero_estado_de_stdout_500_no_es_config_ausente(ce, monkeypatch):
+    out, _ = gh_i(500)
+    _falla_api(ce, monkeypatch, subprocess.CalledProcessError(1, "gh", output=out, stderr="gh: Not Found (HTTP 404)\n"))
+    with pytest.raises(subprocess.CalledProcessError):
+        ce.allowed_release_files("o/r", "main")
+
+
+def test_stderr_con_http_404_sin_linea_de_estado_no_es_config_ausente(ce, monkeypatch):
+    _falla_api(ce, monkeypatch, subprocess.CalledProcessError(1, "gh", output="", stderr="gh: Not Found (HTTP 404)\n"))
+    with pytest.raises(subprocess.CalledProcessError):
+        ce.allowed_release_files("o/r", "main")
 
 # --- T47: corte en merged_at por instante, no por texto ---
 def test_corte_con_merged_at_en_otro_huso_cuenta_el_instante(ce, monkeypatch):
@@ -767,108 +952,6 @@ def test_dos_apps_homonimas_ambas_con_runs_previos_no_dejan_hueco(ce, monkeypatc
     p = _collect_merged(ce, monkeypatch, runs)
     assert sorted(_conclusiones(p)) == [("ci", "failure"), ("ci", "success")]
     assert p["gaps"] == []
-
-
-# --- T48: 5xx de cuerpo vacío con Content-Type JSON ---
-# `gh` 2.89.0 real (cuerpo vacío + application/json, cualquier estado): stderr «unexpected end of JSON input\n»,
-# sin «gh:» ni código, código de salida 1. Con cuerpo no vacío que cita el texto: «gh: <texto> (HTTP 403)\n».
-VACIO = "unexpected end of JSON input\n"
-
-
-@pytest.mark.parametrize("stderr", [VACIO, "unexpected end of JSON input"])
-def test_cuerpo_vacio_json_se_reintenta_hasta_tres_llamadas(ce, monkeypatch, stderr):
-    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err(stderr), _err(stderr), _err(stderr), '{"no": 0}'])
-    with pytest.raises(subprocess.CalledProcessError) as ei:
-        ce.gh_json("x")
-    assert len(llamadas) == 3 and len(esperas) == 2 and ei.value.stderr == stderr
-
-
-def test_cuerpo_vacio_json_y_luego_exito(ce, monkeypatch):
-    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err(VACIO), '{"ok": 1}'])
-    assert ce.gh_json("x") == {"ok": 1} and len(llamadas) == 2 and len(esperas) == 1 and 0 < esperas[0] <= 5
-
-
-def test_cuerpo_vacio_json_dos_veces_y_luego_exito(ce, monkeypatch):
-    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err(VACIO), _err(VACIO), '[1]'])
-    assert ce.gh_json("x") == [1] and len(llamadas) == 3 and len(esperas) == 2
-
-
-def test_cuerpo_vacio_json_mezclado_con_5xx_con_codigo(ce, monkeypatch):
-    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err(VACIO), _err("gh: HTTP 502\n"), '[1]'])
-    assert ce.gh_json("x") == [1] and len(llamadas) == 3
-
-
-@pytest.mark.parametrize("stderr", [
-    "gh: unexpected end of JSON input (HTTP 403)\n",   # 403 con cuerpo JSON {"message": "unexpected end of JSON input"}
-    "gh: unexpected end of JSON input (HTTP 404)\n",
-    "gh: HTTP 404\nunexpected end of JSON input cita\n",
-    "gh: HTTP 403\n",
-])
-def test_con_codigo_no_5xx_y_cita_del_texto_falla_a_la_primera(ce, monkeypatch, stderr):
-    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err(stderr), '{"ok": 1}'])
-    with pytest.raises(subprocess.CalledProcessError):
-        ce.gh_json("x")
-    assert len(llamadas) == 1 and esperas == []
-
-
-@pytest.mark.parametrize("stderr", [
-    "gh: unexpected end of JSON input (HTTP 403)\n",
-    "gh: unexpected end of JSON input (HTTP 404)\n",
-])
-def test_http_status_reconoce_el_codigo_cuando_el_cuerpo_cita_el_texto(ce, stderr):
-    e = subprocess.CalledProcessError(1, "gh", stderr=stderr)
-    assert ce.http_status(e) in (403, 404)
-
-
-@pytest.mark.parametrize("stderr", [
-    "error: unexpected end of JSON input\n",
-    "gh: unexpected end of JSON input.\n",
-    "Unexpected end of JSON input\n",
-    "unexpected end of JSON input extra\n",
-    "x unexpected end of JSON input\n",
-    "gh: connection reset\n",
-    "",
-])
-def test_otros_textos_no_se_reintentan(ce, monkeypatch, stderr):
-    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err(stderr), '{"ok": 1}'])
-    with pytest.raises(subprocess.CalledProcessError):
-        ce.gh_json("x")
-    assert len(llamadas) == 1 and esperas == []
-
-
-def test_linea_exacta_entre_otras_lineas_se_reintenta(ce, monkeypatch):
-    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err("aviso previo\nunexpected end of JSON input\n"), '{"ok": 1}'])
-    assert ce.gh_json("x") == {"ok": 1} and len(llamadas) == 2
-
-
-def test_json_loads_que_falla_sobre_salida_correcta_no_se_reintenta(ce, monkeypatch):
-    llamadas = []
-
-    def run(cmd):
-        llamadas.append(cmd)
-        return "no es json"
-    monkeypatch.setattr(ce, "run", run)
-    monkeypatch.setattr(ce.time, "sleep", lambda s: pytest.fail("no debe esperar"))
-    with pytest.raises(json.JSONDecodeError):
-        ce.gh_json("x")
-    assert len(llamadas) == 1
-
-
-def test_cuerpo_vacio_json_en_collect_pr_deja_hueco_tras_tres_llamadas(ce, monkeypatch):
-    esperas, llamadas = [], []
-    monkeypatch.setattr(ce.time, "sleep", lambda s: esperas.append(s))
-    fake = FakeGh({})
-
-    def run(cmd):
-        path = cmd[-1]
-        if "/check-runs" in path:
-            llamadas.append(path)
-            raise subprocess.CalledProcessError(1, cmd, stderr=VACIO)
-        return json.dumps(fake(path))
-    monkeypatch.setattr(ce, "run", run)
-    p = ce.collect_pr("o/r", 7)
-    assert any("no se pudieron leer los checks" in g and "unexpected end of JSON input" in g for g in p["gaps"])
-    assert len(llamadas) == 3 and len(esperas) == 2
 
 
 # --- T49: filter=all (la API sin filtro solo devuelve el último run de cada check) ---
@@ -916,18 +999,245 @@ def test_simulador_ingenuo_no_distingue_el_filtro(ce, monkeypatch):
     assert a == b == runs
 
 
-# --- T49: el código manda sobre el texto de cuerpo vacío ---
-def test_404_seguido_de_cuerpo_vacio_falla_a_la_primera(ce, monkeypatch):
-    stderr = "gh: HTTP 404\nunexpected end of JSON input\n"
-    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err(stderr), '{"ok": 1}'])
-    with pytest.raises(subprocess.CalledProcessError):
-        ce.gh_json("x")
-    assert len(llamadas) == 1 and esperas == []
+# --- T50: simulador de check-runs por check suite ---
+def test_simulador_sin_filter_all_sirve_el_ultimo_run_por_check_suite(ce):
+    # mismo nombre y misma suite: solo el último; mismo nombre y otra suite: se quedan los dos
+    runs = [_run(1, "ci", "failure", T41, app=1), _run(2, "ci", "success", T45, app=1),
+            _run(3, "ci", "success", T41, app=2)]
+    gh = FakeGh({"/commits/H/check-runs": runs})
+    sin = gh("repos/o/r/commits/H/check-runs?per_page=100&page=1")["check_runs"]
+    con = gh("repos/o/r/commits/H/check-runs?filter=all&per_page=100&page=1")["check_runs"]
+    assert [r["id"] for r in sin] == [2, 3] and [r["id"] for r in con] == [1, 2, 3]
 
 
-def test_403_que_cita_http_500_tras_el_codigo_real_falla_a_la_primera(ce, monkeypatch):
-    stderr = "gh: Forbidden (HTTP 403)\nel mensaje cita HTTP 500 de otro intento\n"
-    llamadas, esperas = _gh_simulado(ce, monkeypatch, [_err(stderr), '{"ok": 1}'])
-    with pytest.raises(subprocess.CalledProcessError):
-        ce.gh_json("x")
-    assert len(llamadas) == 1 and esperas == []
+def test_simulador_dos_suites_de_la_misma_app_con_el_mismo_nombre_se_quedan_las_dos(ce):
+    a, b = _run(1, "build", "success", T41), _run(2, "build", "failure", T43)
+    a["check_suite"], b["check_suite"] = {"id": 7}, {"id": 8}   # medido en cli/cli: 19 suites, mismo nombre y app
+    gh = FakeGh({"/commits/H/check-runs": [a, b]})
+    sin = gh("repos/o/r/commits/H/check-runs?per_page=100&page=1")["check_runs"]
+    assert [r["id"] for r in sin] == [1, 2]
+
+
+# --- T50: corte en merged_at con completed_at cuando falta started_at ---
+def _sin_inicio(i, name, concl, completed, **kw):
+    return _run(i, name, concl, None, completed_at=completed, **kw)
+
+
+@pytest.mark.parametrize("orden", ORDENES)
+def test_run_sin_started_at_completado_tras_el_merge_no_sustituye_al_que_habia(ce, monkeypatch, orden):
+    # el caso de la issue: failure id 1 a las 20:41 y success id 2 sin started_at, que acabó tras el merge
+    runs = _ordena([_run(1, "ci", "failure", T41), _sin_inicio(2, "ci", "success", T45)], orden)
+    p = _collect_merged(ce, monkeypatch, runs)
+    assert _conclusiones(p) == [("ci", "failure")] and p["gaps"] == []
+
+
+@pytest.mark.parametrize("orden", ORDENES)
+def test_run_sin_started_at_completado_antes_del_merge_se_queda(ce, monkeypatch, orden):
+    runs = _ordena([_run(1, "ci", "failure", T41), _sin_inicio(2, "ci", "success", T43)], orden)
+    assert _conclusiones(_collect_merged(ce, monkeypatch, runs)) == [("ci", "success")]
+
+
+def test_run_sin_started_at_completado_justo_en_merged_at_se_queda(ce, monkeypatch):
+    runs = [_run(1, "ci", "failure", T41), _sin_inicio(2, "ci", "success", MERGE)]
+    assert _conclusiones(_collect_merged(ce, monkeypatch, runs)) == [("ci", "success")]
+
+
+def test_run_sin_ninguna_fecha_se_queda(ce, monkeypatch):
+    runs = [_run(1, "ci", "success", T41), _run(2, "ci", "failure", None, completed_at=None)]
+    p = _collect_merged(ce, monkeypatch, runs)
+    assert _conclusiones(p) == [("ci", "failure")] and p["gaps"] == []
+
+
+def test_started_at_manda_sobre_completed_at(ce, monkeypatch):
+    # empezó antes del merge y acabó después: se queda; si se mirara completed_at se descartaría
+    runs = [_run(1, "ci", "failure", T41), _run(2, "ci", "success", T43, completed_at=T45)]
+    assert _conclusiones(_collect_merged(ce, monkeypatch, runs)) == [("ci", "success")]
+
+
+def test_started_at_posterior_manda_sobre_completed_at_anterior(ce, monkeypatch):
+    runs = [_run(1, "ci", "failure", T41), _run(2, "ci", "success", T45, completed_at=T41)]
+    assert _conclusiones(_collect_merged(ce, monkeypatch, runs)) == [("ci", "failure")]
+
+
+def test_check_cuyo_unico_run_sin_started_at_acabo_tras_el_merge_sale_y_deja_hueco(ce, monkeypatch):
+    runs = [_run(1, "ci", "success", T41), _sin_inicio(2, "tardio", "success", T45)]
+    p = _collect_merged(ce, monkeypatch, runs)
+    assert _conclusiones(p) == [("ci", "success")]
+    assert len(p["gaps"]) == 1 and "PR #7" in p["gaps"][0] and "tardio" in p["gaps"][0]
+
+
+def test_completed_at_en_otro_huso_cuenta_el_instante(ce, monkeypatch):
+    # 20:50+01:00 = 19:50Z, anterior al merge de 20:44Z: se queda
+    runs = [_run(1, "ci", "failure", T41), _sin_inicio(2, "ci", "success", "2026-11-04T20:50:00+01:00")]
+    assert _conclusiones(_collect_merged(ce, monkeypatch, runs)) == [("ci", "success")]
+
+
+def test_completed_at_sin_fusionar_no_corta(ce, monkeypatch):
+    runs = [_run(1, "ci", "failure", T41), _sin_inicio(2, "ci", "success", T45)]
+    assert _conclusiones(_collect_merged(ce, monkeypatch, runs, merged_at=None)) == [("ci", "success")]
+
+
+# --- T50: fecha ilegible en el corte = hueco, y ese run no se corta ---
+@pytest.mark.parametrize("malo", ["ayer", "2026-13-45T99:00:00Z"])
+def test_started_at_ilegible_deja_hueco_con_pr_y_check_y_el_run_se_queda(ce, monkeypatch, malo):
+    runs = [_run(1, "ci", "failure", T41), _run(2, "ci", "success", malo)]
+    p = _collect_merged(ce, monkeypatch, runs)
+    assert _conclusiones(p) == [("ci", "success")]
+    assert len(p["gaps"]) == 1 and "PR #7" in p["gaps"][0] and "ci" in p["gaps"][0] and "ilegible" in p["gaps"][0]
+
+
+def test_completed_at_ilegible_sin_started_at_deja_hueco_y_el_run_se_queda(ce, monkeypatch):
+    runs = [_run(1, "ci", "failure", T41), _sin_inicio(2, "ci", "success", "mañana")]
+    p = _collect_merged(ce, monkeypatch, runs)
+    assert _conclusiones(p) == [("ci", "success")]
+    assert len(p["gaps"]) == 1 and "PR #7" in p["gaps"][0] and "ci" in p["gaps"][0]
+
+
+def test_started_at_ilegible_no_cae_a_completed_at(ce, monkeypatch):
+    # completed_at (tras el merge) lo cortaría; la fecha de inicio ilegible deja hueco y el run se queda
+    runs = [_run(1, "ci", "failure", T41), _run(2, "ci", "success", "ayer", completed_at=T45)]
+    p = _collect_merged(ce, monkeypatch, runs)
+    assert _conclusiones(p) == [("ci", "success")] and len(p["gaps"]) == 1
+
+
+def test_merged_at_ilegible_deja_un_hueco_y_no_corta(ce, monkeypatch):
+    runs = [_run(1, "ci", "failure", T41), _run(2, "ci", "success", T45), _run(3, "tardio", "success", T45)]
+    p = _collect_merged(ce, monkeypatch, runs, merged_at="no-es-fecha")
+    assert _conclusiones(p) == [("ci", "success"), ("tardio", "success")]
+    assert len(p["gaps"]) == 1 and "PR #7" in p["gaps"][0] and "merged_at" in p["gaps"][0]
+
+
+def test_merged_at_ilegible_deja_hueco_aunque_no_haya_checks(ce, monkeypatch):
+    p = _collect_merged(ce, monkeypatch, [], merged_at="no-es-fecha")
+    assert len(p["gaps"]) == 1 and "merged_at" in p["gaps"][0]
+
+
+def test_fechas_ilegibles_sin_merged_at_no_dejan_hueco(ce, monkeypatch):
+    runs = [_run(1, "ci", "success", "ayer")]
+    assert _collect_merged(ce, monkeypatch, runs, merged_at=None)["gaps"] == []
+
+
+def test_fechas_legibles_no_dejan_hueco(ce, monkeypatch):
+    runs = [_run(1, "ci", "success", T41), _sin_inicio(2, "otro", "success", T43)]
+    assert _collect_merged(ce, monkeypatch, runs)["gaps"] == []
+
+
+def test_dos_runs_con_fecha_ilegible_dejan_un_hueco_por_check(ce, monkeypatch):
+    runs = [_run(1, "ci", "success", "ayer"), _run(2, "otro", "success", "hoy")]
+    p = _collect_merged(ce, monkeypatch, runs)
+    assert len(p["gaps"]) == 2 and any("ci" in g for g in p["gaps"]) and any("otro" in g for g in p["gaps"])
+
+
+@pytest.mark.parametrize("malo", [12345, ["x"], {"a": 1}])
+def test_cut_at_merge_con_fecha_que_no_es_texto_deja_hueco_y_se_queda(ce, malo):
+    # la rama AttributeError de _utc; la API siempre da texto, pero el corte no debe romperse ni perder el run
+    problemas = []
+    kept = ce.cut_at_merge([_run(1, "ci", "success", malo)], MERGE, problemas)
+    assert [r["id"] for r in kept] == [1] and len(problemas) == 1 and "ci" in problemas[0]
+    problemas = []
+    kept = ce.cut_at_merge([_run(1, "ci", "success", T41)], malo, problemas)
+    assert [r["id"] for r in kept] == [1] and len(problemas) == 1 and "merged_at" in problemas[0]
+
+
+def test_cut_at_merge_directo_anota_el_problema_en_la_lista(ce):
+    problemas = []
+    kept = ce.cut_at_merge([_run(1, "ci", "success", "ayer")], MERGE, problemas)
+    assert [r["id"] for r in kept] == [1] and len(problemas) == 1 and "ci" in problemas[0]
+
+
+def test_hueco_de_fecha_ilegible_aparece_en_el_pack_de_release(ce, monkeypatch, tmp_path):
+    rec, _ = _release_con_runs(ce, monkeypatch, tmp_path, [_run(1, "ci", "success", T41)])
+    assert not any("ilegible" in g for g in rec["gaps"])
+    gh = FakeGh({"/commits/H/check-runs": [_run(1, "ci", "success", "ayer")]})
+    gh.pr["merged_at"] = MERGE
+    import argparse
+    monkeypatch.setattr(ce, "gh_json", gh)
+    ce.mode_release(argparse.Namespace(tag="v1", out=str(tmp_path / "b"), offline=False))
+    rec = json.loads((tmp_path / "b" / "change-record.json").read_text(encoding="utf-8"))
+    assert any("PR #7" in g and "ilegible" in g for g in rec["gaps"])
+
+
+# --- T50: blind-review se corta en merged_at ---
+CTX = "blind-review"
+ANTES, A_LAS, DESPUES = "2026-11-04T20:40:00Z", MERGE, "2026-11-04T20:50:00Z"
+
+
+def _estado(i, state, creado, ctx=CTX, **kw):
+    return {"id": i, "context": ctx, "state": state, "created_at": creado, "description": "d", "target_url": "t", **kw}
+
+
+def _collect_estados(ce, monkeypatch, estados, merged_at=MERGE):
+    gh = FakeGh({"/commits/H/statuses": estados})
+    if merged_at:
+        gh.pr["merged_at"] = merged_at
+    monkeypatch.setattr(ce, "gh_json", gh)
+    monkeypatch.setattr(ce, "PER_PAGE", 100)
+    return ce.collect_pr("o/r", 7)
+
+
+@pytest.mark.parametrize("orden", ORDENES)
+def test_blind_review_publicado_tras_el_merge_no_sustituye_al_previo(ce, monkeypatch, orden):
+    estados = _ordena([_estado(1, "success", ANTES), _estado(2, "failure", DESPUES)], orden)
+    p = _collect_estados(ce, monkeypatch, estados)
+    assert p["blind_review"]["state"] == "success" and p["gaps"] == []
+
+
+@pytest.mark.parametrize("orden", ORDENES)
+def test_blind_review_solo_posterior_al_merge_no_cuenta(ce, monkeypatch, orden):
+    estados = _ordena([_estado(1, "success", DESPUES), _estado(2, "success", "2026-11-04T21:00:00Z")], orden)
+    assert _collect_estados(ce, monkeypatch, estados)["blind_review"] is None
+
+
+def test_blind_review_publicado_justo_en_merged_at_cuenta(ce, monkeypatch):
+    p = _collect_estados(ce, monkeypatch, [_estado(1, "success", A_LAS)])
+    assert p["blind_review"]["state"] == "success"
+
+
+def test_blind_review_un_segundo_despues_no_cuenta(ce, monkeypatch):
+    assert _collect_estados(ce, monkeypatch, [_estado(1, "success", "2026-11-04T20:44:01Z")])["blind_review"] is None
+
+
+def test_blind_review_sin_fusionar_el_posterior_gana(ce, monkeypatch):
+    estados = [_estado(1, "success", ANTES), _estado(2, "failure", DESPUES)]
+    p = _collect_estados(ce, monkeypatch, estados, merged_at=None)
+    assert p["blind_review"]["state"] == "failure"
+
+
+def test_blind_review_otro_huso_cuenta_el_instante(ce, monkeypatch):
+    # 20:50+01:00 = 19:50Z, anterior al merge (20:44Z): cuenta; como texto «20:50» > «20:44» no contaría
+    p = _collect_estados(ce, monkeypatch, [_estado(1, "success", "2026-11-04T20:50:00+01:00")])
+    assert p["blind_review"]["state"] == "success"
+
+
+def test_estado_de_otro_contexto_no_se_corta_ni_cambia(ce, monkeypatch):
+    estados = [_estado(1, "success", ANTES), _estado(2, "failure", DESPUES, ctx="ci")]
+    p = _collect_estados(ce, monkeypatch, estados)
+    assert p["blind_review"]["state"] == "success"
+
+
+def test_blind_review_con_created_at_ilegible_cuenta_y_deja_hueco(ce, monkeypatch):
+    p = _collect_estados(ce, monkeypatch, [_estado(1, "success", "ayer")])
+    assert p["blind_review"]["state"] == "success"
+    assert len(p["gaps"]) == 1 and "PR #7" in p["gaps"][0] and "blind-review" in p["gaps"][0]
+
+
+def test_merged_at_ilegible_no_corta_blind_review_y_no_duplica_el_hueco(ce, monkeypatch):
+    p = _collect_estados(ce, monkeypatch, [_estado(1, "success", ANTES), _estado(2, "failure", DESPUES)],
+                         merged_at="no-es-fecha")
+    assert p["blind_review"]["state"] == "failure"
+    assert len(p["gaps"]) == 1 and "merged_at" in p["gaps"][0]
+
+
+def test_release_con_blind_review_solo_posterior_al_merge_sale_en_el_hueco_de_hoy(ce, monkeypatch, tmp_path):
+    import argparse
+    gh = FakeGh({"/commits/H/statuses": [_estado(1, "success", DESPUES)]})
+    gh.pr["merged_at"] = MERGE
+    monkeypatch.setattr(ce, "PER_PAGE", 100)
+    monkeypatch.setattr(ce, "previous_tag", lambda tag: "v0")
+    monkeypatch.setattr(ce, "repo_slug", lambda: "o/r")
+    monkeypatch.setattr(ce, "git_range_commits", lambda rng: [
+        {"sha": "a" * 40, "subject": "feat: algo (#7)", "author": "x", "tasks": []}])
+    monkeypatch.setattr(ce, "gh_json", gh)
+    ce.mode_release(argparse.Namespace(tag="v1", out=str(tmp_path), offline=False))
+    rec = json.loads((tmp_path / "change-record.json").read_text(encoding="utf-8"))
+    assert any("PR #7 sin revisión ciega correcta (estado: —)" in g for g in rec["gaps"])

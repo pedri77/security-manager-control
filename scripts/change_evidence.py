@@ -19,6 +19,13 @@ repo que SOLO toca ficheros de versión. El nombre de rama no basta: cualquiera 
 elegirlo. Es solo una excepción de trazabilidad: blind-review se exige igual, y su falta es un hueco.
 
 Revisión: sin aprobación de GitHub. Vale el estado `blind-review` sobre el SHA de cabeza del PR.
+
+Lectura de la API: `gh api -i` da el estado HTTP real en la línea de estado de stdout. Se reintenta (2 veces) si y
+solo si es 5xx, sea cual sea el cuerpo; un 403 o 404 falla a la primera aunque el cuerpo venga vacío o truncado, y
+un fallo de red (sin línea de estado) tampoco se reintenta.
+
+PR fusionado: el registro refleja el estado en `merged_at`. Se descartan los check-runs que empezaron (o, sin
+`started_at`, terminaron) después y el `blind-review` creado después. Una fecha ilegible no corta y deja hueco.
 """
 from __future__ import annotations
 
@@ -62,48 +69,54 @@ def run(cmd: list[str]) -> str:
     return subprocess.run(cmd, check=True, capture_output=True, text=True).stdout.strip()
 
 
-# `gh` escribe dos formas en stderr: «gh: <mensaje> (HTTP 503)» si el cuerpo es JSON con `message`, y
-# «gh: HTTP 503» (sin paréntesis, línea propia) si es HTML, vacío o JSON sin `message`.
-HTTP_STATUS_RE = re.compile(r"\(HTTP (\d{3})\)|^gh: HTTP (\d{3})[ \t]*$", re.MULTILINE)
-# Con cuerpo vacío y `Content-Type: application/json`, `gh` escribe solo esta línea, sin código de estado.
-EMPTY_BODY_LINE = "unexpected end of JSON input"
+# `gh api -i` escribe en stdout la línea de estado, las cabeceras y el cuerpo, también cuando falla (código >= 400):
+# «HTTP/1.1 503 Service Unavailable» (o «HTTP/2.0 …» contra GitHub), cabeceras y, tras una línea en blanco, el cuerpo.
+# En bytes el separador es «\r\n\r\n»; `subprocess.run(text=True)` traduce «\r\n» a «\n», así que aquí es «\n\n».
+# `run()` hace `.strip()`: con cuerpo vacío la salida llega sin separador. Medido con `gh` 2.89.0.
+STATUS_LINE_RE = re.compile(r"HTTP/[0-9.]+[ \t]+(\d{3})(?:[ \t]|$)")
 RETRIES = 2  # reintentos tras el primer intento: 3 llamadas como máximo
 RETRY_DELAY = 1.0  # segundos; se multiplica por el número de reintento
 
 
+def split_response(out: str | None) -> tuple[int | None, str]:
+    """(estado, cuerpo) de la salida de `gh api -i`. Sin línea de estado en la primera línea: (None, salida)."""
+    out = out or ""
+    m = STATUS_LINE_RE.match(out.split("\n", 1)[0])
+    if not m:
+        return None, out
+    return int(m.group(1)), out.partition("\n\n")[2]
+
+
 def http_status(e: subprocess.CalledProcessError) -> int | None:
-    """Código de estado que `gh` escribe en stderr: `gh: <mensaje> (HTTP <código>)` o `gh: HTTP <código>`.
+    """Estado HTTP de la línea de estado en stdout de `gh api -i`, también en un fallo. Sin ella devuelve None.
 
-    Cuenta la última aparición. Sin código reconocible devuelve None.
-
-    No se busca un número suelto: un 403 puede citar «HTTP 500» en su mensaje.
+    No mira stderr ni el cuerpo: un 403 puede citar «HTTP 500» o «HTTP 404» en su mensaje, y con cuerpo vacío o
+    ilegible `gh` no escribe el código en stderr. Un fallo de red no trae línea de estado.
     """
-    found = [m.group(1) or m.group(2) for m in HTTP_STATUS_RE.finditer(e.stderr or "")]
-    return int(found[-1]) if found else None
+    return split_response(e.stdout)[0]
 
 
 def is_transient(e: subprocess.CalledProcessError) -> bool:
-    """5xx con código en stderr, o, sin código, una línea que es exactamente el aviso de cuerpo vacío.
+    """Se reintenta si y solo si el estado es 5xx, sea cual sea el cuerpo.
 
-    Sin código no se distingue un 5xx de otro estado: un 403 o 404 con cuerpo vacío y Content-Type JSON
-    también se reintenta (es un GET; criterio acotado de la issue #21).
-    Con código manda el código: un 403 que cita el texto en su mensaje no se reintenta.
+    Un 403 o 404 falla a la primera aunque el cuerpo venga vacío o truncado; sin línea de estado (fallo de red)
+    tampoco se reintenta.
     """
     status = http_status(e)
-    if status is not None:
-        return 500 <= status <= 599
-    return EMPTY_BODY_LINE in (e.stderr or "").splitlines()
+    return status is not None and 500 <= status <= 599
 
 
 def gh_json(path: str) -> object:
-    cmd = ["gh", "api", "-H", "Accept: application/vnd.github+json", path]
+    cmd = ["gh", "api", "-i", "-H", "Accept: application/vnd.github+json", path]
     for attempt in range(RETRIES + 1):
         try:
-            return json.loads(run(cmd))
+            out = run(cmd)
         except subprocess.CalledProcessError as e:
             if attempt == RETRIES or not is_transient(e):
                 raise
             time.sleep(RETRY_DELAY * (attempt + 1))
+        else:
+            return json.loads(split_response(out)[1])
     raise AssertionError("inalcanzable")
 
 
@@ -183,17 +196,48 @@ def _utc(ts: str) -> dt.datetime | None:
     return d if d.tzinfo else d.replace(tzinfo=dt.timezone.utc)
 
 
-def cut_at_merge(runs: list[dict], merged_at: str) -> list[dict]:
-    """Descarta los check-runs iniciados después de merged_at (igual o sin started_at se quedan)."""
+def cut_at_merge(runs: list[dict], merged_at: str, problems: list[str] | None = None) -> list[dict]:
+    """Descarta los check-runs posteriores a merged_at.
+
+    La fecha de un run es `started_at`; sin ella, `completed_at`; sin ninguna de las dos el run se queda.
+    Igual a merged_at se queda. Una fecha ilegible (de merged_at o del run) no corta: el run se queda y
+    la causa se anota en `problems` si se pasa la lista.
+    """
     cut = _utc(merged_at)
     if cut is None:
+        if problems is not None:
+            problems.append(f"merged_at ilegible ({merged_at!r}); los checks no se cortaron")
         return runs
     kept = []
     for r in runs:
-        started = _utc(r["started_at"]) if r.get("started_at") else None
-        if started is None or started <= cut:
+        campo = "started_at" if r.get("started_at") else "completed_at" if r.get("completed_at") else None
+        when = _utc(r[campo]) if campo else None
+        if campo and when is None and problems is not None:
+            problems.append(f"el check {r.get('name')} tiene {campo} ilegible ({r[campo]!r}); no se pudo cortar en merged_at")
+        if when is None or when <= cut:
             kept.append(r)
     return kept
+
+
+def status_at_merge(statuses: list[dict], merged_at: str) -> tuple[list[dict], list[str]]:
+    """Quita los estados blind-review creados después de merged_at (igual se queda).
+
+    Devuelve (estados, problemas). Un created_at ilegible no corta y se anota. Con merged_at ilegible no se
+    corta y no se anota nada: `cut_at_merge` ya lo anota para los checks.
+    """
+    cut = _utc(merged_at)
+    if cut is None:
+        return statuses, []
+    kept, problems = [], []
+    for s in statuses:
+        if s.get("context") == BLIND_REVIEW_CONTEXT and s.get("created_at"):
+            when = _utc(s["created_at"])
+            if when is None:
+                problems.append(f"el estado blind-review tiene created_at ilegible ({s['created_at']!r}); no se pudo cortar en merged_at")
+            elif when > cut:
+                continue
+        kept.append(s)
+    return kept, problems
 
 
 def repo_slug() -> str:
@@ -226,7 +270,7 @@ def allowed_release_files(repo: str, base_ref: str) -> set[str]:
     try:
         meta = gh_json(f"repos/{repo}/contents/release-please-config.json?ref={base_ref}")
     except subprocess.CalledProcessError as e:
-        if "HTTP 404" in (e.stderr or ""):  # rama base sin configuración: solo los ficheros fijos
+        if http_status(e) == 404:  # rama base sin configuración: solo los ficheros fijos
             return allowed
         raise
     config = json.loads(base64.b64decode(meta["content"]))
@@ -254,14 +298,16 @@ def collect_pr(repo: str, number: int) -> dict:
     head_sha = pr["head"]["sha"]
     gaps: list[str] = []
     try:
-        # filter=all: sin él la API devuelve solo el último run de cada check y el corte en merged_at
-        # se queda sin el run que había al fusionar.
+        # filter=all: sin él la API devuelve solo el último run de cada check suite (por nombre y suite) y el
+        # corte en merged_at se queda sin el run que había al fusionar.
         checks = gh_pages(f"repos/{repo}/commits/{head_sha}/check-runs?filter=all", "check_runs")
     except READ_ERRORS as e:
         checks = []
         gaps.append(f"PR #{number}: no se pudieron leer los checks ({reason(e)})")
     if pr.get("merged_at"):
-        kept = cut_at_merge(checks, pr["merged_at"])
+        problems: list[str] = []
+        kept = cut_at_merge(checks, pr["merged_at"], problems)
+        gaps.extend(f"PR #{number}: {m}" for m in problems)
         kept_keys = {(r["name"], (r.get("app") or {}).get("id")) for r in kept}
         lost = sorted({r["name"] for r in checks if (r["name"], (r.get("app") or {}).get("id")) not in kept_keys})
         for name in lost:
@@ -272,6 +318,9 @@ def collect_pr(repo: str, number: int) -> dict:
     except READ_ERRORS as e:
         statuses = []
         gaps.append(f"PR #{number}: no se pudo leer el estado blind-review ({reason(e)})")
+    if pr.get("merged_at"):  # el registro refleja el estado al fusionar: un blind-review posterior no cuenta
+        statuses, odd = status_at_merge(statuses, pr["merged_at"])
+        gaps.extend(f"PR #{number}: {m}" for m in odd)
     blind = latest_status(statuses, BLIND_REVIEW_CONTEXT)
 
     author = pr["user"]["login"]
