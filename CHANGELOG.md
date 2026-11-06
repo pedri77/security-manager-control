@@ -2,6 +2,13 @@
 
 Formato basado en Keep a Changelog. Versionado semántico.
 
+## [0.8.7](https://github.com/pedri77/security-manager-control/compare/v0.8.6...v0.8.7) (2026-11-06)
+
+
+### Correcciones
+
+* **evidence:** estado HTTP real con gh api -i y casos límite del corte en merged_at ([#26](https://github.com/pedri77/security-manager-control/issues/26)) ([7dc9f3b](https://github.com/pedri77/security-manager-control/commit/7dc9f3bd8df0d37220d2292660bce00ef036d0ff))
+
 ## [0.8.6](https://github.com/pedri77/security-manager-control/compare/v0.8.5...v0.8.6) (2026-11-06)
 
 
