@@ -109,3 +109,15 @@ Los 9 mutantes de «Verifica» ponen en rojo al menos un test. m3 solo se detect
 - Plantilla de enjambre-agentes, versión y CHANGELOG sin tocar. Regenerar packs: no.
 
 Prod: ninguna.
+
+## Verificación del coordinador (2026-11-06)
+
+Ejecutado por el coordinador sobre bf11c32, antes de fusionar. Montajes en copias fuera del worktree, en `/private/tmp/claude-501/-Users-pedri77-Dev-Claude-proyectos-Claude/954a23bc-d0e3-4e6f-999b-858a552b0b36/scratchpad/c50/` (`mutc/` con una copia por mutante).
+
+- Alcance: `git diff --stat` solo con los 3 ficheros de «Toca»; `superficies.py diff dev-proyecto`: OK. gitleaks: sin fugas. Pie del commit: `Agente: dev-proyecto v1.5`, `Task: SMC-008`.
+- `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q`: 981 passed.
+- Matriz con `gh` real y servidor propio, peticiones contadas en el servidor (5 estados por 9 cuerpos): 500, 502 y 503 = 3 en las 27 celdas; 403 y 404 = 1 en las 18 celdas; 0 celdas mal. 200 lista y objeto: JSON correcto; paginación con `Link` por `gh_pages`: 101 elementos.
+- Simulados frente a `gh api -i` real (volcado `od -c`): línea de estado acabada en `\n`, cabeceras en `\r\n`, cuerpo ausente en stdout cuando es ilegible, y stderr `gh: HTTP 403` / `unexpected end of JSON input`. Coinciden con `gh_i` y `CUERPOS`.
+- GitHub real, solo lectura, PR #10 a #24, rama frente a `origin/main` (0961722): los 9 PR fusionados (#10, #11, #15, #16, #19, #20, #22, #23, #24) dan `change-record.json` y `.md` idénticos salvo `generated_at` (13 checks, 0 gaps, blind-review success). #12, #13, #14, #17, #18, #21 no son PR: ambas versiones fallan igual (rc=1).
+- Contraprueba, un mutante por copia limpia de `git archive` (base: 306 passed). Todos en rojo: m1 leer de stderr 65 fallos; m2 reintentar todo 45; m3 partir por `\r\n\r\n` 16; m4 ignorar `completed_at` 4; m5 `completed_at` manda 3; m6 quitar hueco de fecha ilegible 10; m7 quitar corte de blind-review 6; m8 `>=` 1 (`test_blind_review_publicado_justo_en_merged_at_cuenta`); m9 404 por texto 7.
+- Criterio de la principal: hueco por `created_at` ilegible en blind-review aceptado; `TypeError` de `latest_check_runs` con `started_at` no texto, fuera de T50.
