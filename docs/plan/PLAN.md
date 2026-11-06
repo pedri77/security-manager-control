@@ -530,6 +530,18 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en b361173 · evidencia informes/T49-dev-proyecto.md
 
+## Ola 23 (SMC-008)
+
+- [ ] **T50** — `change_evidence`: estado HTTP real con `gh api -i` y casos límite del corte en `merged_at`
+  - Issue: SMC-008 https://github.com/pedri77/security-manager-control/issues/25
+  - Hace: en `scripts/change_evidence.py`. (1) `gh_json` llama a `gh api -i` y separa cabeceras y cuerpo; `http_status` lee el código de la línea de estado de la salida estándar, también en el `CalledProcessError`, en vez de stderr. Se quitan `HTTP_STATUS_RE` y `EMPTY_BODY_LINE`: reintenta si y solo si el estado es 5xx, sea cual sea el cuerpo; un 403 o 404 falla a la primera aunque el cuerpo venga vacío o truncado; sin línea de estado (fallo de red) no reintenta, como hoy. (2) El 404 de `allowed_release_files` se reconoce con `http_status`, no con `"HTTP 404" in stderr`. (3) `cut_at_merge` usa `completed_at` cuando falta `started_at`: si es posterior a `merged_at`, el run se descarta; sin ninguna de las dos fechas se queda. (4) Una fecha ilegible en el corte, `merged_at` o la del run, deja hueco que nombra el PR, y no corta ese run. (5) En `collect_pr`, un estado `blind-review` con `created_at` posterior a `merged_at` no cuenta: el registro refleja el estado al fusionar, y sin ninguno previo sale el hueco de hoy. Sin `merged_at`, nada cambia. (6) El comentario de `collect_pr` dice que sin `filter=all` llega el último run por check suite, y el simulador de `tests/test_change_evidence.py` lo imita. Los tests sustituyen los stderr simulados de T47 y T48 por salidas de `gh api -i` copiadas de `gh` real.
+  - No hace: no reintenta fallos de red. No toca `latest_check_runs` (el caso de ids invertidos sigue igual), `is_release_pr` más allá del 404, los workflows ni el formato del registro. No regenera packs. No toca la plantilla de enjambre-agentes, versión ni CHANGELOG.
+  - Toca: `scripts/change_evidence.py`, `tests/test_change_evidence.py`, `docs/plan/informes/T50-dev-proyecto.md`
+  - Depende: T49
+  - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde. Prueba con el binario real de `gh` contra un servidor local, contando peticiones en el servidor, matriz de estados 500, 502, 503, 403 y 404 por cuerpos JSON con `message`, `{}`, `{"errors":[]}`, HTML, vacío `text/plain`, vacío JSON, no JSON con `Content-Type` JSON, JSON truncado y solo espacios: los 5xx dan 3 peticiones y los 403 y 404 dan 1, en todas las celdas; 200 devuelve el JSON, lista y objeto, y también el cuerpo con paginación. Prueba en solo lectura contra GitHub real: `scripts/change_evidence.py pr` de esta rama y de `origin/main` sobre los PR #10 a #24 fusionados; el informe da las diferencias de `checks`, `gaps` y `blind_review` y explica cada una; un `blind-review` real publicado tras el merge es hallazgo, no fallo de la prueba. Contraprueba en copia temporal, un mutante por copia, con resultado medido test a test: leer el estado de stderr; reintentar cualquier error; partir cabeceras por `\n\n` si `gh` usa `\r\n`, o al revés, según lo medido; ignorar `completed_at`; usar `completed_at` aunque haya `started_at`; quitar el hueco de fecha ilegible; quitar el corte de `blind-review`; cortar `blind-review` con `>=`; 404 por texto en stderr. Cada uno debe poner en rojo al menos un test.
+  - Prod: —
+  - Estado: libre
+
 ## Libro
 
 ### Hechos
@@ -565,6 +577,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 - La tabla del Anexo II del RD 311/2022 se puede reconstruir con fiabilidad suficiente; lo dudoso va con `verificar: true`.
 
 ### Decisiones
+- 2026-11-06 · `gh api -i` adoptado (SMC-008): el estado HTTP sale de la línea de estado, con cualquier cuerpo. Medido con 200 y 404 reales. Sustituye el reconocimiento por stderr de T47 y T48 y retira la excepción del 403 o 404 con cuerpo vacío · sesión principal
 - 2026-11-03 · Alcance v0.2-v0.4; v0.5 fuera · sesión principal (encargo de David: ejecutar con el enjambre)
 - 2026-11-03 · HTML con stdlib, sin dependencias nuevas · sesión principal
 - 2026-11-03 · Prioridad = 60·estado + 20·criticidad + 10·entidad + 10·cobertura; P1 >= 70, P2 >= 40, resto P3. Estado: no_implementado 1, sin evaluar 0.75, parcial 0.5, implementado/no_aplica = 0 (P3). Categoría ENS vacía o desconocida = ALTA con aviso. T04 puede reajustar el peso de «sin evaluar» · T02/T01
