@@ -12,3 +12,4 @@ smc/evidencias.py
 osv-scanner.toml
 release-please-config.json
 docs/threat-model/*
+# Prueba de la puerta (PR de prueba, no fusionar).
