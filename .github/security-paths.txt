@@ -1,7 +1,7 @@
 # Rutas sensibles (globs de fnmatch; `*` cruza carpetas; `#` abre un comentario).
 # Un PR que toca alguna, o esta lista, o es de tipo `sec`, exige docs/threat-model/<TASK_ID>.md
 # o la línea `Threat model: no aplica: <motivo>` en la descripción (puerta security-gate, SMC-009).
-# «no aplica» no vale en un PR de tipo `sec` ni si toca esta lista, scripts/change_evidence.py o un workflow.
+# «no aplica» solo vale si las únicas rutas sensibles tocadas son de smc/, y nunca en un PR de tipo `sec`.
 # La puerta lee esta lista de la rama base: un PR no puede librarse editándola. Sin lista en la base, la puerta falla.
 .github/*
 scripts/*
