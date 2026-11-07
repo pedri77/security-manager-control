@@ -1,0 +1,37 @@
+# vigilancia.yml — SMC-009 · vigilancia diaria de dependencias
+# Una CVE publicada después del último PR no la ve `sca` (solo corre en PR). Aquí se escanea la rama principal con
+# la MISMA imagen que ci.yml (un test compara las dos) y se mantiene una única issue abierta (scripts/vigilancia.py).
+# Con hallazgos acaba en rojo; con error del escáner también, y no toca ninguna issue.
+name: vigilancia
+
+on:
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  OSV_IMAGE: ghcr.io/google/osv-scanner:v2.7.0@sha256:4f3b7e2c64b9d38a5febc5a7e4a3dfef1d1362f726dea7a2ef4762b46469fcd0
+
+jobs:
+  vigilancia:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { ref: main, persist-credentials: false }
+      - name: osv-scanner (rama principal)
+        run: |
+          code=0
+          docker run --rm -v "$PWD:/src:ro" "$OSV_IMAGE" scan source -r --format json /src > "$RUNNER_TEMP/osv.json" || code=$?
+          echo "osv-scanner terminó con código $code"
+          echo "$code" > "$RUNNER_TEMP/osv.code"
+      - name: issue de vigilancia
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: python3 scripts/vigilancia.py --code "$(cat "$RUNNER_TEMP/osv.code")" --json "$RUNNER_TEMP/osv.json"

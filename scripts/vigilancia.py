@@ -1,0 +1,174 @@
+#!/usr/bin/env python3
+"""vigilancia.py — vigilancia diaria de dependencias (SMC-009).
+
+Solo usa la librería estándar y la CLI `gh`. Lee la salida de `osv-scanner scan source -r --format json` y el código
+de salida con el que terminó, y mantiene una única issue abierta con el título `[vigilancia] vulnerabilidades en
+dependencias`.
+
+Uso (lo llama .github/workflows/vigilancia.yml):
+  python3 scripts/vigilancia.py --code "$code" --json osv.json
+
+Código de salida de osv-scanner (medido con la imagen fijada, v2.7.0):
+  0    sin hallazgos; stdout lleva `{"results": [], ...}`.
+  1    con hallazgos; `results[].packages[].{package, groups, vulnerabilities}`.
+  128  sin paquetes que escanear (stdout vacío). Misma regla que `sca`: un manifiesto versionado sin lockfile es rojo.
+  otro (127 ruta u opción inválida, 130, 137...) o JSON ilegible o incoherente con el código: error del escáner.
+       Nunca se toma por «sin hallazgos» y no toca ninguna issue.
+
+Código de salida de este script:
+  0 limpio · 1 hallazgos (issue creada o actualizada) · 2 error del escáner o de `gh` · 3 manifiesto sin lockfile.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import subprocess
+import sys
+
+TITLE = "[vigilancia] vulnerabilidades en dependencias"
+LABEL = "security"
+MANIFEST = re.compile(r"(^|/)(pyproject\.toml|package\.json|go\.mod|Cargo\.toml)$")
+
+
+class Error(Exception):
+    pass
+
+
+def _fixed(vulns, name):
+    out = set()
+    for v in vulns:
+        for a in v.get("affected", []):
+            if a.get("package", {}).get("name", name) != name:
+                continue
+            for r in a.get("ranges", []):
+                for e in r.get("events", []):
+                    if "fixed" in e:
+                        out.add(str(e["fixed"]))
+    # (0, número) antes que (1, texto): mezclar «1.11rc1» y «2.0.0» no debe comparar int con str.
+    return sorted(out, key=lambda s: [(0, int(x), "") if x.isdigit() else (1, 0, x) for x in re.split(r"[.\-]", s)])
+
+
+def _sort_key(h):
+    return (h["package"], h["version"], h["id"])
+
+
+def findings(data):
+    """Un hallazgo por grupo de osv-scanner (alias de un mismo problema), ordenado y sin datos del entorno."""
+    out = []
+    for res in data["results"]:
+        for pk in res["packages"]:
+            p = pk["package"]
+            by_id = {v["id"]: v for v in pk.get("vulnerabilities", [])}
+            for g in pk.get("groups", []):
+                vs = [by_id[i] for i in g["ids"] if i in by_id]
+                aliases = sorted({a for a in g.get("aliases", []) if a != g["ids"][0]},
+                                 key=lambda a: (not a.startswith("CVE-"), a))
+                out.append({"package": p["name"], "version": p["version"], "ecosystem": p.get("ecosystem", ""),
+                            "id": g["ids"][0], "aliases": aliases, "fixed": _fixed(vs, p["name"])})
+    return sorted(out, key=_sort_key)
+
+
+def render_body(fs):
+    rows = ["| Paquete | Versión | Identificador | Versión corregida |", "|---|---|---|---|"]
+    for h in fs:
+        ident = h["id"] + (f" ({h['aliases'][0]})" if h["aliases"] and h["aliases"][0].startswith("CVE-") else "")
+        fixed = ", ".join(h["fixed"]) if h["fixed"] else "sin versión corregida"
+        rows.append(f"| {h['package']} | {h['version']} | {ident} | {fixed} |")
+    return (f"`osv-scanner` encuentra {len(fs)} vulnerabilidades en las dependencias de la rama principal.\n\n"
+            + "\n".join(rows) + "\n\nLa excepción, si procede, va en `osv-scanner.toml` con `reason` e `ignoreUntil`. "
+            "Esta issue la mantiene `vigilancia.yml`: se actualiza sola y se cierra cuando ya no hay hallazgos.\n")
+
+
+def classify(code, text):
+    """(estado, hallazgos): clean | findings | no_packages | error."""
+    if code == 128:
+        return "no_packages", []
+    if code not in (0, 1):
+        return "error", []
+    try:
+        data = json.loads(text)
+        fs = findings(data)
+    except (ValueError, KeyError, TypeError, IndexError, AttributeError):
+        return "error", []
+    if code == 0 and not fs:
+        return "clean", []
+    if code == 1 and fs:
+        return "findings", fs
+    return "error", []
+
+
+def gh(args, stdin=None):
+    r = subprocess.run(["gh", *args], input=stdin, capture_output=True, text=True)
+    if r.returncode != 0:
+        raise Error(f"gh {' '.join(args[:2])} falló ({r.returncode}): {r.stderr.strip()}")
+    return r.stdout
+
+
+def open_issue():
+    raw = gh(["issue", "list", "--state", "open", "--json", "number,title,body", "--limit", "1000"])
+    try:
+        issues = json.loads(raw)
+        match = [i for i in issues if i["title"] == TITLE]
+    except (ValueError, KeyError, TypeError) as e:
+        raise Error(f"gh issue list: salida ilegible: {e}")
+    return min(match, key=lambda i: i["number"]) if match else None
+
+
+def manifest_without_lock():
+    r = subprocess.run(["git", "ls-files"], capture_output=True, text=True)
+    if r.returncode != 0:
+        raise Error(f"git ls-files falló: {r.stderr.strip()}")
+    return any(MANIFEST.search(f) for f in r.stdout.splitlines())
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("--code", type=int, required=True, help="código de salida de osv-scanner")
+    ap.add_argument("--json", required=True, help="stdout de osv-scanner --format json")
+    a = ap.parse_args(argv)
+    try:
+        with open(a.json, encoding="utf-8", errors="replace") as f:
+            text = f.read()
+    except OSError as e:
+        print(f"::error::No se puede leer la salida del escáner: {e}")
+        return 2
+    state, fs = classify(a.code, text)
+    try:
+        if state == "error":
+            print(f"::error::Error del escáner (código {a.code}, JSON ilegible o incoherente): no se toca ninguna issue")
+            return 2
+        if state == "no_packages":
+            if manifest_without_lock():
+                print("::error::Hay manifiesto de dependencias pero ningún lockfile versionado: nada escaneado")
+                return 3
+            print("Sin dependencias declaradas: nada que escanear")
+            return 0
+        issue = open_issue()
+        if state == "clean":
+            if issue:
+                gh(["issue", "close", str(issue["number"]), "--comment",
+                    "Sin hallazgos en la última vigilancia: se cierra."])
+                print(f"Sin hallazgos: issue #{issue['number']} cerrada")
+            else:
+                print("Sin hallazgos")
+            return 0
+        body = render_body(fs)
+        if issue is None:
+            gh(["label", "create", LABEL, "--color", "D93F0B", "--description", "Seguridad", "--force"])
+            gh(["issue", "create", "--title", TITLE, "--label", LABEL, "--body-file", "-"], stdin=body)
+            print(f"::error::{len(fs)} vulnerabilidades: issue creada")
+        elif (issue.get("body") or "").strip() != body.strip():
+            gh(["issue", "comment", str(issue["number"]), "--body-file", "-"], stdin="Los hallazgos han cambiado.\n\n" + body)
+            gh(["issue", "edit", str(issue["number"]), "--body-file", "-"], stdin=body)
+            print(f"::error::{len(fs)} vulnerabilidades: issue #{issue['number']} actualizada")
+        else:
+            print(f"::error::{len(fs)} vulnerabilidades: issue #{issue['number']} sin cambios")
+        return 1
+    except Error as e:
+        print(f"::error::{e}")
+        return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())
