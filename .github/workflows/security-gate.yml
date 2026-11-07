@@ -1,0 +1,61 @@
+# security-gate.yml — PLAYBOOK-F2P-001 · S3 · SMC-009
+# Puerta de seguridad: threat model o «Threat model: no aplica: <motivo>» si el PR es de tipo sec o toca una ruta de
+# .github/security-paths.txt (leída de la rama base). Es un job propio, con el nombre `security-gate`: entra en la regla
+# de rama cuando David lo decida.
+#
+# Va con `pull_request_target`: el workflow y el script salen de la rama por defecto, así que un PR no puede editar la
+# puerta que lo juzga (T11). Por eso el checkout es el de la rama base, sin `ref` ni `repository`, y el job no ejecuta
+# nada del PR: el script solo lo lee por la API (título, descripción, ficheros y contenidos por SHA). Nunca hay que
+# añadir aquí un checkout de la cabeza ni un paso que ejecute código del PR.
+#
+# Dónde cuenta el check: GitHub asocia a un `pull_request_target` el último commit de la rama por defecto
+# (GITHUB_SHA), no la cabeza del PR. La documentación lo admite como evento elegible para los checks del PR
+# (docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks),
+# pero no dice que el check quede en la cabeza. Por eso el job publica además un estado de commit `security-gate` sobre
+# el SHA de la cabeza (`statuses: write`, el único permiso de escritura). Si un check y un estado tienen el mismo nombre,
+# los dos deben pasar: coinciden siempre porque salen del mismo resultado.
+#
+# Los datos del PR llegan al shell solo por variables de entorno.
+name: security-gate
+
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  security-gate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      statuses: write
+    steps:
+      # Sin `ref`: con pull_request_target es la rama por defecto del repositorio base, nunca la cabeza del PR.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - name: Puerta de seguridad (threat model o motivo de no aplicación)
+        id: gate
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: python3 scripts/change_evidence.py security --pr "$PR_NUMBER"
+      - name: Publicar el estado security-gate en la cabeza del PR
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          OUTCOME: ${{ steps.gate.outcome }}
+        run: |
+          set -euo pipefail
+          [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "SHA de cabeza ilegible" >&2; exit 1; }
+          if [ "$OUTCOME" = "success" ]; then state=success; desc="Puerta de seguridad: cumple o no aplica"; else state=failure; desc="Puerta de seguridad: no se cumple"; fi
+          gh api -X POST "repos/$REPO/statuses/$HEAD_SHA" -f state="$state" -f context=security-gate -f description="$desc" >/dev/null
+      - name: Acabar en rojo si la puerta no se cumple
+        if: steps.gate.outcome != 'success'
+        run: exit 1

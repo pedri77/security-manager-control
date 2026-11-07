@@ -11,7 +11,10 @@ Modos:
   security Puerta de seguridad de un PR (sin escribir ficheros). Aplica si el título es de tipo `sec` o si el PR toca
            una ruta de `.github/security-paths.txt` (leída de la rama BASE) o esa lista. Si aplica, exige
            `docs/threat-model/<TASK_ID>.md` en la cabeza, sin filas `abierta` ni placeholders, o una línea
-           `Threat model: no aplica: <motivo>` en la descripción. Sale con 1 si no se cumple o si no puede leer la API.
+           `Threat model: no aplica: <motivo>` en la descripción (motivo de 15 caracteres o más, sin placeholders; no vale en
+           PR de tipo `sec` ni si toca la lista, este script o un workflow). El modelo declara `**Issue:** #N` con N entre las
+           issues que cierra el PR. Sin lista en la base la puerta aplica y falla. Sale con 1 si no se cumple o si no puede
+           leer la API. Corre en `.github/workflows/security-gate.yml` con `pull_request_target`, desde la rama base.
 
 Uso:
   python3 scripts/change_evidence.py pr --pr 123 --out change-record
@@ -44,6 +47,7 @@ import re
 import subprocess
 import sys
 import time
+import unicodedata
 from pathlib import Path
 from urllib.parse import quote
 
@@ -61,6 +65,13 @@ NO_APLICA_RE = re.compile(r"^[ \t]*Threat model:[ \t]*no aplica:(.*)$", re.MULTI
 SEC_TITLE_RE = re.compile(r"^\s*sec(?:\([^)]*\))?!?:", re.IGNORECASE)
 THREAT_STATES = ("mitigada", "aceptada")  # vocabulario cerrado del estado de una amenaza
 ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+ISSUE_DECL_RE = re.compile(r"\*\*Issue:\*\*[ \t]*#(\d+)\b")
+OPEN_CELL_RE = re.compile(r"^abiert[ao]\b", re.IGNORECASE)
+PLACEHOLDER_RE = re.compile(r"<[^<>]*>")
+NO_APLICA_MIN = 15  # caracteres de motivo, sin contar placeholders `<...>`
+EMPTY_CELLS = ("", "-", "--", "—", "–", "n/a", "na", "ninguno", "ninguna", "pendiente", "tbd")
+CHANGE_EVIDENCE_PATH = "scripts/change_evidence.py"
+WORKFLOWS_PREFIX = ".github/workflows/"
 # Restos de TEMPLATE.md que un threat model terminado no puede conservar.
 THREAT_PLACEHOLDERS = ("<TASK_ID>", "<feature>", "<n>", "<slug>", "YYYY-MM-DD", "NNNN", "tests/...", "sí / no")
 RELEASE_BRANCH_PREFIX = "release-please--branches--"
@@ -286,7 +297,7 @@ def allowed_release_files(repo: str, base_ref: str) -> set[str]:
     """Ficheros de versión: los fijos más los extra-files de la rama BASE, nunca los del propio PR."""
     allowed = set(RELEASE_FILES)
     try:
-        meta = gh_json(f"repos/{repo}/contents/release-please-config.json?ref={base_ref}")
+        meta = gh_json(f"repos/{repo}/contents/release-please-config.json?ref={quote(base_ref, safe='')}")
     except subprocess.CalledProcessError as e:
         if http_status(e) == 404:  # rama base sin configuración: solo los ficheros fijos
             return allowed
@@ -305,7 +316,8 @@ def is_release_pr(repo: str, number: int, head_ref: str, base_ref: str, same_rep
     if len(files) >= FILES_PAGE:  # puede haber más páginas sin leer
         return False
     allowed = allowed_release_files(repo, base_ref)
-    return bool(files) and all(f["filename"] in allowed for f in files)
+    # un renombrado o copia desde una ruta sensible a un fichero de versión no es un cambio de versión
+    return bool(files) and all(f["filename"] in allowed and (f.get("previous_filename") or f["filename"]) in allowed for f in files)
 
 
 # ───────────── puerta de seguridad (SMC-009) ─────────────
@@ -352,26 +364,47 @@ def _clean(cell: str) -> str:
     return cell.strip().strip("`*_ \t")
 
 
+def _is_table_line(line: str) -> bool:
+    """Línea de tabla: lleva un `|` sin escapar, con o sin `|` inicial."""
+    return re.search(r"(?<!\\)\|", line) is not None
+
+
+def _tables(text: str) -> list[list[list[str]]]:
+    """Tablas del texto: líneas seguidas con `|`; la primera es la cabecera. Cada fila es su lista de celdas."""
+    tables: list[list[list[str]]] = []
+    current: list[list[str]] | None = None
+    for line in text.splitlines():
+        if not _is_table_line(line):
+            current = None
+            continue
+        if current is None:
+            current = []
+            tables.append(current)
+        current.append(_cells(line))
+    return tables
+
+
+def _is_separator(cells: list[str]) -> bool:
+    return all(re.fullmatch(r":?-+:?", c) for c in cells if c)
+
+
 def _table_rows(text: str, column: str) -> list[tuple[list[str], dict[str, int]]]:
     """Filas de datos de las tablas cuya cabecera tiene la columna `column`, con los índices de sus columnas."""
-    rows, cols, in_table = [], None, False
-    for line in text.splitlines():
-        if not line.lstrip().startswith("|"):
-            cols, in_table = None, False
+    rows = []
+    for table in _tables(text):
+        names = {_clean(c).casefold(): i for i, c in enumerate(table[0])}
+        if column.casefold() not in names:
             continue
-        cells = _cells(line)
-        if not in_table:  # primera línea de la tabla: la cabecera
-            names = {_clean(c).casefold(): i for i, c in enumerate(cells)}
-            cols = names if column.casefold() in names else None
-            in_table = True
-            continue
-        if cols is not None and not all(re.fullmatch(r":?-+:?", c) for c in cells if c):
-            rows.append((cells, cols))
+        rows.extend((cells, names) for cells in table[1:] if not _is_separator(cells))
     return rows
 
 
-def _signed(section5: str, threat: str) -> bool:
-    """¿Hay en la sección 5 una fila de `threat` con quien acepta y «Fecha» con formato de fecha real?"""
+def _accepted_on(section5: str, threat: str) -> bool:
+    """¿Hay en la sección 5 una fila de `threat` con quien acepta y «Fecha» con formato de fecha real?
+
+    La fecha es la fecha de aceptación que escribe quien acepta; no autentica a nadie. La firma real es el estado
+    `security-review` que publica David sobre el SHA del PR.
+    """
     for cells, cols in _table_rows(section5, "Fecha"):
         def cell(name: str) -> str:
             i = cols.get(name)
@@ -385,17 +418,38 @@ def _signed(section5: str, threat: str) -> bool:
     return False
 
 
-def threat_model_problems(text: str) -> list[str]:
+def _cell_at(cells: list[str], names: dict[str, int], prefix: str) -> tuple[bool, str]:
+    """(¿existe la columna cuyo nombre empieza por `prefix`?, su celda limpia)."""
+    for name, i in names.items():
+        if name.startswith(prefix):
+            return True, (_clean(cells[i]) if i < len(cells) else "")
+    return False, ""
+
+
+def threat_model_problems(text: str, closes: list[int] | None = None) -> list[str]:
     """Motivos por los que un threat model no vale.
 
-    Los comentarios HTML no cuentan (no se ven). Hace falta al menos una fila de amenaza (tabla con columna «Estado»);
-    el estado de cada fila es, entera la celda, `mitigada` o `aceptada` (cualquier otro valor, vacío o `abierta (x)`
-    incluidos, no pasa); una `aceptada` exige su fila en la sección 5 con «Fecha» con formato de fecha (la firma es
-    esa columna, la rellena David); y no quedan placeholders de la plantilla.
+    Los comentarios HTML no cuentan (no se ven). Hace falta al menos una fila de amenaza (tabla con una columna
+    «Estado»); el estado de cada fila es, entera la celda, `mitigada` o `aceptada` (cualquier otro valor, vacío o
+    `abierta (x)` incluidos, no pasa); una `mitigada` exige celdas de mitigación y de test no vacías; una `aceptada`
+    exige su fila en la sección 5 con «Fecha» con formato de fecha (la fecha de aceptación, que escribe David);
+    `abierta` en cualquier celda de cualquier línea de tabla no pasa, tenga o no `|` inicial y sea cual sea la
+    cabecera; y no quedan placeholders de la plantilla. Con `closes` (las issues que cierra el PR), el modelo declara
+    `**Issue:** #N` y N está entre ellas.
     """
     text = HTML_COMMENT_RE.sub("", text or "")
     problems = []
-    rows = _table_rows(text, "Estado")
+    rows: list[tuple[list[str], dict[str, int]]] = []
+    for table in _tables(text):
+        names = {_clean(c).casefold(): i for i, c in enumerate(table[0])}
+        n_estado = sum(1 for c in table[0] if _clean(c).casefold() == "estado")
+        if n_estado > 1:
+            problems.append(f"tabla con dos columnas «Estado» (o más, {n_estado}): el estado de cada amenaza debe ser una sola celda")
+        elif n_estado == 1:
+            rows.extend((cells, names) for cells in table[1:] if not _is_separator(cells))
+        for cells in table:
+            if any(OPEN_CELL_RE.match(_clean(c)) for c in cells):
+                problems.append(f"celda 'abierta' en la línea de tabla de {cells[0] or '?'}: una amenaza abierta no pasa la puerta")
     if not rows:
         problems.append("sin filas de amenaza: falta la tabla con columna «Estado» y al menos una amenaza")
     section5 = ""
@@ -410,13 +464,36 @@ def threat_model_problems(text: str) -> list[str]:
         estado = _clean(cells[idx]) if len(cells) > idx else ""
         if estado.casefold() not in THREAT_STATES:
             problems.append(f"amenaza {name}: estado '{estado.casefold()}' fuera de {'/'.join(THREAT_STATES)}")
-        elif estado.casefold() == "aceptada" and not _signed(section5, _clean(name)):
-            problems.append(f"amenaza {name} aceptada sin aceptación firmada en la sección 5 "
-                            "(fila con su ID y «Fecha» con formato AAAA-MM-DD)")
+        elif estado.casefold() == "aceptada" and not _accepted_on(section5, _clean(name)):
+            problems.append(f"amenaza {name} aceptada sin fecha de aceptación en la sección 5 "
+                            "(fila con su ID, quien acepta y «Fecha» con formato AAAA-MM-DD)")
+        elif estado.casefold() == "mitigada":
+            for etiqueta, prefijo in (("mitigación", "mitigaci"), ("test que la verifica", "test")):
+                existe, valor = _cell_at(cells, cols, prefijo)
+                if valor.casefold() in EMPTY_CELLS:
+                    problems.append(f"amenaza {name} mitigada sin {etiqueta}: "
+                                    + ("celda vacía" if existe else f"falta la columna «{etiqueta}»"))
     for ph in THREAT_PLACEHOLDERS:
         if ph in text:
             problems.append(f"queda un placeholder de la plantilla: {ph}")
+    if closes is not None:
+        m = ISSUE_DECL_RE.search(text)
+        if not m:
+            problems.append("el modelo no declara su issue con '**Issue:** #N'")
+        elif int(m.group(1)) not in closes:
+            problems.append(f"el modelo declara **Issue:** #{m.group(1)} y el PR cierra "
+                            + (", ".join(f"#{n}" for n in closes) if closes else "ninguna issue"))
     return problems
+
+
+def safe_text(value: object) -> str:
+    """Texto sin saltos de línea ni caracteres de control, para imprimir lo que controla el autor del PR.
+
+    Un salto de línea (también U+2028 o U+0085) abre una línea nueva en el log, y una línea que empieza por `::` es
+    un comando de workflow. Los saltos se vuelven un espacio; el resto de caracteres de control o de formato se quitan.
+    """
+    out = re.sub(r"[\r\n\t\x0b\x0c\x85\u2028\u2029]+", " ", str(value))
+    return "".join(c for c in out if not unicodedata.category(c).startswith("C"))
 
 
 def no_aplica_reason(body: str) -> str | None:
@@ -424,6 +501,15 @@ def no_aplica_reason(body: str) -> str | None:
     cadena vacía si la hay sin motivo."""
     m = NO_APLICA_RE.search(HTML_COMMENT_RE.sub("", body or ""))
     return m.group(1).strip() if m else None
+
+
+def no_aplica_invalid(motivo: str) -> str | None:
+    """Por qué un motivo de `no aplica` no vale (None si vale): sin contar placeholders `<...>`, al menos
+    NO_APLICA_MIN caracteres y 8 letras o cifras. `<motivo>`, `.` o una fila de puntos no son un motivo."""
+    rest = PLACEHOLDER_RE.sub("", motivo or "").strip()
+    if len(rest) < NO_APLICA_MIN or sum(c.isalnum() for c in rest) < 8:
+        return f"el motivo debe decir algo: al menos {NO_APLICA_MIN} caracteres sin placeholders <...> (hay {len(rest)})"
+    return None
 
 
 def evaluate_security(repo: str, number: int, pr: dict | None = None, tasks: list[str] | None = None,
@@ -452,23 +538,44 @@ def evaluate_security(repo: str, number: int, pr: dict | None = None, tasks: lis
     touched = {n for f in files for n in (f.get("filename"), f.get("previous_filename")) if n}
     listing = read_file_at(repo, SECURITY_PATHS_FILE, pr["base"]["ref"])
     reasons = []
-    if pr_title_type(pr.get("title") or "") == "sec":
+    is_sec = pr_title_type(pr.get("title") or "") == "sec"
+    if is_sec:
         reasons.append("título de tipo sec")
-    if listing is None:
-        out["warnings"].append(f"no existe {SECURITY_PATHS_FILE} en la rama base {pr['base']['ref']}: solo cuenta el tipo sec")
+    if SECURITY_PATHS_FILE in touched:
+        reasons.append(f"toca la lista de rutas sensibles ({SECURITY_PATHS_FILE})")
+    missing_list = listing is None
+    if missing_list:
+        # sin lista en la base no se puede saber qué es sensible: la puerta aplica y falla en cerrado
+        reasons.append(f"falta la lista de rutas sensibles ({SECURITY_PATHS_FILE}) en la rama base {safe_text(pr['base']['ref'])}")
+        out["warnings"].append(f"no existe {SECURITY_PATHS_FILE} en la rama base {safe_text(pr['base']['ref'])}: la puerta falla en cerrado")
     else:
         globs = parse_security_paths(listing)
         hits = sorted(n for n in touched if any(fnmatch.fnmatchcase(n, g) for g in globs))
-        if SECURITY_PATHS_FILE in touched:
-            reasons.append(f"toca la lista de rutas sensibles ({SECURITY_PATHS_FILE})")
         if hits:
-            reasons.append("toca rutas sensibles: " + ", ".join(hits[:5]) + (f" y {len(hits) - 5} más" if len(hits) > 5 else ""))
+            shown = ", ".join(safe_text(h) for h in hits[:5])
+            reasons.append("toca rutas sensibles: " + shown + (f" y {len(hits) - 5} más" if len(hits) > 5 else ""))
     if not reasons:
         out["reason"] = "no toca rutas sensibles ni es de tipo sec"
         return out
 
     out["required"], out["reason"] = True, "; ".join(reasons)
-    motivo = no_aplica_reason(body)
+    if missing_list:
+        out["problems"].append(f"falta {SECURITY_PATHS_FILE} en la rama base {safe_text(pr['base']['ref'])}: la puerta falla en cerrado")
+    # «no aplica» no vale donde el riesgo es mayor: tipo sec, la lista, esta puerta o un workflow
+    strict = (is_sec or SECURITY_PATHS_FILE in touched or CHANGE_EVIDENCE_PATH in touched
+              or any(n.startswith(WORKFLOWS_PREFIX) for n in touched))
+    motivo_raw = no_aplica_reason(body)
+    motivo = None
+    if motivo_raw is not None:
+        bad = no_aplica_invalid(motivo_raw)
+        if strict:
+            out["problems"].append("la línea 'Threat model: no aplica' no vale en un PR de tipo sec ni si toca la lista de rutas, "
+                                   f"{CHANGE_EVIDENCE_PATH} o un workflow: hace falta el threat model")
+        elif bad:
+            out["problems"].append(f"motivo no válido en la línea 'Threat model: no aplica': {bad}")
+        else:
+            motivo = safe_text(motivo_raw)
+    closes = extract_issues(body)
     found = []
     present = {f["filename"] for f in files if f.get("filename") and f.get("status") != "removed"}
     for task in tasks or []:
@@ -486,7 +593,7 @@ def evaluate_security(repo: str, number: int, pr: dict | None = None, tasks: lis
                                        + (" con motivo" if motivo == "" else ""))
             continue
         found.append(path)
-        out["problems"].extend(f"{path}: {m}" for m in threat_model_problems(text))
+        out["problems"].extend(f"{path}: {m}" for m in threat_model_problems(text, closes))
     if not tasks and not motivo:
         out["problems"].append("sin TASK_ID no se puede localizar docs/threat-model/<TASK_ID>.md y no hay línea "
                                "'Threat model: no aplica: <motivo>'" + (" con motivo" if motivo == "" else ""))
@@ -681,7 +788,7 @@ def mode_pr(args: argparse.Namespace) -> int:
     for e in errors:
         print(f"ERROR: {e}", file=sys.stderr)
     for g in p["gaps"]:
-        print(f"AVISO: {g}", file=sys.stderr)
+        print(f"AVISO: {safe_text(g)}", file=sys.stderr)
     return 1 if errors else 0
 
 
@@ -691,16 +798,16 @@ def mode_security(args: argparse.Namespace) -> int:
         repo = repo_slug()
         r = evaluate_security(repo, args.pr)
     except Exception as e:  # noqa: BLE001 — cualquier fallo de lectura o de forma cierra la puerta
-        print(f"ERROR: PR #{args.pr}: no se pudo evaluar la puerta de seguridad ({reason(e)})", file=sys.stderr)
+        print(f"ERROR: PR #{args.pr}: no se pudo evaluar la puerta de seguridad ({safe_text(reason(e))})", file=sys.stderr)
         return 1
     for w in r["warnings"]:
-        print(f"AVISO: {w}", file=sys.stderr)
+        print(f"AVISO: {safe_text(w)}", file=sys.stderr)
     if not r["required"]:
-        print(f"PR #{args.pr}: no aplica la puerta de seguridad ({r['reason']})")
+        print(f"PR #{args.pr}: no aplica la puerta de seguridad ({safe_text(r['reason'])})")
         return 0
-    print(f"PR #{args.pr}: aplica la puerta de seguridad ({r['reason']}) · threat model: {r['threat_model'] or '—'}")
+    print(f"PR #{args.pr}: aplica la puerta de seguridad ({safe_text(r['reason'])}) · threat model: {safe_text(r['threat_model'] or '—')}")
     for m in r["problems"]:
-        print(f"ERROR: {m}", file=sys.stderr)
+        print(f"ERROR: {safe_text(m)}", file=sys.stderr)
     return 1 if r["problems"] else 0
 
 
