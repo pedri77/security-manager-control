@@ -544,7 +544,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 
 ## Ola 24 (SMC-009)
 
-- [ ] **T51** — Puerta de seguridad en PR
+- [~] **T51** — Puerta de seguridad en PR
   - Issue: SMC-009 https://github.com/pedri77/security-manager-control/issues/28
   - Hace: en `scripts/change_evidence.py`, modo nuevo `security --pr N` y funciones que comparte con el modo `pr`. La puerta aplica si el título es de tipo `sec` o si algún fichero del PR casa con una ruta de `.github/security-paths.txt` (globs con `fnmatch`, comentarios con `#`), leído de la rama base, nunca de la cabeza; tocar ese fichero también activa la puerta; si no existe en la base, solo cuenta el tipo `sec` y se avisa en la salida. Si aplica, exige `docs/threat-model/<TASK_ID>.md` en la cabeza, sin filas con estado `abierta` ni placeholders de la plantilla, o una línea `Threat model: no aplica: <motivo>` en la descripción, fuera de comentarios HTML. Sale con código 1 si no se cumple o si no puede leer la API. El PR de release no se ve afectado. `collect_pr` añade al registro el campo `security` (`required`, `reason`, `threat_model`, `review`), con el estado `security-review` cortado en `merged_at` igual que `blind-review`; `mode_release` anota hueco si `required` y `review` no es `success`. En `.github/workflows/pr-meta.yml`, job `security-gate`, con `pull_request`, nunca `pull_request_target`, y sin interpolar datos del PR en el shell. Crea `.github/security-paths.txt` con `.github/workflows/*`, `scripts/*`, `smc/report_html.py`, `smc/dashboard.py`, `smc/visor.py` y `smc/evidencias.py`. Crea `docs/threat-model/SMC-009.md` con la plantilla: cubre los dos jobs de la issue, incluida la manipulación del PR y el permiso `issues: write`.
   - No hace: no publica `security-review`. No toca la regla de rama, `vigilancia.yml`, la plantilla de enjambre-agentes, versión ni CHANGELOG. No exige `security-review` en el modo `pr`.
@@ -552,9 +552,9 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Depende: T50
   - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde. Prueba en solo lectura contra GitHub real: `scripts/change_evidence.py security --pr` sobre los PR #24 y #26 (tocan `scripts/`: debe exigir threat model y fallar) y #23 y #22 (no deben fallar), y `pr` de esta rama frente a `origin/main` sobre #24 y #26: solo cambia el campo `security`. Medida con `gh` real: lectura de la lista desde la base y 404 del threat model. Contraprueba en copia temporal, un mutante por copia, medida test a test: leer la lista de la cabeza; no activar por tocar la lista; aceptar motivo vacío; aceptar la línea dentro de un comentario HTML; ignorar `abierta`; no eximir el PR de release; pasar si falla la API; quitar el hueco de `security-review`; contar un `security-review` posterior a `merged_at`. Cada uno debe poner en rojo al menos un test.
   - Prod: —
-  - Estado: libre
+  - Estado: reservada por coordinador-smc-f2p 2026-11-07
 
-- [ ] **T52** — Vigilancia diaria de dependencias
+- [~] **T52** — Vigilancia diaria de dependencias
   - Issue: SMC-009 https://github.com/pedri77/security-manager-control/issues/28
   - Hace: `.github/workflows/vigilancia.yml` con `schedule` diario y `workflow_dispatch`, permisos `contents: read` e `issues: write`, actions fijadas por SHA y la misma imagen `OSV_IMAGE` de `ci.yml`, con la misma versión y digest. `scripts/vigilancia.py` lee el JSON de `osv-scanner`: código 0 sin hallazgos, 1 con hallazgos, 128 sin paquetes y otro código o JSON ilegible es error del escáner. Con hallazgos, crea la issue `[vigilancia] vulnerabilidades en dependencias` con etiqueta `security`, o comenta en la abierta si cambian, sin duplicar, y el job acaba en rojo. Sin hallazgos, cierra esa issue con un comentario si está abierta. Con error del escáner, el job acaba en rojo y no toca ninguna issue. Con 128 aplica la misma regla de `sca`: si hay manifiesto sin lockfile, rojo. Respeta `osv-scanner.toml`. La issue lista paquete, versión, identificador y si hay versión corregida.
   - No hace: no abre PR de dependencias ni actualiza nada. No toca `ci.yml`, `pr-meta.yml`, `change_evidence.py`, la plantilla de enjambre-agentes, versión ni CHANGELOG.
@@ -562,7 +562,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Depende: T50
   - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde. Medida real, con la imagen fijada por Docker: `osv-scanner` sobre este repo, y sobre una carpeta temporal con un `requirements.txt` o lock de una versión vieja con CVE conocida; las salidas reales se copian a los fixtures de los tests, con sus códigos de salida. Comprueba además con `gh` real, solo lectura, la búsqueda de issue abierta por título. Contraprueba en copia temporal, un mutante por copia, medida test a test: tratar el código 128 como limpio; tratar JSON ilegible como limpio; no ponerse en rojo con hallazgos; crear issue sin buscar la abierta; cerrar la issue con error del escáner; no cerrarla sin hallazgos. Cada uno debe poner en rojo al menos un test. Una imagen distinta de la de `ci.yml` debe fallar un test que compare las dos.
   - Prod: —
-  - Estado: libre
+  - Estado: reservada por coordinador-smc-f2p 2026-11-07
 
 ## Libro
 
