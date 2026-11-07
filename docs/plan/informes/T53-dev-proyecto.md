@@ -51,3 +51,9 @@ Diez de diez en rojo. Los tests nuevos fallaban antes del código (100 en rojo c
 
 ## Acción de prod pendiente
 Ninguna. Tras fusionar: David añade `security-gate` a la regla de rama (contexto del estado de commit y, si aparece, del check) y rellena las fechas de T13, T23, T24 en §5.
+
+## Ampliación: integración de T54 (eb371e4)
+- `git merge --no-ff eb371e4` sin conflictos (T54 trae `vigilancia.py`, `vigilancia.yml`, `test_vigilancia.py`, informe T54 y PLAN.md).
+- Modelo: T26 = N2 (adopción de la issue por un tercero) y T27 = N3 (datos de terceros en issue pública), ambas `mitigada`, con 7 y 11 tests citados de `tests/test_vigilancia.py` (nombres reales, comprobados con grep: 105 citas en el modelo, 0 inexistentes). T27 incluye el artefacto `osv-vigilancia`: contenido público de OSV en repo público, aceptado como dato público, sin fila `aceptada` nueva. T14 remite a T26 y T27.
+- Insignia del README: `tests-731` (recuento real de `def test_` en `tests/`).
+- Fechas de aceptación: ninguna rellenada (T13, T23, T24, T25 siguen vacías).
