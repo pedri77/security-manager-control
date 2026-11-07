@@ -326,7 +326,8 @@ def parse_security_rules(text: str) -> list[tuple[str, bool]]:
     """Reglas de `.github/security-paths.txt`: (glob, admite_no_aplica), una por línea; `#` abre un comentario.
 
     `~` pegado al inicio del glob (tras quitar espacios) lo marca: la ruta sigue siendo sensible y además admite
-    «no aplica». Una marca mal escrita (`~ ruta`, `~~ruta`) no marca: la ruta queda sensible y sin exención.
+    «no aplica». Una marca mal escrita (`~ ruta`, `~~ruta`, `~` + cualquier espacio Unicode) no marca: se quitan los `~` y
+    los espacios del inicio y la ruta queda sensible y sin exención. Otros signos parecidos (`～`, `˜`) no son marca.
     """
     rules = []
     for line in text.splitlines():
@@ -337,10 +338,24 @@ def parse_security_rules(text: str) -> list[tuple[str, bool]]:
             continue
         rest = line[1:]
         marked = bool(rest) and not rest[0].isspace() and rest[0] != "~"
-        glob = rest if marked else rest.lstrip("~ \t")
+        glob = rest if marked else re.sub(r"^[~\s]+", "", rest)  # \s de str: también NBSP, U+3000 y demás espacios Unicode
         if glob:
             rules.append((glob, marked))
     return rules
+
+
+def security_rule_warnings(rules: list[tuple[str, bool]]) -> list[str]:
+    """Avisos sobre globs que casi seguro no casan con ninguna ruta real. No cambian la decisión de la puerta."""
+    out = []
+    for glob, _ in rules:
+        shown = safe_text(glob)
+        if not glob.isascii():
+            out.append(f"{SECURITY_PATHS_FILE}: el glob '{shown}' contiene caracteres no ASCII (¿un signo parecido a «~» o a un espacio?)")
+        if glob.startswith("./"):
+            out.append(f"{SECURITY_PATHS_FILE}: el glob '{shown}' empieza por './' y no casará con ninguna ruta de pulls/N/files")
+        if re.search(r"\s", glob):
+            out.append(f"{SECURITY_PATHS_FILE}: el glob '{shown}' contiene espacios internos (¿dos rutas en una línea?)")
+    return out
 
 
 def parse_security_paths(text: str) -> list[str]:
@@ -591,6 +606,7 @@ def _evaluate_security(repo: str, number: int, pr: dict, tasks: list[str] | None
         out["warnings"].append(f"no existe {SECURITY_PATHS_FILE} en la rama base {safe_text(pr['base']['ref'])}: la puerta falla en cerrado")
     else:
         rules = parse_security_rules(listing)
+        out["warnings"].extend(security_rule_warnings(rules))
         hits = sorted(n for n in touched if any(fnmatch.fnmatchcase(n, g) for g, _ in rules))
         listed_hits = hits
         # admite «no aplica» la ruta que casa con una regla marcada y con ninguna sin marcar

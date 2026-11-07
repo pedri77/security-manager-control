@@ -2332,12 +2332,12 @@ def test_t57_marcar_una_ruta_en_la_cabeza_no_libra_la_marca_se_lee_de_la_base(ce
 
 
 def test_t57_marcar_una_ruta_sensible_para_librarse_del_modelo_exige_modelo(ce, monkeypatch):
-    # el PR marca scripts/* con ~ en la lista: toca la lista, así que la puerta es estricta aunque scripts/* quede marcada
-    r = _t57(ce, monkeypatch, "scripts/*\n", [LISTA_PATH, "scripts/x.py"])
-    assert r["threat_model"] is None and r["problems"]
+    # el PR marca scripts/* con ~ en la cabeza (la base no tiene marcas) y toca la lista: la puerta es estricta
+    r = _t57(ce, monkeypatch, "scripts/*\n", [LISTA_PATH, "scripts/x.py"], contents={("H", LISTA_PATH): "~scripts/*\n"})
+    assert r["required"] is True and r["threat_model"] is None and any("no vale" in p for p in r["problems"])
 
 
-@pytest.mark.parametrize("linea", ["~ app/*", "~~app/*", "~\tapp/*", "~ ~app/*"])
+@pytest.mark.parametrize("linea", ["~ app/*", "~~app/*", "~\tapp/*", "~ ~app/*", "~\xa0app/*", "~\u3000app/*", "~\u2003~\xa0app/*"])
 def test_t57_una_marca_mal_escrita_no_marca_y_la_ruta_sigue_siendo_sensible(ce, monkeypatch, linea):
     r = _t57(ce, monkeypatch, linea + "\n", ["app/x.py"])
     assert r["required"] is True and r["threat_model"] is None and any("no vale" in p for p in r["problems"])
@@ -2385,3 +2385,58 @@ def test_t57_el_threat_model_de_smc_011_pasa_la_puerta_y_sus_tests_existen(ce):
     assert citados
     for fichero, nombre in citados:
         assert _re.search(rf"^\s*def {nombre}\b", (RAIZ / fichero).read_text(encoding="utf-8"), _re.M), f"{fichero}::{nombre}"
+
+
+# --- T58 · SMC-011: cierre de los no bloqueantes de la auditoría ---
+@pytest.mark.parametrize("linea", ["~\xa0app/*", "~\u3000app/*", "~\u2003\xa0~app/*", "~ ~\xa0app/*"])
+def test_t58_espacios_unicode_tras_la_marca_se_quitan_y_la_ruta_queda_sensible_sin_marca(ce, linea):
+    assert ce.parse_security_rules(linea + "\n") == [("app/*", False)]
+
+
+@pytest.mark.parametrize("linea", ["\uff5eapp/*", "\u02dcapp/*"])
+def test_t58_otros_signos_parecidos_a_la_marca_no_marcan_y_se_avisan(ce, monkeypatch, linea):
+    assert ce.parse_security_rules(linea + "\n") == [(linea, False)]
+    r = _t57(ce, monkeypatch, linea + "\nscripts/*\n", ["scripts/x.py"], body=TASK)
+    assert any("no ASCII" in w for w in r["warnings"])
+
+
+@pytest.mark.parametrize("linea,fragmento", [
+    ("~./app/*", "./"), ("./app/*", "./"), ("~app/* ~lib/*", "espacio"), ("app/* lib/*", "espacio"), ("\u00e9/*", "no ASCII"),
+    ("~\u00e9/*", "no ASCII"),
+])
+def test_t58_globs_sospechosos_dan_aviso_sin_cambiar_la_decision(ce, monkeypatch, linea, fragmento):
+    con = _t57(ce, monkeypatch, linea + "\nscripts/*\n", ["scripts/x.py", "app/x.py"], body=TASK)
+    sin = _t57(ce, monkeypatch, "scripts/*\n", ["scripts/x.py", "app/x.py"], body=TASK)
+    assert any(fragmento in w and "security-paths" in w for w in con["warnings"])
+    assert (con["required"], con["problems"], con["threat_model"]) == (sin["required"], sin["problems"], sin["threat_model"])
+
+
+@pytest.mark.parametrize("lista", ["~app/*\nscripts/*\n.github/*\n", LISTA_REAL, "~*\n"])
+def test_t58_una_lista_bien_escrita_no_da_avisos(ce, monkeypatch, lista):
+    assert _t57(ce, monkeypatch, lista, ["app/x.py"], body=TASK)["warnings"] == []
+
+
+def test_t58_el_aviso_sale_por_la_salida_de_la_puerta(ce, monkeypatch, capsys):
+    rc, out, err, _ = _modo_security(ce, monkeypatch, capsys, files=["app/x.py"], lista="\uff5eapp/*\napp/*\n", body=TASK)
+    assert "AVISO" in err and "no ASCII" in err
+
+
+def test_t58_con_la_base_marcada_scripts_change_evidence_exige_modelo(ce, monkeypatch):
+    r = _t57(ce, monkeypatch, "~scripts/*\n", ["scripts/change_evidence.py"])
+    assert r["required"] is True and r["threat_model"] is None and any("no vale" in p for p in r["problems"])
+
+
+def test_t58_con_la_base_marcada_scripts_otro_fichero_si_admite_no_aplica(ce, monkeypatch):
+    r = _t57(ce, monkeypatch, "~scripts/*\n", ["scripts/otro.py"])
+    assert r["problems"] == [] and r["threat_model"] is not None
+
+
+@pytest.mark.parametrize("ruta", [".github/workflows/ci.yml", ".github/workflows/security-gate.yml"])
+def test_t58_con_la_base_marcada_github_un_workflow_exige_modelo(ce, monkeypatch, ruta):
+    r = _t57(ce, monkeypatch, "~.github/*\n", [ruta])
+    assert r["required"] is True and r["threat_model"] is None and any("no vale" in p for p in r["problems"])
+
+
+def test_t58_con_la_base_marcada_github_otro_fichero_si_admite_no_aplica(ce, monkeypatch):
+    r = _t57(ce, monkeypatch, "~.github/*\n", [".github/CODEOWNERS"])
+    assert r["problems"] == [] and r["threat_model"] is not None
