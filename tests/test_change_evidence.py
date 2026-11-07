@@ -2154,3 +2154,118 @@ def _c_no_publica_si_se_cancela():
 ])
 def test_t55_workflow_security_gate(comprobacion):
     assert comprobacion()
+
+
+# --- T56 · G3: el paso que publica el estado se ejecuta de verdad (el fragmento `run` sale del YAML) ---
+SHA40 = "0123456789abcdef0123456789abcdef01234567"
+
+
+def _paso_publica_estado():
+    pasos = [s for s in _gate_job()["steps"] if s.get("name", "").startswith("Publicar el estado security-gate")]
+    assert len(pasos) == 1
+    return pasos[0]["run"]
+
+
+def _publica(tmp_path, outcome, head_sha=SHA40):
+    """Ejecuta el `run` del YAML con un `gh` falso al principio del PATH. Devuelve (código, argumentos de gh por llamada)."""
+    import os
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    registro = tmp_path / "gh.log"
+    gh = bin_dir / "gh"
+    gh.write_text('#!/bin/sh\nprintf "%s\\n" "$*" >> "$GH_LOG"\n', encoding="utf-8")
+    gh.chmod(0o755)
+    script = tmp_path / "paso.sh"
+    script.write_text(_paso_publica_estado(), encoding="utf-8")
+    env = {"PATH": f"{bin_dir}{os.pathsep}/usr/bin{os.pathsep}/bin", "GH_LOG": str(registro), "GH_TOKEN": "falso",
+           "REPO": "o/r", "HEAD_SHA": head_sha, "OUTCOME": outcome}
+    r = subprocess.run(["bash", str(script)], env=env, capture_output=True, text=True, cwd=tmp_path)
+    llamadas = registro.read_text(encoding="utf-8").splitlines() if registro.exists() else []
+    return r.returncode, llamadas
+
+
+def _estado_de(llamada):
+    m = _re.search(r"-f state=(\S+)", llamada)
+    return m.group(1) if m else None
+
+
+@pytest.mark.parametrize("outcome,esperado", [
+    ("success", "success"), ("failure", "failure"), ("cancelled", "failure"), ("skipped", "failure"),
+    ("", "failure"), ("Success", "failure"), ("success ", "failure"),
+])
+def test_t56_el_paso_publica_success_solo_con_outcome_success(tmp_path, outcome, esperado):
+    rc, llamadas = _publica(tmp_path, outcome)
+    assert rc == 0 and len(llamadas) == 1
+    assert _estado_de(llamadas[0]) == esperado
+    assert f"repos/o/r/statuses/{SHA40}" in llamadas[0] and "context=security-gate" in llamadas[0]
+
+
+@pytest.mark.parametrize("sha", ["", "abc", SHA40.upper(), SHA40 + "0", "x" * 40])
+def test_t56_el_paso_no_publica_si_el_sha_no_es_legible(tmp_path, sha):
+    rc, llamadas = _publica(tmp_path, "success", head_sha=sha)
+    assert rc != 0 and llamadas == []
+
+
+# --- T56 · M10: motivos de «no aplica» no válidos en un PR no sec que solo toca smc/ ---
+LISTA_REAL = (RAIZ / ".github/security-paths.txt").read_text(encoding="utf-8")
+PLANTILLA_PR = (RAIZ / ".github/pull_request_template.md").read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize("motivo", [".", "<motivo>", "x" * 14, "<a>" * 10, "..............."])
+def test_t56_motivo_no_valido_en_pr_no_sec_solo_smc_da_problema(ce, monkeypatch, motivo):
+    _, r = _gate(ce, monkeypatch, files=["smc/visor.py"], lista=LISTA_REAL, body=TASK + f"\nThreat model: no aplica: {motivo}")
+    assert r["required"] is True and r["threat_model"] is None
+    assert any("motivo no válido" in p for p in r["problems"])
+
+
+def test_t56_plantilla_del_pr_sin_rellenar_solo_smc_da_problema(ce, monkeypatch):
+    _, r = _gate(ce, monkeypatch, files=["smc/visor.py"], lista=LISTA_REAL, body=PLANTILLA_PR + "\nTask: SMC-777\n")
+    assert r["required"] is True and r["problems"] and r["threat_model"] is None
+
+
+def test_t56_plantilla_con_la_linea_no_aplica_sin_rellenar_da_motivo_no_valido(ce, monkeypatch):
+    cuerpo = PLANTILLA_PR.replace("- [ ] Threat model:", "- [ ] Threat model: no aplica: <motivo>") + "\nTask: SMC-777\n"
+    _, r = _gate(ce, monkeypatch, files=["smc/visor.py"], lista=LISTA_REAL, body=cuerpo)
+    assert any("motivo no válido" in p for p in r["problems"]) and r["threat_model"] is None
+
+
+def test_t56_motivo_valido_en_pr_no_sec_solo_smc_pasa(ce, monkeypatch):
+    _, r = _gate(ce, monkeypatch, files=["smc/visor.py"], lista=LISTA_REAL, body=TASK + "\nThreat model: no aplica: solo cambia un texto del visor")
+    assert r["required"] is True and r["problems"] == [] and r["threat_model"] == "no aplica: solo cambia un texto del visor"
+
+
+# --- T56 · usabilidad: la casilla de lista de la plantilla del PR ---
+@pytest.mark.parametrize("prefijo", ["- [ ] ", "- [x] ", "- [X] ", "* [ ] ", "  - [ ] "])
+def test_t56_la_casilla_de_lista_vale_para_no_aplica(ce, monkeypatch, prefijo):
+    _, r = _gate(ce, monkeypatch, files=["smc/visor.py"], lista=LISTA_REAL,
+                 body=TASK + f"\n{prefijo}Threat model: no aplica: solo cambia un texto del visor")
+    assert r["problems"] == [] and r["threat_model"] == "no aplica: solo cambia un texto del visor"
+
+
+@pytest.mark.parametrize("cuerpo", [
+    "<!--\n- [ ] Threat model: no aplica: solo cambia un texto del visor\n-->",
+    "<!-- - [x] Threat model: no aplica: solo cambia un texto del visor -->",
+    "<!-- a --><!-- - [ ] Threat model: no aplica: solo cambia un texto del visor",
+    "<!-- - [ ] Threat model: no aplica: solo cambia un texto del visor -->",
+])
+def test_t56_la_casilla_dentro_de_un_comentario_html_no_vale(ce, monkeypatch, cuerpo):
+    _, r = _gate(ce, monkeypatch, files=["smc/visor.py"], lista=LISTA_REAL, body=TASK + "\n" + cuerpo)
+    assert r["problems"] and r["threat_model"] is None
+
+
+@pytest.mark.parametrize("linea", ["- [] Threat model: no aplica: solo cambia un texto del visor",
+                                   "- [ ]Threat model: no aplica: solo cambia un texto del visor",
+                                   "- Threat model: no aplica: solo cambia un texto del visor",
+                                   "texto - [ ] Threat model: no aplica: solo cambia un texto del visor"])
+def test_t56_otras_formas_de_casilla_no_valen(ce, monkeypatch, linea):
+    _, r = _gate(ce, monkeypatch, files=["smc/visor.py"], lista=LISTA_REAL, body=TASK + "\n" + linea)
+    assert r["problems"] and r["threat_model"] is None
+
+
+# --- T56: los tests que cita el threat model de SMC-009 existen ---
+def test_t56_los_tests_citados_en_el_threat_model_de_smc_009_existen():
+    texto = (RAIZ / "docs/threat-model/SMC-009.md").read_text(encoding="utf-8")
+    citados = set(_re.findall(r"`(tests/[\w./-]+\.py)::(\w+)", texto))
+    assert citados
+    for fichero, nombre in citados:
+        assert _re.search(rf"^\s*def {nombre}\b", (RAIZ / fichero).read_text(encoding="utf-8"), _re.M), f"{fichero}::{nombre}"

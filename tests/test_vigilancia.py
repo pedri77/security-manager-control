@@ -1337,3 +1337,35 @@ def test_n16_un_texto_que_solo_cita_already_exists_en_otro_fallo_no_se_traga(ent
     s["falla"], s["stderr"] = ["label", "create"], "gh: algo falló (HTTP 500) already exists\n"
     ent.set_estado(s)
     assert ent.correr(1, OSV_HALLAZGOS).returncode == 2
+
+
+# ───────────── T56: la comparación del cuerpo de la issue no depende de saltos de línea ni de espacios finales ─────────────
+def _cuerpo_variantes(cuerpo):
+    return {
+        "crlf": cuerpo.replace("\n", "\r\n"),
+        "espacios_finales_por_linea": "\n".join(l + "  " for l in cuerpo.split("\n")),
+        "final_con_saltos_y_espacios": cuerpo.rstrip("\n") + " \r\n\r\n  ",
+        "tabuladores_finales": cuerpo.replace("\n", "\t\n"),
+    }
+
+
+@pytest.mark.parametrize("variante", ["crlf", "espacios_finales_por_linea", "final_con_saltos_y_espacios", "tabuladores_finales"])
+def test_t56_cuerpo_igual_salvo_saltos_y_espacios_finales_no_comenta(ent, variante):
+    assert ent.correr(1, OSV_HALLAZGOS).returncode == 1
+    e = ent.get_estado()
+    e["issues"][0]["body"] = _cuerpo_variantes(e["issues"][0]["body"])[variante]
+    ent.set_estado(e)
+    r = ent.correr(1, OSV_HALLAZGOS)
+    assert r.returncode == 1 and "sin cambios" in r.stdout
+    assert [a for a in ent.llamadas() if a[:2] in (["issue", "comment"], ["issue", "edit"])] == []
+
+
+def test_t56_cuerpo_con_crlf_y_hallazgos_distintos_sigue_comentando(ent):
+    ent.correr(1, OSV_HALLAZGOS)
+    e = ent.get_estado()
+    e["issues"][0]["body"] = e["issues"][0]["body"].replace("\n", "\r\n")
+    ent.set_estado(e)
+    menos = copy.deepcopy(OSV_HALLAZGOS)
+    menos["results"][0]["packages"] = menos["results"][0]["packages"][:1]
+    assert ent.correr(1, menos).returncode == 1
+    assert len([a for a in ent.llamadas() if a[:2] == ["issue", "comment"]]) == 1
