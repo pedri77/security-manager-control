@@ -16,6 +16,16 @@
 # los dos deben pasar: coinciden siempre porque salen del mismo resultado.
 #
 # Los datos del PR llegan al shell solo por variables de entorno.
+#
+# Un solo SHA (B2): HEAD_SHA se fija una vez, en el `env` del job, con la cabeza del evento. El script lo recibe con
+# `--head-sha` y falla si el PR ya tiene otra cabeza (al empezar y al acabar); el estado se publica sobre ese mismo SHA.
+# Sin esto, una ejecución que evaluó un commit B podía publicar `success` sobre A. `concurrency` por número de PR con
+# `cancel-in-progress: true` cancela la ejecución vieja cuando llega un push nuevo, y una ejecución cancelada no publica
+# estado: la cabeza nueva tiene el suyo. Un `failure` sobre un SHA que ya no es la cabeza no molesta (la regla de rama
+# mira la cabeza), pero así ni siquiera se publica.
+#
+# Solo corre si la base del PR es la rama por defecto (N11): un PR hacia otra rama con un diff inocuo compartiría SHA
+# con un PR hacia la principal y publicaría `success` sobre él.
 name: security-gate
 
 on:
@@ -26,9 +36,16 @@ permissions:
   contents: read
   pull-requests: read
 
+concurrency:
+  group: security-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   security-gate:
+    if: github.event.pull_request.base.ref == github.event.repository.default_branch
     runs-on: ubuntu-latest
+    env:
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
     permissions:
       contents: read
       pull-requests: read
@@ -43,13 +60,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: python3 scripts/change_evidence.py security --pr "$PR_NUMBER"
+        run: python3 scripts/change_evidence.py security --pr "$PR_NUMBER" --head-sha "$HEAD_SHA"
       - name: Publicar el estado security-gate en la cabeza del PR
-        if: always()
+        if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           OUTCOME: ${{ steps.gate.outcome }}
         run: |
           set -euo pipefail
