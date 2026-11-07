@@ -1268,7 +1268,7 @@ MODELO_OK = """# Threat model — SMC-777 · algo
 | ID | Categoría | Amenaza | Componente | Prob. (1-3) | Impacto (1-3) | Riesgo | Mitigación | Test que la verifica | Estado |
 |---|---|---|---|---|---|---|---|---|---|
 | T1 | Tampering | x | y | 1 | 2 | 2 | z | `tests/test_x.py::test_x` | mitigada |
-| T2 | Spoofing | x | y | 1 | 2 | 2 | z |  | aceptada |
+| T2 | Spoofing | x | y | 1 | 2 | 2 | z | `tests/test_x.py::test_y` | mitigada |
 """
 
 
@@ -1362,6 +1362,9 @@ def _modo_security(ce, monkeypatch, capsys, **kw):
     return rc, cap.out, cap.err, gh
 
 
+MODELO_PATH = "docs/threat-model/SMC-777.md"
+
+
 def _modelo(texto=MODELO_OK, tarea="SMC-777", ref="H"):
     return {(ref, f"docs/threat-model/{tarea}.md"): texto}
 
@@ -1438,17 +1441,40 @@ CASOS_MODELO = [
     P(dict(commits=["a\n\nTask: SMC-777", "b\n\nTask: SMC-778"], contents=_modelo()), True, ["SMC-778"], "docs/threat-model/SMC-777.md",
       id="varias_tareas_cada_una_necesita_el_suyo"),
     P(dict(body="Closes #1", commits=["sin pie"]), True, ["TASK_ID"], None, id="sin_task_id_ni_linea_falla"),
+    # el modelo debe estar añadido o modificado en pulls/N/files: uno ya existente sin tocar, o de otra tarea, no vale
+    P(dict(files=["scripts/x.py"], contents=_modelo()), True, ["SMC-777", "no lo añade ni lo modifica"], None,
+      id="modelo_existente_en_la_cabeza_sin_tocar_no_vale"),
+    P(dict(files=["scripts/x.py"], contents=_modelo(), body=TASK + "\nThreat model: no aplica: motivo"), False, [], "no aplica: motivo",
+      id="modelo_sin_tocar_con_linea_no_aplica_pasa_por_la_linea"),
+    P(dict(files=["scripts/x.py", "docs/threat-model/SMC-999.md"], contents={**_modelo(), **_modelo(tarea="SMC-999")}), True,
+      ["SMC-777", "no lo añade ni lo modifica"], None, id="task_de_otra_tarea_con_modelo_existente_no_vale"),
+    P(dict(files=["scripts/x.py", {"filename": MODELO_PATH, "status": "added"}], contents=_modelo()), False, [], MODELO_PATH,
+      id="modelo_anadido_pasa"),
+    P(dict(files=["scripts/x.py", {"filename": MODELO_PATH, "status": "renamed", "previous_filename": "docs/threat-model/viejo.md"}],
+           contents=_modelo()), False, [], MODELO_PATH, id="modelo_renombrado_cuenta_como_tocado"),
+    P(dict(files=["scripts/x.py", {"filename": "docs/threat-model/nuevo.md", "status": "renamed", "previous_filename": MODELO_PATH}],
+           contents=_modelo()), True, ["SMC-777", "no lo añade ni lo modifica"], None, id="modelo_movido_a_otro_nombre_no_vale_su_ruta_antigua"),
+    P(dict(files=["scripts/x.py", {"filename": MODELO_PATH, "status": "removed"}], contents=_modelo()), True, ["SMC-777"], None,
+      id="modelo_borrado_no_vale"),
+    P(dict(commits=["a\n\nTask: SMC-777", "b\n\nTask: SMC-778"], files=["scripts/x.py", MODELO_PATH, "docs/threat-model/SMC-778.md"],
+           contents={**_modelo(), **_modelo(tarea="SMC-778")}), False, [], "docs/threat-model/SMC-777.md, docs/threat-model/SMC-778.md",
+      id="varias_tareas_basta_con_que_cada_una_cumpla"),
+    P(dict(commits=["a\n\nTask: SMC-777", "b\n\nTask: SMC-778"], files=["scripts/x.py", MODELO_PATH],
+           contents={**_modelo(), **_modelo(tarea="SMC-778")}), True, ["SMC-778"], "docs/threat-model/SMC-777.md",
+      id="varias_tareas_una_existente_sin_tocar_no_vale"),
 ]
 
 
 @pytest.mark.parametrize("kw,hay_problemas,fragmentos,threat_model", CASOS_MODELO)
 def test_exige_threat_model_o_linea_no_aplica_con_motivo(ce, monkeypatch, kw, hay_problemas, fragmentos, threat_model):
-    gh, r = _gate(ce, monkeypatch, **{"files": ["scripts/x.py"], **kw})
+    gh, r = _gate(ce, monkeypatch, **{"files": ["scripts/x.py", MODELO_PATH], **kw})
     assert r["required"] is True and bool(r["problems"]) is hay_problemas and r["threat_model"] == threat_model
     assert all(any(f in p for p in r["problems"]) for f in fragmentos)
     assert all("ref=H" in x for x in gh.leyo("threat-model"))  # el threat model sale de la cabeza
 
 
+ACEPTADA = MODELO_OK + "| T3 | DoS | x | y | 1 | 1 | 1 | z |  | aceptada |\n"
+_S5 = ("\n## 5. Riesgos aceptados\n| ID | Justificación | Aceptado por | Fecha | Revisar en |\n|---|---|---|---|---|\n")
 PLANTILLA = (RAIZ / "docs/threat-model/TEMPLATE.md").read_text(encoding="utf-8")
 CASOS_CONTENIDO = [
     P(MODELO_OK, [], id="todo_cerrado_pasa"),
@@ -1461,6 +1487,35 @@ CASOS_CONTENIDO = [
         ["<TASK_ID>", "<feature>", "<n>", "<slug>", "YYYY-MM-DD", "docs/adr/NNNN-x.md", "`tests/...::test_...`", "sí / no"])],
     P(MODELO_OK + "\n<!-- rellenar <TASK_ID> -->\n", [], id="placeholder_en_comentario_html_no_cuenta"),
     P(PLANTILLA, ["abierta", "placeholder"], id="la_plantilla_sin_rellenar_no_pasa"),
+    # un modelo sin filas de amenaza no pasa
+    *[P(t, ["filas"], id=f"sin_filas_de_amenaza_{i}") for i, t in enumerate([
+        "", "# x\n", "# x\n\n## 3. Amenazas (STRIDE)\n", "solo prosa sobre amenazas mitigadas\n",
+        "| ID | Estado |\n|---|---|\n", "| ID | Amenaza |\n|---|---|\n| T1 | x |\n",
+        "<!-- " + MODELO_OK + " -->\n"])],
+    # estado en vocabulario cerrado: solo mitigada o aceptada, la celda entera
+    *[P(MODELO_OK.replace("| mitigada", f"| {e}"), ["estado"], id=f"estado_fuera_del_vocabulario_{i}") for i, e in enumerate([
+        "abierta (pendiente)", "abierta, ver T3", "abierto", "abierta.", "mitigada (parcial)", "mitigada y aceptada", "no mitigada",
+        "pendiente", "mitigado", "", " - ", "n/a"])],
+    *[P(MODELO_OK.replace("| mitigada", f"| {e}"), [], id=f"estado_valido_{i}") for i, e in enumerate(
+        ["Mitigada", "MITIGADA", " mitigada ", "`mitigada`", "**mitigada**", "_mitigada_"])],
+    P(MODELO_OK.replace("T1", "T9").replace("| mitigada", "| abierto"), ["T9", "abierto"], id="el_problema_nombra_la_amenaza_y_el_estado"),
+    # una aceptada exige su fila firmada en la sección 5 (columna «Fecha» con fecha)
+    P(ACEPTADA, ["T3", "firmada"], id="aceptada_sin_seccion_5_no_pasa"),
+    P(ACEPTADA + _S5 + "| T3 | porque | David Moya |  |  |\n", ["T3", "firmada"], id="aceptada_con_fecha_vacia_no_pasa"),
+    *[P(ACEPTADA + _S5 + f"| T3 | porque | David Moya | {f} |  |\n", ["T3", "firmada"], id=f"aceptada_con_fecha_ilegible_{i}") for i, f in enumerate(
+        ["pendiente", "2026-13-45", "2026-02-30", "07/11/2026", "2026-11-07T10:00", "20261107", "2026-1-7", "YYYY-MM-DD",
+         "`tests/test_x.py::test_y`", "tests/test_x.py::test_y", "2026-11-07 y 2026-11-08", "hoy"])],
+    P(ACEPTADA + _S5 + "| T3 | porque |  | 2026-11-07 |  |\n", ["T3", "firmada"], id="aceptada_sin_nadie_que_acepte_no_pasa"),
+    P(ACEPTADA + _S5 + "| T3 | porque | David Moya |  | 2026-11-07 |\n", ["T3", "firmada"], id="la_fecha_se_busca_en_su_columna"),
+    P(ACEPTADA + _S5 + "| T9 | porque | David Moya | 2026-11-07 |  |\n", ["T3", "firmada"], id="la_fila_firmada_es_de_otra_amenaza"),
+    P(ACEPTADA + _S5.replace("5. Riesgos aceptados", "6. Otra cosa") + "| T3 | porque | David Moya | 2026-11-07 |  |\n", ["T3", "firmada"],
+      id="la_tabla_firmada_fuera_de_la_seccion_5_no_vale"),
+    P(ACEPTADA + _S5 + "<!-- | T3 | porque | David Moya | 2026-11-07 |  | -->\n", ["T3", "firmada"], id="fila_firmada_en_comentario_html_no_vale"),
+    P(ACEPTADA + _S5 + "| T3 | porque | David Moya | 2026-11-07 |  |\n", [], id="aceptada_con_fecha_valida_pasa"),
+    P(ACEPTADA + _S5 + "| `T3` | porque | David Moya | **2026-11-07** |  |\n", [], id="aceptada_con_fecha_en_negrita_pasa"),
+    P(ACEPTADA + "| T4 | DoS | x | y | 1 | 1 | 1 | z | w | aceptada |\n" + _S5 + "| T3 | porque | David Moya | 2026-11-07 |  |\n",
+      ["T4", "firmada"], id="una_de_dos_aceptadas_sin_firmar_no_pasa"),
+    P(MODELO_OK + "\n" + _S5 + "| T7 | sobra | David Moya |  |  |\n", [], id="una_fila_de_aceptacion_sin_aceptada_no_estorba"),
 ]
 
 
@@ -1491,29 +1546,46 @@ def test_funciones_puras_de_la_puerta(ce, comprobacion):
     assert comprobacion(ce)
 
 
-def test_el_threat_model_de_smc_009_esta_limpio_y_cada_mitigacion_tiene_su_test(ce):
+def _filas_s5(ce, texto):
+    sin = ce.HTML_COMMENT_RE.sub("", texto).partition("## 5.")[2]
+    return [[c.strip() for c in _re.split(r"(?<!\\)\|", l.strip().strip("|"))] for l in sin.splitlines()
+            if _re.match(r"\|\s*T\d+\s*\|", l)]
+
+
+def test_el_threat_model_de_smc_009_solo_espera_la_firma_de_david_y_cada_mitigacion_tiene_su_test(ce):
     texto = (RAIZ / "docs/threat-model/SMC-009.md").read_text(encoding="utf-8")
-    assert ce.threat_model_problems(texto) == []
     sin_comentarios = ce.HTML_COMMENT_RE.sub("", texto)
     filas = [[c.strip() for c in _re.split(r"(?<!\\)\|", l.strip().strip("|"))] for l in sin_comentarios.partition("## 5.")[0].splitlines()
              if _re.match(r"\|\s*T\d+\s*\|", l)]
-    assert len(filas) >= 10
-    firmas = sin_comentarios.partition("## 5.")[2]
-    assert "Aceptado por" in firmas
-    fuente = "".join((RAIZ / n).read_text(encoding="utf-8") for n in ("tests/test_change_evidence.py", "tests/test_vigilancia.py")
-                     if (RAIZ / n).exists())
+    assert len(filas) >= 10 and "T12" not in [f[0] for f in filas]
+    fuente = "".join((RAIZ / n).read_text(encoding="utf-8") for n in ("tests/test_change_evidence.py", "tests/test_vigilancia.py"))
+    aceptadas = []
     for f in filas:
         estado = f[-1].strip("`* ").lower()
         assert estado in ("mitigada", "aceptada"), f
         if estado == "mitigada":
             refs = _re.findall(r"`(tests/[\w./]+)::(\w+)(?:\[(\w+)\])?`", f[-2])
-            assert refs, f
+            assert refs and "pendiente" not in f[-2], f
             for fichero, nombre, caso in refs:
                 assert (RAIZ / fichero).exists(), (f[0], fichero)
                 assert _re.search(rf"^def {nombre}\(", fuente, _re.MULTILINE), (f[0], nombre)
-                assert not caso or f'id="{caso}"' in fuente, (f[0], caso)
+                prefijo = _re.sub(r"_\d+$", "", caso)  # los ids generados (`id=f"nombre_{i}"`) se comprueban por su prefijo
+                assert not caso or f'id="{caso}"' in fuente or f'id=f"{prefijo}_{{' in fuente, (f[0], caso)
         else:
-            assert _re.search(rf"\b{f[0]}\b.*pendiente de firma", firmas, _re.IGNORECASE), f"{f[0]} sin fila pendiente de firma en §5"
+            aceptadas.append(f[0])
+    # las amenazas de vigilancia (job de T52) ya son mitigadas, con tests de tests/test_vigilancia.py
+    por_id = {f[0]: f for f in filas}
+    for t in ("T14", "T15", "T16"):
+        assert por_id[t][-1].strip("`* ").lower() == "mitigada" and "tests/test_vigilancia.py::" in por_id[t][-2], t
+    # la firma es la columna «Fecha» de §5: la rellena David, ningún agente. Vacía en cada aceptación.
+    s5 = _filas_s5(ce, texto)
+    assert sorted(f[0] for f in s5) == sorted(aceptadas) and aceptadas, (aceptadas, s5)
+    for f in s5:
+        assert len(f) == 5 and f[2] == "David Moya" and f[3] == "", f
+    # lo único que falta a la puerta es esa firma
+    problemas = ce.threat_model_problems(texto)
+    assert len(problemas) == len(aceptadas) and all("firmada" in p for p in problemas), problemas
+    assert {m for p in problemas for m in _re.findall(r"\bT\d+\b", p)} == set(aceptadas)
 
 
 # --- lectura de ficheros de la API ---
@@ -1542,6 +1614,18 @@ def test_leer_fichero_distingue_ausencia_de_error(ce, monkeypatch, respuesta, es
         assert ce.read_file_at("o/r", "x", "H") == esperado
 
 
+@pytest.mark.parametrize("ref", ["feat/x", "a&ref=main", "x#y", "x?y=1", "con espacio", "100%", "a+b", "ñ", "x\ny", "-h", "../main", "x;ls"])
+def test_leer_fichero_escapa_ref_y_ruta(ce, monkeypatch, ref):
+    from urllib.parse import parse_qs, unquote, urlsplit
+    vistos = []
+    monkeypatch.setattr(ce, "gh_json", lambda p: vistos.append(p) or contenido("hola\n"))
+    assert ce.read_file_at("o/r", "docs/a b#c?d.md", ref) == "hola\n"
+    u = urlsplit(vistos[0])
+    assert u.fragment == "" and not any(c in vistos[0] for c in " \n") and vistos[0].startswith("repos/o/r/contents/")
+    assert parse_qs(u.query, keep_blank_values=True) == {"ref": [ref]}      # ni parámetros extra ni ref truncada
+    assert unquote(u.path) == "repos/o/r/contents/docs/a b#c?d.md"
+
+
 def test_leer_fichero_404_con_gh_falso_y_los_bytes_medidos(ce, gh_falso):
     out = ("HTTP/2.0 404 Not Found\r\nContent-Length: %d\r\nContent-Type: application/json; charset=utf-8\r\n\r\n%s"
            % (len(GITHUB_404), GITHUB_404)).encode()
@@ -1554,10 +1638,10 @@ def test_leer_fichero_404_con_gh_falso_y_los_bytes_medidos(ce, gh_falso):
 E403, E502, ERED = fallo(403), fallo(502, "html"), fallo_red()
 CASOS_MODO = [
     # (kwargs de FakeSec, código de salida, texto en stdout, texto en stderr, texto que NO debe salir en stderr)
-    P(dict(files=["scripts/x.py"], contents=_modelo()), 0, "docs/threat-model/SMC-777.md", "", "ERROR", id="ok_sale_con_0_y_resume"),
+    P(dict(files=["scripts/x.py", MODELO_PATH], contents=_modelo()), 0, "docs/threat-model/SMC-777.md", "", "ERROR", id="ok_sale_con_0_y_resume"),
     P(dict(files=["README.md"]), 0, "no aplica la puerta", "", "ERROR", id="sin_puerta_sale_con_0"),
     P(dict(files=["scripts/x.py"]), 1, "", "SMC-777", "", id="incumplido_sale_con_1_y_dice_que_falta"),
-    P(dict(files=["scripts/x.py"], contents=_modelo(SUCIO)), 1, "", "abierta", "", id="amenaza_abierta_sale_con_1"),
+    P(dict(files=["scripts/x.py", MODELO_PATH], contents=_modelo(SUCIO)), 1, "", "abierta", "", id="amenaza_abierta_sale_con_1"),
     P(dict(files=["README.md"], lista=None), 0, "", LISTA_PATH, "ERROR", id="sin_lista_en_la_base_avisa_por_stderr"),
     P(dict(files=FICHEROS_RELEASE, head_ref=RELEASE, lista="*\n"), 0, "release", "", "ERROR", id="pr_de_release_sale_con_0"),
     P(dict(files=["scripts/x.py"], fail={LISTA_PATH: fallo(403)}), 1, "", "ERROR", "", id="403_en_la_lista_no_es_lista_ausente"),
@@ -1566,7 +1650,7 @@ CASOS_MODO = [
       id="threat_model_que_es_una_carpeta_es_error"),
     P(dict(nfiles=3000), 1, "", "3000", "", id="3000_ficheros_es_lectura_incompleta"),
     P(dict(nfiles=2999), 0, "", "", "ERROR", id="2999_ficheros_se_leen"),
-    *[P(dict(files=["scripts/x.py"], contents=_modelo(), fail={que: err}), 1, "", "ERROR", "", id=f"api_caida_{n}_{e}")
+    *[P(dict(files=["scripts/x.py", MODELO_PATH], contents=_modelo(), fail={que: err}), 1, "", "ERROR", "", id=f"api_caida_{n}_{e}")
       for que, n in [("/pulls/7", "pr"), ("/pulls/7/files", "ficheros"), ("/pulls/7/commits", "commits"), (LISTA_PATH, "lista"),
                      ("threat-model", "threat_model")]
       for err, e in [(E403, "403"), (E502, "502"), (ERED, "red")]],
@@ -1606,7 +1690,7 @@ CASOS_REGISTRO = [
     P(dict(files=["README.md"]), lambda p, ce: set(p["security"]) == {"required", "reason", "threat_model", "review"}
       and p["security"]["required"] is False and p["security"]["threat_model"] is None and p["security"]["review"] is None
       and p["gaps"] == [], id="sin_puerta_lleva_el_campo_y_ningun_hueco"),
-    P(dict(files=["scripts/x.py"], contents=_modelo(), statuses=[_sr(1, "success", ANTES)]),
+    P(dict(files=["scripts/x.py", MODELO_PATH], contents=_modelo(), statuses=[_sr(1, "success", ANTES)]),
       lambda p, ce: p["security"]["required"] is True and p["security"]["reason"]
       and p["security"]["threat_model"] == "docs/threat-model/SMC-777.md" and p["security"]["review"] == "success",
       id="recoge_aplica_threat_model_y_security_review"),
@@ -1632,7 +1716,7 @@ CASOS_REGISTRO = [
       and any("PR #7" in g and "puerta de seguridad" in g for g in p["gaps"]), id="fallo_de_api_deja_hueco_y_no_aborta"),
     P(dict(files=FICHEROS_RELEASE, head_ref=RELEASE, lista="*\n"),
       lambda p, ce: p["maint"] is True and p["security"]["required"] is False, id="pr_de_release_no_aplica"),
-    P(dict(files=["scripts/x.py"], contents=_modelo()),
+    P(dict(files=["scripts/x.py", MODELO_PATH], contents=_modelo()),
       lambda p, ce: "Puerta de seguridad" in ce.pr_markdown(p) and "docs/threat-model/SMC-777.md"
       in ce.pr_markdown(p), id="el_markdown_muestra_la_puerta"),
 ]
@@ -1659,13 +1743,13 @@ def _hueco(gaps, estado):
 
 
 CASOS_PACK = [
-    P(dict(files=["scripts/x.py"], contents=_modelo()), lambda g: _hueco(g, "—"), id="aplica_sin_security_review_deja_hueco"),
-    *[P(dict(files=["scripts/x.py"], contents=_modelo(), statuses=[_sr(1, e, ANTES)]), lambda g, e=e: _hueco(g, e),
+    P(dict(files=["scripts/x.py", MODELO_PATH], contents=_modelo()), lambda g: _hueco(g, "—"), id="aplica_sin_security_review_deja_hueco"),
+    *[P(dict(files=["scripts/x.py", MODELO_PATH], contents=_modelo(), statuses=[_sr(1, e, ANTES)]), lambda g, e=e: _hueco(g, e),
         id=f"security_review_{e}_deja_hueco") for e in ["failure", "pending", "error"]],
-    P(dict(files=["scripts/x.py"], contents=_modelo(), statuses=[_sr(1, "success", ANTES), _estado(2, "success", ANTES)], merged_at=MERGE),
+    P(dict(files=["scripts/x.py", MODELO_PATH], contents=_modelo(), statuses=[_sr(1, "success", ANTES), _estado(2, "success", ANTES)], merged_at=MERGE),
       lambda g: not any("security-review" in x for x in g), id="security_review_correcto_no_deja_hueco"),
     P(dict(files=["README.md"]), lambda g: not any("security-review" in x for x in g), id="sin_puerta_no_deja_hueco"),
-    P(dict(files=["scripts/x.py"], contents=_modelo(), merged_at=MERGE, statuses=[_sr(1, "success", DESPUES)]),
+    P(dict(files=["scripts/x.py", MODELO_PATH], contents=_modelo(), merged_at=MERGE, statuses=[_sr(1, "success", DESPUES)]),
       lambda g: _hueco(g, "—"), id="security_review_solo_posterior_al_merge_deja_hueco"),
     P(dict(files=FICHEROS_RELEASE, head_ref=RELEASE, lista="*\n"), lambda g: not any("security-review" in x for x in g),
       id="el_pr_de_release_no_deja_hueco"),

@@ -45,6 +45,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from urllib.parse import quote
 
 TASK_RE = re.compile(r"^\s*Task:\s*([A-Z][A-Z0-9]{1,9}-\d{1,5})\s*$", re.MULTILINE)
 CLOSES_RE = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)\b", re.IGNORECASE)
@@ -58,7 +59,8 @@ THREAT_MODEL_DIR = "docs/threat-model"
 FILES_API_CAP = 3000  # `pulls/N/files` no devuelve más de 3000 ficheros y no avisa: llegar ahí es lectura incompleta
 NO_APLICA_RE = re.compile(r"^[ \t]*Threat model:[ \t]*no aplica:(.*)$", re.MULTILINE | re.IGNORECASE)
 SEC_TITLE_RE = re.compile(r"^\s*sec(?:\([^)]*\))?!?:", re.IGNORECASE)
-ABIERTA_RE = re.compile(r"^[`*_ ]*abierta[`*_ .]*$", re.IGNORECASE)
+THREAT_STATES = ("mitigada", "aceptada")  # vocabulario cerrado del estado de una amenaza
+ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 # Restos de TEMPLATE.md que un threat model terminado no puede conservar.
 THREAT_PLACEHOLDERS = ("<TASK_ID>", "<feature>", "<n>", "<slug>", "YYYY-MM-DD", "NNNN", "tests/...", "sí / no")
 RELEASE_BRANCH_PREFIX = "release-please--branches--"
@@ -329,7 +331,7 @@ def read_file_at(repo: str, path: str, ref: str) -> str | None:
     fichero que la API no sirve en base64 no son un fichero legible: ValueError, no «ausente».
     """
     try:
-        meta = gh_json(f"repos/{repo}/contents/{path}?ref={ref}")
+        meta = gh_json(f"repos/{repo}/contents/{quote(path, safe='/')}?ref={quote(ref, safe='')}")
     except subprocess.CalledProcessError as e:
         if http_status(e) == 404:
             return None
@@ -342,20 +344,75 @@ def read_file_at(repo: str, path: str, ref: str) -> str | None:
         raise ValueError(f"{path} en {ref}: contenido ilegible ({e})") from e
 
 
-def threat_model_problems(text: str) -> list[str]:
-    """Motivos por los que un threat model no vale: amenazas `abierta` o restos de la plantilla.
+def _cells(line: str) -> list[str]:
+    return [c.strip() for c in re.split(r"(?<!\\)\|", line.strip().strip("|"))]
 
-    Los comentarios HTML no cuentan (no se ven). Una celda de tabla cuyo texto es `abierta` cuenta, sea cual sea la
-    columna; la palabra suelta en prosa no.
+
+def _clean(cell: str) -> str:
+    return cell.strip().strip("`*_ \t")
+
+
+def _table_rows(text: str, column: str) -> list[tuple[list[str], dict[str, int]]]:
+    """Filas de datos de las tablas cuya cabecera tiene la columna `column`, con los índices de sus columnas."""
+    rows, cols, in_table = [], None, False
+    for line in text.splitlines():
+        if not line.lstrip().startswith("|"):
+            cols, in_table = None, False
+            continue
+        cells = _cells(line)
+        if not in_table:  # primera línea de la tabla: la cabecera
+            names = {_clean(c).casefold(): i for i, c in enumerate(cells)}
+            cols = names if column.casefold() in names else None
+            in_table = True
+            continue
+        if cols is not None and not all(re.fullmatch(r":?-+:?", c) for c in cells if c):
+            rows.append((cells, cols))
+    return rows
+
+
+def _signed(section5: str, threat: str) -> bool:
+    """¿Hay en la sección 5 una fila de `threat` con quien acepta y «Fecha» con formato de fecha real?"""
+    for cells, cols in _table_rows(section5, "Fecha"):
+        def cell(name: str) -> str:
+            i = cols.get(name)
+            return _clean(cells[i]) if i is not None and i < len(cells) else ""
+        if _clean(cells[0]) == threat and cell("aceptado por") and ISO_DATE_RE.match(cell("fecha")):
+            try:
+                dt.date.fromisoformat(cell("fecha"))
+            except ValueError:
+                continue
+            return True
+    return False
+
+
+def threat_model_problems(text: str) -> list[str]:
+    """Motivos por los que un threat model no vale.
+
+    Los comentarios HTML no cuentan (no se ven). Hace falta al menos una fila de amenaza (tabla con columna «Estado»);
+    el estado de cada fila es, entera la celda, `mitigada` o `aceptada` (cualquier otro valor, vacío o `abierta (x)`
+    incluidos, no pasa); una `aceptada` exige su fila en la sección 5 con «Fecha» con formato de fecha (la firma es
+    esa columna, la rellena David); y no quedan placeholders de la plantilla.
     """
     text = HTML_COMMENT_RE.sub("", text or "")
     problems = []
-    for line in text.splitlines():
-        if not line.lstrip().startswith("|"):
-            continue
-        cells = [c.strip() for c in re.split(r"(?<!\\)\|", line.strip().strip("|"))]
-        if any(ABIERTA_RE.match(c) for c in cells):
-            problems.append(f"amenaza {cells[0] or '?'} en estado abierta")
+    rows = _table_rows(text, "Estado")
+    if not rows:
+        problems.append("sin filas de amenaza: falta la tabla con columna «Estado» y al menos una amenaza")
+    section5 = ""
+    m5 = re.search(r"^##[ \t]+5\b.*$", text, re.MULTILINE)
+    if m5:
+        rest = text[m5.end():]
+        nxt = re.search(r"^##[ \t]", rest, re.MULTILINE)
+        section5 = rest[:nxt.start()] if nxt else rest
+    for cells, cols in rows:
+        name = cells[0] or "?"
+        idx = cols["estado"]
+        estado = _clean(cells[idx]) if len(cells) > idx else ""
+        if estado.casefold() not in THREAT_STATES:
+            problems.append(f"amenaza {name}: estado '{estado.casefold()}' fuera de {'/'.join(THREAT_STATES)}")
+        elif estado.casefold() == "aceptada" and not _signed(section5, _clean(name)):
+            problems.append(f"amenaza {name} aceptada sin aceptación firmada en la sección 5 "
+                            "(fila con su ID y «Fecha» con formato AAAA-MM-DD)")
     for ph in THREAT_PLACEHOLDERS:
         if ph in text:
             problems.append(f"queda un placeholder de la plantilla: {ph}")
@@ -413,9 +470,16 @@ def evaluate_security(repo: str, number: int, pr: dict | None = None, tasks: lis
     out["required"], out["reason"] = True, "; ".join(reasons)
     motivo = no_aplica_reason(body)
     found = []
+    present = {f["filename"] for f in files if f.get("filename") and f.get("status") != "removed"}
     for task in tasks or []:
         path = f"{THREAT_MODEL_DIR}/{task}.md"
         text = read_file_at(repo, path, pr["head"]["sha"])
+        if text is not None and path not in present:
+            # existe en la cabeza pero el PR no lo toca: es de antes (o de otra tarea) y no prueba nada de este cambio
+            if not motivo:
+                out["problems"].append(f"{path} existe en la cabeza pero el PR no lo añade ni lo modifica en pulls/{number}/files "
+                                       "y no hay línea 'Threat model: no aplica: <motivo>'")
+            continue
         if text is None:
             if not motivo:
                 out["problems"].append(f"falta {path} en la cabeza del PR y no hay línea 'Threat model: no aplica: <motivo>'"
