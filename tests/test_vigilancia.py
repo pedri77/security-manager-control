@@ -7,6 +7,12 @@ Fixtures medidos el 2026-11-07 con la imagen fijada en ci.yml (osv-scanner v2.7.
     sin `details`, `references` ni `versions`. Todas las vulnerabilidades medidas traían versión corregida.
   - carpeta vacía y carpeta con solo pyproject.toml: código 128, stdout vacío, stderr «No package sources found».
   - ruta inexistente u opción desconocida: código 127, stdout vacío.
+T54, medido con `gh` real (solo GET) el 2026-11-07:
+  - `gh issue list --json number,title,body,author,labels` en este repo: `author` = {"id","is_bot":false,"login":
+    "pedri77","name"}; `labels` = [{"id","name","description","color"}].
+  - issue creada por `github-actions[bot]` (repo público happyhappy82/github-trending-notion #1465): `author` =
+    {"is_bot":true,"login":"app/github-actions"} (sin `id` ni `name`, y el login NO es `github-actions[bot]`, que es la
+    forma de `gh search issues`); `labels` con la misma forma de objetos.
 """
 import copy
 import importlib.util
@@ -26,6 +32,8 @@ SCRIPT = RAIZ / "scripts/vigilancia.py"
 WORKFLOW = RAIZ / ".github/workflows/vigilancia.yml"
 CI = RAIZ / ".github/workflows/ci.yml"
 TITULO = "[vigilancia] vulnerabilidades en dependencias"
+BOT = {"is_bot": True, "login": "app/github-actions"}
+HUMANO = {"id": "MDQ6VXNlcjEyOTg5Njk0", "is_bot": False, "login": "pedri77", "name": "pedri77"}
 
 OSV_HALLAZGOS = json.loads(r'''{
  "results": [
@@ -434,6 +442,7 @@ import json, os, sys
 estado_f = os.environ["FAKE_GH_STATE"]
 est = json.load(open(estado_f))
 args = sys.argv[1:]
+BOT = {"is_bot": True, "login": "app/github-actions"}
 cuerpo = sys.stdin.read() if "--body-file" in args else None
 est["llamadas"].append({"args": args, "stdin": cuerpo})
 def fin(rc=0, out=""):
@@ -444,7 +453,12 @@ if est.get("falla") == args[:2] or est.get("falla") == args[0]:
     sys.stderr.write("gh: simulated failure (HTTP 500)\n")
     fin(1)
 if args[:2] == ["issue", "list"]:
-    fin(0, json.dumps([{k: i[k] for k in ("number", "title", "body")} for i in est["issues"] if i["state"] == "open"]))
+    # Misma forma que `gh issue list --json number,title,body,author,labels` medida con gh real.
+    fin(0, json.dumps([{"number": i["number"], "title": i["title"], "body": i["body"],
+                        "author": i.get("author", BOT),
+                        "labels": [{"id": "LA_x", "name": n, "description": "", "color": "D93F0B"}
+                                   for n in i.get("labels", ["security"])]}
+                       for i in est["issues"] if i["state"] == "open"]))
 if args[:2] == ["label", "create"]:
     fin(0)
 if args[:2] == ["issue", "create"]:
@@ -500,10 +514,11 @@ class Entorno:
     def get_estado(self):
         return json.loads(self.estado.read_text())
 
-    def issue_abierta(self, titulo=TITULO, body="viejo\n"):
+    def issue_abierta(self, titulo=TITULO, body="viejo\n", autor=BOT, etiquetas=("security",)):
         e = self.get_estado()
         n = max([i["number"] for i in e["issues"]] + [0]) + 1
-        e["issues"].append({"number": n, "title": titulo, "body": body, "state": "open"})
+        e["issues"].append({"number": n, "title": titulo, "body": body, "state": "open", "author": autor,
+                            "labels": list(etiquetas)})
         self.set_estado(e)
         return n
 
@@ -870,3 +885,232 @@ def test_workflow_no_traga_el_codigo_del_escaner():
 def test_workflow_gh_usa_token_por_entorno(wf):
     txt = WORKFLOW.read_text()
     assert "GH_TOKEN: ${{ github.token }}" in txt or "GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}" in txt
+
+
+# ───────────── T54 · N2: solo se adopta la issue del bot con la etiqueta ─────────────
+def test_issue_pide_autor_y_etiquetas_a_gh(ent):
+    ent.correr(1, OSV_HALLAZGOS)
+    lista = next(a for a in ent.llamadas() if a[:2] == ["issue", "list"])
+    campos = lista[lista.index("--json") + 1].split(",")
+    assert {"number", "title", "body", "author", "labels"} <= set(campos)
+
+
+def test_issue_ajena_con_el_mismo_titulo_no_se_adopta_ni_se_toca(ent):
+    ajena = ent.issue_abierta(autor=HUMANO, body="la abrió un humano\n")
+    r = ent.correr(1, OSV_HALLAZGOS)
+    assert r.returncode == 1, r.stderr
+    e = ent.get_estado()
+    por_n = {i["number"]: i for i in e["issues"]}
+    assert por_n[ajena]["body"] == "la abrió un humano\n" and "comentarios" not in por_n[ajena]
+    assert len(e["issues"]) == 2 and any(a[:2] == ["issue", "create"] for a in ent.llamadas())
+
+
+def test_issue_ajena_no_se_cierra_cuando_no_hay_hallazgos(ent):
+    ent.issue_abierta(autor=HUMANO)
+    assert ent.correr(0, OSV_LIMPIO).returncode == 0
+    assert ent.escrituras() == []
+
+
+def test_issue_del_bot_sin_etiqueta_security_no_se_adopta(ent):
+    sin = ent.issue_abierta(etiquetas=())
+    otra = ent.issue_abierta(etiquetas=("bug",), titulo=TITULO)
+    assert ent.correr(1, OSV_HALLAZGOS).returncode == 1
+    e = ent.get_estado()
+    assert {i["number"]: i["body"] for i in e["issues"]}[sin] == "viejo\n"
+    assert {i["number"]: i["body"] for i in e["issues"]}[otra] == "viejo\n"
+    assert len(e["issues"]) == 3
+
+
+def test_humano_con_etiqueta_security_y_mismo_titulo_no_se_adopta(ent):
+    ent.issue_abierta(autor=HUMANO, etiquetas=("security",))
+    assert ent.correr(0, OSV_LIMPIO).returncode == 0
+    assert ent.escrituras() == []
+
+
+@pytest.mark.parametrize("autor", [
+    {"is_bot": False, "login": "app/github-actions"},   # un humano no puede llamarse así, pero is_bot lo dice
+    {"is_bot": True, "login": "app/dependabot"},
+    {"is_bot": True, "login": "github-actions[bot]"},    # forma de `gh search`, no de `gh issue list`
+    {"is_bot": False, "login": "github-actions"},
+    {},
+])
+def test_solo_el_bot_de_actions_medido_cuenta(ent, autor):
+    ent.issue_abierta(autor=autor)
+    assert ent.correr(0, OSV_LIMPIO).returncode == 0
+    assert ent.escrituras() == []
+
+
+def test_con_ajena_anterior_se_adopta_la_del_bot(ent):
+    ajena = ent.issue_abierta(autor=HUMANO)
+    propia = ent.issue_abierta()
+    assert ent.correr(1, OSV_HALLAZGOS).returncode == 1
+    e = ent.get_estado()
+    por_n = {i["number"]: i for i in e["issues"]}
+    assert por_n[ajena]["body"] == "viejo\n" and "comentarios" not in por_n[ajena]
+    assert "django" in por_n[propia]["body"] and len(e["issues"]) == 2
+    assert [a[:3] for a in ent.escrituras()] == [["issue", "comment", str(propia)], ["issue", "edit", str(propia)]]
+
+
+def test_la_issue_propia_se_adopta_en_la_forma_real_de_gh(ent):
+    n = ent.issue_abierta()
+    assert ent.correr(0, OSV_LIMPIO).returncode == 0
+    assert ent.get_estado()["issues"][0]["state"] == "closed" and n == 1
+
+
+def test_gh_list_sin_author_o_labels_es_error_de_gh(ent):
+    # Si gh cambiara la forma, mejor rojo que adoptar a ciegas.
+    bin_ = ent.dir.parent / "bin" / "gh"
+    bin_.write_text("#!/bin/sh\necho '[{\"number\":1,\"title\":\"%s\",\"body\":\"\"}]'\n" % TITULO)
+    assert ent.correr(1, OSV_HALLAZGOS).returncode == 2
+
+
+# ───────────── T54 · N3: contenido de terceros en una issue pública ─────────────
+HOSTILES = {
+    "mencion": "@org/team",
+    "salto_solo": "a\nb",
+    "salto_final": "abc\n",
+    "barra": "a|b",
+    "salto": "x\n| inyectada | fila | de | tabla |",
+    "imagen": "![x](https://evil.example/p.png)",
+    "comentario": "<!-- oculto -->",
+    "enlace": "[clic](https://evil.example)",
+    "url": "https://evil.example/x",
+    "html": "<img src=x onerror=1>",
+    "issue": "#1234",
+    "cr": "a\rb",
+    "ceros": "a\u200bb",
+    "unicode": "pаypal",          # 'а' cirílica
+    "largo": "a" * 300,
+    "vacio": "",
+    "espacio": "a b",
+    "tick": "a`b",
+    "cancel": "a\u202eb",
+}
+
+
+def hallazgo(**kw):
+    h = {"package": "django", "version": "1.11.0", "ecosystem": "PyPI", "id": "PYSEC-2017-44",
+         "aliases": ["CVE-2017-12794"], "fixed": ["1.11.5"]}
+    h.update(kw)
+    return h
+
+
+def filas(cuerpo):
+    return [l for l in cuerpo.split("\n") if l.startswith("|")]
+
+
+def fuera_de_codigo(cuerpo):
+    return re.sub(r"`[^`\n]*`", "", cuerpo)
+
+
+@pytest.mark.parametrize("campo", ["package", "version", "id"])
+@pytest.mark.parametrize("clave", sorted(HOSTILES))
+def test_campo_hostil_no_llega_literal_ni_rompe_la_tabla(vig, campo, clave):
+    valor = HOSTILES[clave]
+    cuerpo = vig.render_body([hallazgo(**{campo: valor})])
+    assert len(filas(cuerpo)) == 3 and all(f.count("|") == 5 for f in filas(cuerpo)), cuerpo
+    if valor and not (campo == "package" and clave == "mencion"):    # `@org/team` es un nombre npm válido: va en código
+        assert valor not in cuerpo
+    plano = fuera_de_codigo(cuerpo)
+    assert "@" not in plano and "<!--" not in cuerpo and "![" not in cuerpo and "](" not in cuerpo
+    assert "://" not in cuerpo and "<img" not in cuerpo and "#1234" not in cuerpo
+    assert "\r" not in cuerpo and "\u200b" not in cuerpo and "\u202e" not in cuerpo
+
+
+@pytest.mark.parametrize("clave", sorted(HOSTILES))
+def test_version_corregida_hostil_no_llega_literal(vig, clave):
+    valor = HOSTILES[clave]
+    cuerpo = vig.render_body([hallazgo(fixed=["1.0.0", valor])])
+    assert len(filas(cuerpo)) == 3 and all(f.count("|") == 5 for f in filas(cuerpo)), cuerpo
+    if valor:
+        assert valor not in cuerpo
+    assert "@" not in fuera_de_codigo(cuerpo) and "<!--" not in cuerpo and "![" not in cuerpo
+
+
+@pytest.mark.parametrize("clave", sorted(set(HOSTILES) - {"vacio"}))
+def test_alias_cve_hostil_no_llega_literal(vig, clave):
+    valor = "CVE-" + HOSTILES[clave]
+    cuerpo = vig.render_body([hallazgo(aliases=[valor])])
+    assert len(filas(cuerpo)) == 3 and all(f.count("|") == 5 for f in filas(cuerpo)), cuerpo
+    assert valor not in cuerpo and "@" not in fuera_de_codigo(cuerpo) and "<!--" not in cuerpo
+
+
+@pytest.mark.parametrize("valor", [5, None, ["a"], {"a": 1}, 1.5])
+def test_campos_que_no_son_texto_se_sustituyen(vig, valor):
+    cuerpo = vig.render_body([hallazgo(package=valor, version=valor)])
+    assert len(filas(cuerpo)) == 3 and "None" not in cuerpo and "{" not in cuerpo
+
+
+def test_valor_no_valido_se_sustituye_por_marca_fija(vig):
+    cuerpo = vig.render_body([hallazgo(package="a|b")])
+    assert f"| {vig.INVALID} | 1.11.0 |" in cuerpo
+    assert not set(vig.INVALID) & set("@|<>!#`:/\n&")
+
+
+def test_mencion_de_npm_se_neutraliza_en_codigo_no_se_borra(vig):
+    cuerpo = vig.render_body([hallazgo(package="@org/team", id="GHSA-xxxx-yyyy-zzzz")])
+    assert "| `@org/team` | 1.11.0 |" in cuerpo
+    assert "@" not in fuera_de_codigo(cuerpo)
+
+
+@pytest.mark.parametrize("nombre", ["@scope/paquete", "@babel/core", "lodash", "github.com/gorilla/mux",
+                                    "org.apache.logging.log4j:log4j-core", "serde_json", "Django", "zope.interface",
+                                    "golang.org/x/crypto", "libssl1.1", "a", "pkg~beta"])
+def test_nombres_legitimos_de_paquete_pasan(vig, nombre):
+    cuerpo = vig.render_body([hallazgo(package=nombre)])
+    celda = f"`{nombre}`" if "@" in nombre else nombre
+    assert f"| {celda} | 1.11.0 |" in cuerpo
+    assert "@" not in fuera_de_codigo(cuerpo)
+
+
+@pytest.mark.parametrize("ident", ["GHSA-9r8w-6x8c-6jr9", "PYSEC-2017-44", "CVE-2017-12794", "GO-2024-0001",
+                                   "RUSTSEC-2023-0001", "OSV-2020-1", "MAL-2024-1234", "DSA-5000-1",
+                                   "UBUNTU-CVE-2024-1234", "ALPINE-CVE-2024-1"])
+def test_identificadores_legitimos_pasan(vig, ident):
+    assert f"| {ident} |" in vig.render_body([hallazgo(id=ident, aliases=[])])
+
+
+@pytest.mark.parametrize("version", ["1.11.0", "5.3.0", "2.0.0b1", "1.11rc1", "1.2.3+build.5", "1.0.0-rc.1+meta",
+                                     "v0.0.0-20200101000000-abcdef123456", "v2.0.0+incompatible", "1:2.3-4~bpo11+1",
+                                     "2024.1", "0"])
+def test_versiones_legitimas_pasan_incluido_el_mas(vig, version):
+    cuerpo = vig.render_body([hallazgo(version=version, fixed=[version])])
+    assert f"| {version} | PYSEC-2017-44 (CVE-2017-12794) | {version} |" in cuerpo
+
+
+def test_fixtures_reales_se_renderizan_igual_que_antes(vig):
+    cuerpo = vig.render_body(vig.findings(OSV_HALLAZGOS))
+    assert not any("`" in f for f in filas(cuerpo))    # ningún valor legítimo lleva código
+    assert "| django | 1.11.0 | PYSEC-2018-2 (CVE-2018-14574) | 1.11.15, 2.0.8 |" in cuerpo
+
+
+def test_longitud_maxima_de_la_lista_blanca(vig):
+    assert f"| {'a' * 100} |" in vig.render_body([hallazgo(package="a" * 100)])
+    assert f"| {vig.INVALID} |" in vig.render_body([hallazgo(package="a" * 101)])
+    assert f"| {'1' * 64} |" in vig.render_body([hallazgo(version="1" * 64)])
+    assert f"| {vig.INVALID} |" in vig.render_body([hallazgo(version="1" * 65)])
+
+
+def test_json_hostil_de_punta_a_punta_issue_creada_limpia(ent):
+    d = copy.deepcopy(OSV_HALLAZGOS)
+    p = d["results"][0]["packages"][0]["package"]
+    p["name"] = "@org/team"
+    p["version"] = "1.0|![x](https://evil.example/p.png)"
+    d["results"][0]["packages"][0]["groups"][0]["ids"][0] = "<!-- x -->\nGHSA-fake"
+    r = ent.correr(1, d)
+    assert r.returncode == 1, r.stderr
+    body = ent.get_estado()["issues"][0]["body"]
+    assert "`@org/team`" in body and "evil.example" not in body and "<!--" not in body
+    assert "@" not in fuera_de_codigo(body)
+
+
+# ───────────── T54 · N10: concurrencia y plazo ─────────────
+def test_concurrency_sin_cancelar_la_que_corre(wf):
+    c = wf["concurrency"]
+    assert isinstance(c, dict) and c["group"] and c["cancel-in-progress"] is False
+
+
+def test_timeout_en_cada_job(wf):
+    for nombre, job in wf["jobs"].items():
+        t = job.get("timeout-minutes")
+        assert isinstance(t, int) and 1 <= t <= 30, nombre

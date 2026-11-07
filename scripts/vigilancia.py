@@ -28,6 +28,16 @@ import sys
 
 TITLE = "[vigilancia] vulnerabilidades en dependencias"
 LABEL = "security"
+# Autor de la issue que crea este flujo con GITHUB_TOKEN, medido con `gh issue list --json author` en un repo público:
+# {"is_bot": true, "login": "app/github-actions"}. (`gh search issues` lo muestra como `github-actions[bot]`.)
+BOT_LOGIN = "app/github-actions"
+# Listas blancas de los campos que vienen del escáner (tercero) y acaban en una issue pública. Solo ASCII, sin espacios,
+# sin saltos de línea ni caracteres de control, y nada de `|` (tabla), `` ` ``, `<`, `>`, `!`, `[`, `]`, `(`, `)`, `#`,
+# `&` ni `\`. `@` solo en el nombre del paquete (npm: `@scope/paquete`) y se muestra siempre en código.
+NAME_RE = re.compile(r"[A-Za-z0-9@][A-Za-z0-9._+:/~@-]{0,99}")
+VERSION_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._+:~-]{0,63}")
+ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,63}")
+INVALID = "(valor no válido)"
 MANIFEST = re.compile(r"(^|/)(pyproject\.toml|package\.json|go\.mod|Cargo\.toml)$")
 
 
@@ -69,12 +79,28 @@ def findings(data):
     return sorted(out, key=_sort_key)
 
 
+def _cell(value, rx):
+    """Valor del escáner apto para una celda: pasa la lista blanca o se sustituye por INVALID.
+
+    Un `@` se neutraliza envolviendo el valor en un código en línea (`@org/team`): GitHub no crea menciones, ni notifica,
+    dentro de código, y el nombre legítimo (`@scope/paquete`) se sigue leyendo entero. `://` se rechaza para que no
+    haya enlaces automáticos.
+    """
+    if not isinstance(value, str) or not rx.fullmatch(value) or "://" in value:
+        return INVALID
+    return f"`{value}`" if "@" in value else value
+
+
 def render_body(fs):
     rows = ["| Paquete | Versión | Identificador | Versión corregida |", "|---|---|---|---|"]
     for h in fs:
-        ident = h["id"] + (f" ({h['aliases'][0]})" if h["aliases"] and h["aliases"][0].startswith("CVE-") else "")
-        fixed = ", ".join(h["fixed"]) if h["fixed"] else "sin versión corregida"
-        rows.append(f"| {h['package']} | {h['version']} | {ident} | {fixed} |")
+        ident = _cell(h["id"], ID_RE)
+        cve = h["aliases"][0] if h["aliases"] and isinstance(h["aliases"][0], str) \
+            and h["aliases"][0].startswith("CVE-") else None
+        if cve is not None and _cell(cve, ID_RE) != INVALID:
+            ident += f" ({cve})"
+        fixed = ", ".join(_cell(f, VERSION_RE) for f in h["fixed"]) if h["fixed"] else "sin versión corregida"
+        rows.append(f"| {_cell(h['package'], NAME_RE)} | {_cell(h['version'], VERSION_RE)} | {ident} | {fixed} |")
     return (f"`osv-scanner` encuentra {len(fs)} vulnerabilidades en las dependencias de la rama principal.\n\n"
             + "\n".join(rows) + "\n\nLa excepción, si procede, va en `osv-scanner.toml` con `reason` e `ignoreUntil`. "
             "Esta issue la mantiene `vigilancia.yml`: se actualiza sola y se cierra cuando ya no hay hallazgos.\n")
@@ -105,12 +131,19 @@ def gh(args, stdin=None):
     return r.stdout
 
 
+def _mine(i):
+    """Solo se adopta la issue que creó el bot de Actions y lleva la etiqueta: el título lo puede copiar cualquiera."""
+    a = i["author"]
+    return (a.get("is_bot") is True and a.get("login") == BOT_LOGIN
+            and any(l["name"] == LABEL for l in i["labels"]))
+
+
 def open_issue():
-    raw = gh(["issue", "list", "--state", "open", "--json", "number,title,body", "--limit", "1000"])
+    raw = gh(["issue", "list", "--state", "open", "--json", "number,title,body,author,labels", "--limit", "1000"])
     try:
         issues = json.loads(raw)
-        match = [i for i in issues if i["title"] == TITLE]
-    except (ValueError, KeyError, TypeError) as e:
+        match = [i for i in issues if i["title"] == TITLE and _mine(i)]
+    except (ValueError, KeyError, TypeError, AttributeError) as e:
         raise Error(f"gh issue list: salida ilegible: {e}")
     return min(match, key=lambda i: i["number"]) if match else None
 

@@ -12,12 +12,18 @@ on:
 permissions:
   contents: read
 
+# Una sola vigilancia a la vez y sin cancelar la que corre: cortarla a media escritura de la issue la dejaría a medias.
+concurrency:
+  group: vigilancia
+  cancel-in-progress: false
+
 env:
   OSV_IMAGE: ghcr.io/google/osv-scanner:v2.7.0@sha256:4f3b7e2c64b9d38a5febc5a7e4a3dfef1d1362f726dea7a2ef4762b46469fcd0
 
 jobs:
   vigilancia:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       issues: write
