@@ -1617,7 +1617,7 @@ def _filas_s5(ce, texto):
             if _re.match(r"\|\s*T\d+\s*\|", l)]
 
 
-def test_el_threat_model_de_smc_009_solo_espera_la_fecha_de_david_y_cada_mitigacion_tiene_su_test(ce):
+def test_el_threat_model_de_smc_009_esta_aceptado_por_david_y_cada_mitigacion_tiene_su_test(ce):
     texto = (RAIZ / "docs/threat-model/SMC-009.md").read_text(encoding="utf-8")
     sin_comentarios = ce.HTML_COMMENT_RE.sub("", texto)
     filas = [[c.strip() for c in _re.split(r"(?<!\\)\|", l.strip().strip("|"))] for l in sin_comentarios.partition("## 5.")[0].splitlines()
@@ -1646,15 +1646,13 @@ def test_el_threat_model_de_smc_009_solo_espera_la_fecha_de_david_y_cada_mitigac
     # las amenazas de vigilancia (job de T52) son mitigadas, con tests de tests/test_vigilancia.py
     for t in ("T14", "T15", "T16"):
         assert por_id[t][-1].strip("`* ").lower() == "mitigada" and "tests/test_vigilancia.py::" in por_id[t][-2], t
-    # la fecha de aceptación es la columna «Fecha» de §5: la rellena David, ningún agente. Vacía en cada aceptación.
+    # la fecha de aceptación es la columna «Fecha» de §5: la rellena David, ningún agente (commit 13a2826, 2026-11-07).
     s5 = _filas_s5(ce, texto)
     assert sorted(f[0] for f in s5) == sorted(aceptadas) == ["T13", "T23", "T24", "T25", "T30", "T31", "T32"], (aceptadas, s5)
     for f in s5:
-        assert len(f) == 5 and f[2] == "David Moya" and f[3] == "", f
-    # lo único que falta a la puerta es esa fecha, y el modelo declara la issue del PR
-    problemas = ce.threat_model_problems(texto, [28])
-    assert len(problemas) == len(aceptadas) and all("fecha de aceptación" in p for p in problemas), problemas
-    assert {m for p in problemas for m in _re.findall(r"\bT\d+\b", p)} == set(aceptadas)
+        assert len(f) == 5 and f[2] == "David Moya" and _re.fullmatch(r"\d{4}-\d{2}-\d{2}", f[3]), f
+    # con las fechas puestas, el modelo pasa su propia puerta, y declara la issue del PR
+    assert ce.threat_model_problems(texto, [28]) == []
     assert any("Issue" in p for p in ce.threat_model_problems(texto, [27]))
 
 
