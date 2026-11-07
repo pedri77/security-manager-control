@@ -1,0 +1,10 @@
+# Rutas sensibles (globs de fnmatch; `*` cruza carpetas; `#` abre un comentario).
+# Un PR que toca alguna, o esta lista, o es de tipo `sec`, exige docs/threat-model/<TASK_ID>.md
+# o la línea `Threat model: no aplica: <motivo>` en la descripción (puerta security-gate, SMC-009).
+# La puerta lee esta lista de la rama base: un PR no puede librarse editándola.
+.github/workflows/*
+scripts/*
+smc/report_html.py
+smc/dashboard.py
+smc/visor.py
+smc/evidencias.py

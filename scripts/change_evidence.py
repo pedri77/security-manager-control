@@ -8,11 +8,16 @@ Modos:
   pr       Comprueba la trazabilidad de un PR y escribe change-record.{json,md}.
            Falla (exit 1) si el PR no enlaza una issue ("Closes #N") o no declara TASK_ID.
   release  Junta todos los PRs entre el tag anterior y el tag dado y escribe el evidence pack.
+  security Puerta de seguridad de un PR (sin escribir ficheros). Aplica si el título es de tipo `sec` o si el PR toca
+           una ruta de `.github/security-paths.txt` (leída de la rama BASE) o esa lista. Si aplica, exige
+           `docs/threat-model/<TASK_ID>.md` en la cabeza, sin filas `abierta` ni placeholders, o una línea
+           `Threat model: no aplica: <motivo>` en la descripción. Sale con 1 si no se cumple o si no puede leer la API.
 
 Uso:
   python3 scripts/change_evidence.py pr --pr 123 --out change-record
   python3 scripts/change_evidence.py release --tag v2.3.0 --out evidence/v2.3.0
   python3 scripts/change_evidence.py release --tag v2.3.0 --out /tmp/ev --offline   # solo git, sin API
+  python3 scripts/change_evidence.py security --pr 123
 
 Excepción: el PR de release recibe TASK_ID "MAINT": rama release-please--branches--* del propio
 repo que SOLO toca ficheros de versión. El nombre de rama no basta: cualquiera con push puede
@@ -32,6 +37,7 @@ from __future__ import annotations
 import argparse
 import base64
 import datetime as dt
+import fnmatch
 import json
 import os
 import re
@@ -46,6 +52,15 @@ CLOSES_RE = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)\b"
 HTML_COMMENT_RE = re.compile(r"<!--.*?(?:-->|\Z)", re.DOTALL)
 PR_IN_SUBJECT_RE = re.compile(r"\(#(\d+)\)\s*$")
 BLIND_REVIEW_CONTEXT = "blind-review"
+SECURITY_REVIEW_CONTEXT = "security-review"
+SECURITY_PATHS_FILE = ".github/security-paths.txt"
+THREAT_MODEL_DIR = "docs/threat-model"
+FILES_API_CAP = 3000  # `pulls/N/files` no devuelve más de 3000 ficheros y no avisa: llegar ahí es lectura incompleta
+NO_APLICA_RE = re.compile(r"^[ \t]*Threat model:[ \t]*no aplica:(.*)$", re.MULTILINE | re.IGNORECASE)
+SEC_TITLE_RE = re.compile(r"^\s*sec(?:\([^)]*\))?!?:", re.IGNORECASE)
+ABIERTA_RE = re.compile(r"^[`*_ ]*abierta[`*_ .]*$", re.IGNORECASE)
+# Restos de TEMPLATE.md que un threat model terminado no puede conservar.
+THREAT_PLACEHOLDERS = ("<TASK_ID>", "<feature>", "<n>", "<slug>", "YYYY-MM-DD", "NNNN", "tests/...", "sí / no")
 RELEASE_BRANCH_PREFIX = "release-please--branches--"
 RELEASE_FILES = {"CHANGELOG.md", ".release-please-manifest.json", "pyproject.toml", "uv.lock",
                  "package.json", "package-lock.json", "version.txt"}
@@ -219,8 +234,9 @@ def cut_at_merge(runs: list[dict], merged_at: str, problems: list[str] | None = 
     return kept
 
 
-def status_at_merge(statuses: list[dict], merged_at: str) -> tuple[list[dict], list[str]]:
-    """Quita los estados blind-review creados después de merged_at (igual se queda).
+def status_at_merge(statuses: list[dict], merged_at: str,
+                    contexts: tuple[str, ...] = (BLIND_REVIEW_CONTEXT,)) -> tuple[list[dict], list[str]]:
+    """Quita los estados de `contexts` creados después de merged_at (igual se queda).
 
     Devuelve (estados, problemas). Un created_at ilegible no corta y se anota. Con merged_at ilegible no se
     corta y no se anota nada: `cut_at_merge` ya lo anota para los checks.
@@ -230,10 +246,10 @@ def status_at_merge(statuses: list[dict], merged_at: str) -> tuple[list[dict], l
         return statuses, []
     kept, problems = [], []
     for s in statuses:
-        if s.get("context") == BLIND_REVIEW_CONTEXT and s.get("created_at"):
+        if s.get("context") in contexts and s.get("created_at"):
             when = _utc(s["created_at"])
             if when is None:
-                problems.append(f"el estado blind-review tiene created_at ilegible ({s['created_at']!r}); no se pudo cortar en merged_at")
+                problems.append(f"el estado {s['context']} tiene created_at ilegible ({s['created_at']!r}); no se pudo cortar en merged_at")
             elif when > cut:
                 continue
         kept.append(s)
@@ -290,6 +306,130 @@ def is_release_pr(repo: str, number: int, head_ref: str, base_ref: str, same_rep
     return bool(files) and all(f["filename"] in allowed for f in files)
 
 
+# ───────────── puerta de seguridad (SMC-009) ─────────────
+def parse_security_paths(text: str) -> list[str]:
+    """Globs de `.github/security-paths.txt`: uno por línea; `#` abre un comentario (de línea o tras un espacio)."""
+    paths = []
+    for line in text.splitlines():
+        line = re.split(r"(?:^|\s)#", line, maxsplit=1)[0].strip()
+        if line:
+            paths.append(line)
+    return paths
+
+
+def pr_title_type(title: str) -> str | None:
+    """Tipo conventional del título (`sec`) o None."""
+    return "sec" if SEC_TITLE_RE.match(title or "") else None
+
+
+def read_file_at(repo: str, path: str, ref: str) -> str | None:
+    """Texto de `path` en `ref` (rama o SHA). None solo si el estado HTTP es 404.
+
+    Cualquier otro fallo propaga. Una carpeta (la API devuelve una lista), un enlace simbólico, un submódulo o un
+    fichero que la API no sirve en base64 no son un fichero legible: ValueError, no «ausente».
+    """
+    try:
+        meta = gh_json(f"repos/{repo}/contents/{path}?ref={ref}")
+    except subprocess.CalledProcessError as e:
+        if http_status(e) == 404:
+            return None
+        raise
+    if not isinstance(meta, dict) or meta.get("type") != "file" or meta.get("encoding") != "base64" or not meta.get("content"):
+        raise ValueError(f"{path} en {ref}: no es un fichero legible por la API de contenidos")
+    try:
+        return base64.b64decode("".join(meta["content"].split()), validate=True).decode("utf-8")
+    except ValueError as e:  # binascii.Error y UnicodeDecodeError lo son
+        raise ValueError(f"{path} en {ref}: contenido ilegible ({e})") from e
+
+
+def threat_model_problems(text: str) -> list[str]:
+    """Motivos por los que un threat model no vale: amenazas `abierta` o restos de la plantilla.
+
+    Los comentarios HTML no cuentan (no se ven). Una celda de tabla cuyo texto es `abierta` cuenta, sea cual sea la
+    columna; la palabra suelta en prosa no.
+    """
+    text = HTML_COMMENT_RE.sub("", text or "")
+    problems = []
+    for line in text.splitlines():
+        if not line.lstrip().startswith("|"):
+            continue
+        cells = [c.strip() for c in re.split(r"(?<!\\)\|", line.strip().strip("|"))]
+        if any(ABIERTA_RE.match(c) for c in cells):
+            problems.append(f"amenaza {cells[0] or '?'} en estado abierta")
+    for ph in THREAT_PLACEHOLDERS:
+        if ph in text:
+            problems.append(f"queda un placeholder de la plantilla: {ph}")
+    return problems
+
+
+def no_aplica_reason(body: str) -> str | None:
+    """Motivo de la línea `Threat model: no aplica: <motivo>` (fuera de comentarios HTML). None si no hay línea;
+    cadena vacía si la hay sin motivo."""
+    m = NO_APLICA_RE.search(HTML_COMMENT_RE.sub("", body or ""))
+    return m.group(1).strip() if m else None
+
+
+def evaluate_security(repo: str, number: int, pr: dict | None = None, tasks: list[str] | None = None,
+                      maint: bool | None = None) -> dict:
+    """Puerta de seguridad de un PR. Devuelve required, reason, threat_model, problems y warnings.
+
+    La lista de rutas se lee de la rama BASE; el threat model, de la cabeza. Cualquier fallo de la API
+    propaga (la puerta falla en cerrado). `pr`, `tasks` y `maint` se pasan si el llamador ya los tiene.
+    """
+    pr = pr if pr is not None else gh_json(f"repos/{repo}/pulls/{number}")
+    body = pr.get("body") or ""
+    if tasks is None:
+        commits = gh_pages(f"repos/{repo}/pulls/{number}/commits")
+        tasks = extract_tasks(body, *[c["commit"]["message"] for c in commits])
+    if maint is None:
+        head_repo = (pr["head"].get("repo") or {}).get("full_name")
+        maint = is_release_pr(repo, number, pr["head"].get("ref") or "", pr["base"]["ref"], head_repo == repo)
+    out = {"required": False, "reason": "", "threat_model": None, "problems": [], "warnings": []}
+    if maint:
+        out["reason"] = "PR de release: no le afecta la puerta"
+        return out
+
+    files = gh_pages(f"repos/{repo}/pulls/{number}/files")
+    if len(files) >= FILES_API_CAP:
+        raise PagesLimitError(f"pulls/{number}/files: {len(files)} ficheros; la API corta en {FILES_API_CAP}, lectura incompleta")
+    touched = {n for f in files for n in (f.get("filename"), f.get("previous_filename")) if n}
+    listing = read_file_at(repo, SECURITY_PATHS_FILE, pr["base"]["ref"])
+    reasons = []
+    if pr_title_type(pr.get("title") or "") == "sec":
+        reasons.append("título de tipo sec")
+    if listing is None:
+        out["warnings"].append(f"no existe {SECURITY_PATHS_FILE} en la rama base {pr['base']['ref']}: solo cuenta el tipo sec")
+    else:
+        globs = parse_security_paths(listing)
+        hits = sorted(n for n in touched if any(fnmatch.fnmatchcase(n, g) for g in globs))
+        if SECURITY_PATHS_FILE in touched:
+            reasons.append(f"toca la lista de rutas sensibles ({SECURITY_PATHS_FILE})")
+        if hits:
+            reasons.append("toca rutas sensibles: " + ", ".join(hits[:5]) + (f" y {len(hits) - 5} más" if len(hits) > 5 else ""))
+    if not reasons:
+        out["reason"] = "no toca rutas sensibles ni es de tipo sec"
+        return out
+
+    out["required"], out["reason"] = True, "; ".join(reasons)
+    motivo = no_aplica_reason(body)
+    found = []
+    for task in tasks or []:
+        path = f"{THREAT_MODEL_DIR}/{task}.md"
+        text = read_file_at(repo, path, pr["head"]["sha"])
+        if text is None:
+            if not motivo:
+                out["problems"].append(f"falta {path} en la cabeza del PR y no hay línea 'Threat model: no aplica: <motivo>'"
+                                       + (" con motivo" if motivo == "" else ""))
+            continue
+        found.append(path)
+        out["problems"].extend(f"{path}: {m}" for m in threat_model_problems(text))
+    if not tasks and not motivo:
+        out["problems"].append("sin TASK_ID no se puede localizar docs/threat-model/<TASK_ID>.md y no hay línea "
+                               "'Threat model: no aplica: <motivo>'" + (" con motivo" if motivo == "" else ""))
+    out["threat_model"] = ", ".join(found) if found else (f"no aplica: {motivo}" if motivo else None)
+    return out
+
+
 # ───────────── recogida de datos ─────────────
 def collect_pr(repo: str, number: int) -> dict:
     pr = gh_json(f"repos/{repo}/pulls/{number}")
@@ -319,9 +459,10 @@ def collect_pr(repo: str, number: int) -> dict:
         statuses = []
         gaps.append(f"PR #{number}: no se pudo leer el estado blind-review ({reason(e)})")
     if pr.get("merged_at"):  # el registro refleja el estado al fusionar: un blind-review posterior no cuenta
-        statuses, odd = status_at_merge(statuses, pr["merged_at"])
+        statuses, odd = status_at_merge(statuses, pr["merged_at"], (BLIND_REVIEW_CONTEXT, SECURITY_REVIEW_CONTEXT))
         gaps.extend(f"PR #{number}: {m}" for m in odd)
     blind = latest_status(statuses, BLIND_REVIEW_CONTEXT)
+    sec_review = latest_status(statuses, SECURITY_REVIEW_CONTEXT)
 
     author = pr["user"]["login"]
     head_repo = (pr["head"].get("repo") or {}).get("full_name")
@@ -337,6 +478,11 @@ def collect_pr(repo: str, number: int) -> dict:
     messages = [c["commit"]["message"] for c in commits]
     tasks = extract_tasks(body, *messages) or (["MAINT"] if maint else [])
     approvals = sorted({r["user"]["login"] for r in reviews if r.get("state") == "APPROVED"})
+    try:
+        gate = evaluate_security(repo, number, pr, tasks, maint)
+    except (*READ_ERRORS, ValueError) as e:
+        gate = {"required": None, "reason": f"no se pudo evaluar ({reason(e)})", "threat_model": None}
+        gaps.append(f"PR #{number}: no se pudo evaluar la puerta de seguridad ({reason(e)})")
 
     return {
         "pr": number,
@@ -351,6 +497,10 @@ def collect_pr(repo: str, number: int) -> dict:
             {"state": blind.get("state"), "description": blind.get("description"), "url": blind.get("target_url")}
             if blind else None
         ),
+        "security": {
+            "required": gate["required"], "reason": gate["reason"], "threat_model": gate["threat_model"],
+            "review": sec_review.get("state") if sec_review else None,
+        },
         "gaps": gaps,
         "merged": bool(pr.get("merged_at")),
         "merged_at": pr.get("merged_at"),
@@ -376,6 +526,15 @@ def previous_tag(tag: str) -> str | None:
 def blind_review_label(p: dict) -> str:
     b = p.get("blind_review")
     return b["state"] if b else "—"
+
+
+def security_label(sec: dict) -> str:
+    if sec["required"] is None:
+        return f"sin evaluar · {sec['reason']}"
+    if not sec["required"]:
+        return f"no aplica · {sec['reason']}"
+    return (f"aplica ({sec['reason']}) · threat model: {sec['threat_model'] or '—'} · "
+            f"security-review: {sec['review'] or '—'}")
 
 
 def git_range_commits(rng: str) -> list[dict]:
@@ -408,6 +567,7 @@ def pr_markdown(p: dict) -> str:
         f"- **Issues:** {', '.join('#' + str(i) for i in p['issues']) or '—'}\n"
         f"- **Autor:** {p['author']} · **Aprobado por:** {', '.join(p['approved_by']) or '—'}\n"
         f"- **Revisión ciega:** {blind_review_label(p)}\n"
+        f"- **Puerta de seguridad:** {security_label(p['security'])}\n"
         f"- **Merge:** {p['merged_at'] or 'pendiente'} por {p['merged_by'] or '—'} → `{p['base']}`\n"
         f"- **Head SHA:** `{p['head_sha']}`\n\n"
         f"| Check | Resultado |\n|---|---|\n{checks}\n"
@@ -461,6 +621,25 @@ def mode_pr(args: argparse.Namespace) -> int:
     return 1 if errors else 0
 
 
+def mode_security(args: argparse.Namespace) -> int:
+    """Puerta de seguridad: 1 si aplica y no se cumple, o si no se pudo leer la API (falla en cerrado)."""
+    try:
+        repo = repo_slug()
+        r = evaluate_security(repo, args.pr)
+    except Exception as e:  # noqa: BLE001 — cualquier fallo de lectura o de forma cierra la puerta
+        print(f"ERROR: PR #{args.pr}: no se pudo evaluar la puerta de seguridad ({reason(e)})", file=sys.stderr)
+        return 1
+    for w in r["warnings"]:
+        print(f"AVISO: {w}", file=sys.stderr)
+    if not r["required"]:
+        print(f"PR #{args.pr}: no aplica la puerta de seguridad ({r['reason']})")
+        return 0
+    print(f"PR #{args.pr}: aplica la puerta de seguridad ({r['reason']}) · threat model: {r['threat_model'] or '—'}")
+    for m in r["problems"]:
+        print(f"ERROR: {m}", file=sys.stderr)
+    return 1 if r["problems"] else 0
+
+
 def mode_release(args: argparse.Namespace) -> int:
     prev = previous_tag(args.tag)
     rng = f"{prev}..{args.tag}" if prev else args.tag
@@ -494,6 +673,9 @@ def mode_release(args: argparse.Namespace) -> int:
             gaps.extend(p["gaps"])
             if blind_review_label(p) != "success":
                 gaps.append(f"PR #{n} sin revisión ciega correcta (estado: {blind_review_label(p)})")
+            sec = p["security"]
+            if sec["required"] and sec["review"] != "success":
+                gaps.append(f"PR #{n} activa la puerta de seguridad sin security-review correcto (estado: {sec['review'] or '—'})")
             if failed:
                 gaps.append(f"PR #{n} con checks no exitosos: {', '.join(failed)}")
         else:
@@ -518,12 +700,14 @@ def main() -> None:
     a = sub.add_parser("pr")
     a.add_argument("--pr", type=int, required=True)
     a.add_argument("--out", default="change-record")
+    c = sub.add_parser("security")
+    c.add_argument("--pr", type=int, required=True)
     b = sub.add_parser("release")
     b.add_argument("--tag", required=True)
     b.add_argument("--out", required=True)
     b.add_argument("--offline", action="store_true", help="solo git, sin llamadas a la API")
     args = ap.parse_args()
-    sys.exit(mode_pr(args) if args.mode == "pr" else mode_release(args))
+    sys.exit({"pr": mode_pr, "security": mode_security, "release": mode_release}[args.mode](args))
 
 
 if __name__ == "__main__":
