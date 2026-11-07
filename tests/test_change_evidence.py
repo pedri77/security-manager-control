@@ -1433,10 +1433,10 @@ CASOS_MODELO = [
     P(dict(contents=_modelo()), False, [], "docs/threat-model/SMC-777.md", id="threat_model_en_la_cabeza_pasa"),
     P(dict(contents=_modelo(ref="main")), True, ["SMC-777"], None, id="threat_model_solo_en_la_base_no_vale"),
     P(dict(), True, ["docs/threat-model/SMC-777.md"], None, id="sin_threat_model_ni_linea_falla"),
-    P(dict(files=["smc/visor.py", MODELO_PATH], lista="smc/*\nscripts/*\n", body=TASK + "\nThreat model: no aplica: solo renombra una variable"), False, [],
+    P(dict(files=["smc/visor.py", MODELO_PATH], lista="~smc/*\nscripts/*\n", body=TASK + "\nThreat model: no aplica: solo renombra una variable"), False, [],
       "no aplica: solo renombra una variable", id="linea_no_aplica_con_motivo_pasa"),
-    P(dict(files=["smc/visor.py", MODELO_PATH], lista="smc/*\nscripts/*\n", body=TASK + "\nThreat model: No Aplica: motivo suficiente"), False, [], "no aplica: motivo suficiente", id="linea_no_aplica_sin_distinguir_mayusculas"),
-    P(dict(files=["smc/visor.py", MODELO_PATH], lista="smc/*\nscripts/*\n", body=TASK + "\n<!-- nota -->\nThreat model: no aplica: motivo real y suficiente"), False, [], "no aplica: motivo real y suficiente",
+    P(dict(files=["smc/visor.py", MODELO_PATH], lista="~smc/*\nscripts/*\n", body=TASK + "\nThreat model: No Aplica: motivo suficiente"), False, [], "no aplica: motivo suficiente", id="linea_no_aplica_sin_distinguir_mayusculas"),
+    P(dict(files=["smc/visor.py", MODELO_PATH], lista="~smc/*\nscripts/*\n", body=TASK + "\n<!-- nota -->\nThreat model: no aplica: motivo real y suficiente"), False, [], "no aplica: motivo real y suficiente",
       id="linea_tras_un_comentario_cerrado_pasa"),
     *[P(dict(body=TASK + f"\n{linea}\n"), True, [], None, id=f"linea_sin_motivo_{i}") for i, linea in enumerate(
         ["Threat model: no aplica:", "Threat model: no aplica:    ", "Threat model: no aplica:\t", "Threat model: no aplica",
@@ -1454,7 +1454,7 @@ CASOS_MODELO = [
     # el modelo debe estar añadido o modificado en pulls/N/files: uno ya existente sin tocar, o de otra tarea, no vale
     P(dict(files=["scripts/x.py"], contents=_modelo()), True, ["SMC-777", "no lo añade ni lo modifica"], None,
       id="modelo_existente_en_la_cabeza_sin_tocar_no_vale"),
-    P(dict(files=["smc/visor.py"], lista="smc/*\nscripts/*\n", contents=_modelo(), body=TASK + "\nThreat model: no aplica: motivo suficiente"), False, [], "no aplica: motivo suficiente",
+    P(dict(files=["smc/visor.py"], lista="~smc/*\nscripts/*\n", contents=_modelo(), body=TASK + "\nThreat model: no aplica: motivo suficiente"), False, [], "no aplica: motivo suficiente",
       id="modelo_sin_tocar_con_linea_no_aplica_pasa_por_la_linea"),
     P(dict(files=["scripts/x.py", "docs/threat-model/SMC-999.md"], contents={**_modelo(), **_modelo(tarea="SMC-999")}), True,
       ["SMC-777", "no lo añade ni lo modifica"], None, id="task_de_otra_tarea_con_modelo_existente_no_vale"),
@@ -1488,7 +1488,7 @@ CASOS_MODELO = [
     *[P(dict(body=TASK + f"\nThreat model: no aplica: {m}"), True, ["motivo"], None, id=f"motivo_no_valido_{i}") for i, m in enumerate(
         ["<motivo>", ".", "<otro texto>", "<motivo> <motivo> <motivo>", "corto", "x" * 14, "...............", "solo <motivo>",
          "<a>" * 10, "- - - - - - - - - - - -"])],
-    P(dict(files=["smc/visor.py", MODELO_PATH], lista="smc/*\nscripts/*\n", body=TASK + "\nThreat model: no aplica: " + "x" * 15 + " ahora sí"), False, [], "no aplica: " + "x" * 15 + " ahora sí",
+    P(dict(files=["smc/visor.py", MODELO_PATH], lista="~smc/*\nscripts/*\n", body=TASK + "\nThreat model: no aplica: " + "x" * 15 + " ahora sí"), False, [], "no aplica: " + "x" * 15 + " ahora sí",
       id="motivo_de_quince_o_mas_caracteres_pasa"),
     # T13: «no aplica» no vale en tipo sec ni al tocar la lista, change_evidence.py o un workflow
     *[P(dict(files=fs, title=t, body=TASK + "\nThreat model: no aplica: motivo que no se debe aceptar"), True, ["no aplica"], None, id=i)
@@ -1762,7 +1762,7 @@ CASOS_REGISTRO = [
       lambda p, ce: p["security"]["required"] is True and p["security"]["reason"]
       and p["security"]["threat_model"] == "docs/threat-model/SMC-777.md" and p["security"]["review"] == "success",
       id="recoge_aplica_threat_model_y_security_review"),
-    P(dict(files=["smc/visor.py"], lista="smc/*\nscripts/*\n", body="Task: SMC-777\nThreat model: no aplica: motivo suficiente"),
+    P(dict(files=["smc/visor.py"], lista="~smc/*\nscripts/*\n", body="Task: SMC-777\nThreat model: no aplica: motivo suficiente"),
       lambda p, ce: p["security"]["threat_model"] == "no aplica: motivo suficiente", id="recoge_la_linea_no_aplica"),
     P(dict(files=["scripts/x.py"], statuses=[_estado(1, "success", ANTES)]),
       lambda p, ce: p["security"]["review"] is None and p["blind_review"]["state"] == "success", id="no_confunde_blind_review_con_security_review"),
@@ -1978,7 +1978,7 @@ def test_modo_security_no_imprime_lineas_de_comando_con_nombres_de_fichero(ce, m
 
 
 def test_modo_security_no_imprime_lineas_de_comando_con_el_motivo(ce, monkeypatch, capsys):
-    rc, out, err, _ = _modo_security(ce, monkeypatch, capsys, files=["smc/visor.py"], lista="smc/*\n", title="feat: x",
+    rc, out, err, _ = _modo_security(ce, monkeypatch, capsys, files=["smc/visor.py"], lista="~smc/*\n", title="feat: x",
                                      body="Closes #1\nTask: SMC-777\nThreat model: no aplica: motivo\x1b[0m\r::error::inyectado largo")
     assert rc == 0 and "::error::" in out
     assert all(not l.lstrip().startswith("::") for l in (out + err).splitlines())
@@ -2265,6 +2265,122 @@ def test_t56_otras_formas_de_casilla_no_valen(ce, monkeypatch, linea):
 # --- T56: los tests que cita el threat model de SMC-009 existen ---
 def test_t56_los_tests_citados_en_el_threat_model_de_smc_009_existen():
     texto = (RAIZ / "docs/threat-model/SMC-009.md").read_text(encoding="utf-8")
+    citados = set(_re.findall(r"`(tests/[\w./-]+\.py)::(\w+)", texto))
+    assert citados
+    for fichero, nombre in citados:
+        assert _re.search(rf"^\s*def {nombre}\b", (RAIZ / fichero).read_text(encoding="utf-8"), _re.M), f"{fichero}::{nombre}"
+
+
+# --- T57 · SMC-011: las rutas que admiten «no aplica» se marcan con `~` en la lista ---
+MOTIVO_OK = "Threat model: no aplica: solo cambia un texto del visor"
+
+
+def _t57(ce, monkeypatch, lista, files, body=None, **kw):
+    return _gate(ce, monkeypatch, files=files, lista=lista, body=TASK + "\n" + (MOTIVO_OK if body is None else body), **kw)[1]
+
+
+def test_t57_el_script_no_nombra_a_smc_ni_guarda_el_prefijo(ce):
+    texto = SCRIPT.read_text(encoding="utf-8")
+    assert "smc/" not in texto and not hasattr(ce, "NO_APLICA_PREFIX")
+
+
+def test_t57_una_ruta_marcada_admite_no_aplica(ce, monkeypatch):
+    r = _t57(ce, monkeypatch, "~app/*\nscripts/*\n", ["app/x.py"])
+    assert r["required"] is True and r["problems"] == [] and r["threat_model"] == "no aplica: solo cambia un texto del visor"
+
+
+def test_t57_una_ruta_marcada_sigue_siendo_sensible(ce, monkeypatch):
+    r = _t57(ce, monkeypatch, "~app/*\n", ["app/x.py"], body=TASK)
+    assert r["required"] is True and r["problems"]
+
+
+@pytest.mark.parametrize("lista", ["app/*\nscripts/*\n", "# ~app/*\napp/*\n", "app/*  # ~app/*\n"])
+def test_t57_lista_sin_ruta_marcada_no_admite_no_aplica(ce, monkeypatch, lista):
+    r = _t57(ce, monkeypatch, lista, ["app/x.py"])
+    assert r["required"] is True and r["threat_model"] is None and any("no vale" in p for p in r["problems"])
+
+
+def test_t57_una_ruta_marcada_y_otra_sin_marcar_no_valen(ce, monkeypatch):
+    r = _t57(ce, monkeypatch, "~app/*\nlib/*\n", ["app/x.py", "lib/y.py"])
+    assert r["threat_model"] is None and any("no vale" in p for p in r["problems"])
+
+
+def test_t57_una_ruta_que_casa_con_una_marcada_y_otra_sin_marcar_no_vale(ce, monkeypatch):
+    r = _t57(ce, monkeypatch, "~app/*\napp/secreto.py\n", ["app/secreto.py"])
+    assert r["threat_model"] is None and r["problems"]
+
+
+def test_t57_el_origen_de_un_renombrado_tambien_cuenta(ce, monkeypatch):
+    f = {"filename": "app/x.py", "previous_filename": "lib/y.py", "status": "renamed"}
+    r = _t57(ce, monkeypatch, "~app/*\nlib/*\n", [f])
+    assert r["threat_model"] is None and r["problems"]
+
+
+def test_t57_en_un_pr_sec_no_aplica_no_vale_aunque_todo_este_marcado(ce, monkeypatch):
+    r = _t57(ce, monkeypatch, "~app/*\n", ["app/x.py"], title="sec: cierra algo")
+    assert r["threat_model"] is None and any("no vale" in p for p in r["problems"])
+
+
+def test_t57_tocar_la_lista_sigue_siendo_estricto_aunque_este_marcada(ce, monkeypatch):
+    r = _t57(ce, monkeypatch, "~.github/*\n~app/*\n", [LISTA_PATH, "app/x.py"])
+    assert r["threat_model"] is None and any("no vale" in p for p in r["problems"])
+
+
+def test_t57_marcar_una_ruta_en_la_cabeza_no_libra_la_marca_se_lee_de_la_base(ce, monkeypatch):
+    r = _t57(ce, monkeypatch, "app/*\n", ["app/x.py"], contents={("H", LISTA_PATH): "~app/*\n"})
+    assert r["threat_model"] is None and any("no vale" in p for p in r["problems"])
+
+
+def test_t57_marcar_una_ruta_sensible_para_librarse_del_modelo_exige_modelo(ce, monkeypatch):
+    # el PR marca scripts/* con ~ en la lista: toca la lista, así que la puerta es estricta aunque scripts/* quede marcada
+    r = _t57(ce, monkeypatch, "scripts/*\n", [LISTA_PATH, "scripts/x.py"])
+    assert r["threat_model"] is None and r["problems"]
+
+
+@pytest.mark.parametrize("linea", ["~ app/*", "~~app/*", "~\tapp/*", "~ ~app/*"])
+def test_t57_una_marca_mal_escrita_no_marca_y_la_ruta_sigue_siendo_sensible(ce, monkeypatch, linea):
+    r = _t57(ce, monkeypatch, linea + "\n", ["app/x.py"])
+    assert r["required"] is True and r["threat_model"] is None and any("no vale" in p for p in r["problems"])
+
+
+def test_t57_parse_security_rules(ce):
+    texto = "# cab\n~app/*\n  ~ lib/*  # x\n~~dos/*\nplana/*\n~\n~   \n~doc/a.md # c\n"
+    assert ce.parse_security_rules(texto) == [("app/*", True), ("lib/*", False), ("dos/*", False), ("plana/*", False), ("doc/a.md", True)]
+
+
+def test_t57_parse_security_paths_quita_la_marca_y_no_la_trata_como_glob(ce):
+    assert ce.parse_security_paths("~app/*\nlib/*\n~ x/*\n") == ["app/*", "lib/*", "x/*"]
+    import fnmatch
+    assert fnmatch.fnmatchcase("app/x.py", ce.parse_security_paths("~app/*")[0])
+
+
+def test_t57_la_lista_real_marca_solo_las_cuatro_rutas_de_smc(ce):
+    reglas = ce.parse_security_rules(LISTA_REAL)
+    assert sorted(g for g, m in reglas if m) == ["smc/dashboard.py", "smc/evidencias.py", "smc/report_html.py", "smc/visor.py"]
+    assert all(m or not g.startswith("smc/") for g, m in reglas)
+
+
+@pytest.mark.parametrize("ruta", ["smc/report_html.py", "smc/dashboard.py", "smc/visor.py", "smc/evidencias.py"])
+def test_t57_en_smc_el_comportamiento_no_cambia_con_la_lista_real(ce, monkeypatch, ruta):
+    r = _t57(ce, monkeypatch, LISTA_REAL, [ruta])
+    assert r["problems"] == [] and r["threat_model"] == "no aplica: solo cambia un texto del visor"
+
+
+def test_t57_la_lista_real_sigue_exigiendo_modelo_fuera_de_smc(ce, monkeypatch):
+    r = _t57(ce, monkeypatch, LISTA_REAL, ["smc/visor.py", "osv-scanner.toml"])
+    assert r["threat_model"] is None and r["problems"]
+
+
+def test_t57_la_lista_y_la_plantilla_describen_la_marca_sin_nombrar_smc():
+    lista = [ln for ln in LISTA_REAL.splitlines() if ln.lstrip().startswith("#")]
+    plantilla = (RAIZ / ".github/pull_request_template.md").read_text(encoding="utf-8")
+    assert not any("smc/" in ln for ln in lista) and "smc/" not in plantilla
+    assert any("~" in ln for ln in lista) and "~" in plantilla
+
+
+def test_t57_el_threat_model_de_smc_011_pasa_la_puerta_y_sus_tests_existen(ce):
+    texto = (RAIZ / "docs/threat-model/SMC-011.md").read_text(encoding="utf-8")
+    assert ce.threat_model_problems(texto, [33]) == []
     citados = set(_re.findall(r"`(tests/[\w./-]+\.py)::(\w+)", texto))
     assert citados
     for fichero, nombre in citados:
