@@ -1395,13 +1395,23 @@ CASOS_PUERTA = [
     P(dict(files=[LISTA_PATH], lista="scripts/*\n"), True, "lista", [], id="tocar_la_lista_activa_la_puerta"),
     P(dict(files=[{"filename": LISTA_PATH, "status": "removed"}], lista="scripts/*\n"), True, "lista", [],
       id="borrar_la_lista_activa_la_puerta"),
-    P(dict(files=["scripts/x.py", LISTA_PATH], lista=None), False, "", [LISTA_PATH], id="sin_lista_en_la_base_solo_cuenta_sec"),
+    # N1: sin lista en la base la puerta aplica y falla en cerrado; tocar la lista activa la puerta también sin ella
+    P(dict(files=["scripts/x.py", LISTA_PATH], lista=None), True, "falta la lista", [LISTA_PATH], id="sin_lista_en_la_base_aplica_y_falla_en_cerrado"),
+    P(dict(files=["README.md"], lista=None), True, "falta la lista", [LISTA_PATH], id="sin_lista_en_la_base_aplica_aunque_no_se_toque"),
+    P(dict(files=[LISTA_PATH], lista=None), True, "toca la lista de rutas", [LISTA_PATH], id="tocar_la_lista_con_la_lista_ausente_en_la_base"),
     P(dict(files=["README.md"], lista=None, title="sec: x"), True, "sec", [LISTA_PATH], id="sin_lista_en_la_base_y_tipo_sec"),
     P(dict(files=FICHEROS_RELEASE, head_ref=RELEASE, lista="*\n", title="chore(main): release 1.0.0"), False, "release", [],
       id="el_pr_de_release_no_se_ve_afectado"),
     P(dict(files=FICHEROS_RELEASE, head_ref=RELEASE, lista="*\n", title="sec: release"), False, "release", [],
       id="el_pr_de_release_de_tipo_sec_tampoco"),
     P(dict(files=FICHEROS_RELEASE + ["scripts/x.py"], head_ref=RELEASE), True, "scripts/x.py", [], id="rama_de_release_con_otro_fichero_aplica"),
+    # B1: la exención mira también de dónde viene cada fichero
+    P(dict(files=[{"filename": "version.txt", "previous_filename": "scripts/change_evidence.py", "status": "renamed"}], head_ref=RELEASE,
+           lista="scripts/*\n"), True, "scripts/change_evidence.py", [], id="release_renombrado_desde_ruta_sensible_aplica"),
+    P(dict(files=[{"filename": "version.txt", "previous_filename": "scripts/change_evidence.py", "status": "copied"}], head_ref=RELEASE,
+           lista="scripts/*\n"), True, "scripts/change_evidence.py", [], id="release_copiado_desde_ruta_sensible_aplica"),
+    P(dict(files=[{"filename": "version.txt", "previous_filename": "CHANGELOG.md", "status": "renamed"}], head_ref=RELEASE, lista="*\n"),
+       False, "release", [], id="release_renombrado_entre_ficheros_de_version_no_aplica"),
     P(dict(files=FICHEROS_RELEASE, head_ref=RELEASE, lista="*\n", same_repo=False), True, "", [], id="rama_de_release_desde_un_fork_aplica"),
     P(dict(files=[f"docs/a{i}.md" for i in range(150)] + ["scripts/x.py"]), True, "scripts/x.py", [], id="lee_todas_las_paginas_de_ficheros"),
 ]
@@ -1425,8 +1435,8 @@ CASOS_MODELO = [
     P(dict(), True, ["docs/threat-model/SMC-777.md"], None, id="sin_threat_model_ni_linea_falla"),
     P(dict(body=TASK + "\nThreat model: no aplica: solo renombra una variable"), False, [],
       "no aplica: solo renombra una variable", id="linea_no_aplica_con_motivo_pasa"),
-    P(dict(body=TASK + "\nThreat model: No Aplica: motivo"), False, [], "no aplica: motivo", id="linea_no_aplica_sin_distinguir_mayusculas"),
-    P(dict(body=TASK + "\n<!-- nota -->\nThreat model: no aplica: motivo real"), False, [], "no aplica: motivo real",
+    P(dict(body=TASK + "\nThreat model: No Aplica: motivo suficiente"), False, [], "no aplica: motivo suficiente", id="linea_no_aplica_sin_distinguir_mayusculas"),
+    P(dict(body=TASK + "\n<!-- nota -->\nThreat model: no aplica: motivo real y suficiente"), False, [], "no aplica: motivo real y suficiente",
       id="linea_tras_un_comentario_cerrado_pasa"),
     *[P(dict(body=TASK + f"\n{linea}\n"), True, [], None, id=f"linea_sin_motivo_{i}") for i, linea in enumerate(
         ["Threat model: no aplica:", "Threat model: no aplica:    ", "Threat model: no aplica:\t", "Threat model: no aplica",
@@ -1436,7 +1446,7 @@ CASOS_MODELO = [
         "<!-- a --><!-- Threat model: no aplica: x -->"])],
     P(dict(body=(RAIZ / ".github/pull_request_template.md").read_text(encoding="utf-8") + "\nTask: SMC-777\n"), True, [], None,
       id="plantilla_del_pr_sin_rellenar_no_pasa"),
-    P(dict(contents=_modelo(SUCIO), body="Task: SMC-777\nThreat model: no aplica: lo digo yo"), True, ["abierta"], "docs/threat-model/SMC-777.md",
+    P(dict(contents=_modelo(SUCIO), body="Closes #1\nTask: SMC-777\nThreat model: no aplica: lo digo yo, lo digo yo"), True, ["abierta"], "docs/threat-model/SMC-777.md",
       id="si_existe_el_threat_model_se_juzga_aunque_haya_linea"),
     P(dict(commits=["a\n\nTask: SMC-777", "b\n\nTask: SMC-778"], contents=_modelo()), True, ["SMC-778"], "docs/threat-model/SMC-777.md",
       id="varias_tareas_cada_una_necesita_el_suyo"),
@@ -1444,7 +1454,7 @@ CASOS_MODELO = [
     # el modelo debe estar añadido o modificado en pulls/N/files: uno ya existente sin tocar, o de otra tarea, no vale
     P(dict(files=["scripts/x.py"], contents=_modelo()), True, ["SMC-777", "no lo añade ni lo modifica"], None,
       id="modelo_existente_en_la_cabeza_sin_tocar_no_vale"),
-    P(dict(files=["scripts/x.py"], contents=_modelo(), body=TASK + "\nThreat model: no aplica: motivo"), False, [], "no aplica: motivo",
+    P(dict(files=["scripts/x.py"], contents=_modelo(), body=TASK + "\nThreat model: no aplica: motivo suficiente"), False, [], "no aplica: motivo suficiente",
       id="modelo_sin_tocar_con_linea_no_aplica_pasa_por_la_linea"),
     P(dict(files=["scripts/x.py", "docs/threat-model/SMC-999.md"], contents={**_modelo(), **_modelo(tarea="SMC-999")}), True,
       ["SMC-777", "no lo añade ni lo modifica"], None, id="task_de_otra_tarea_con_modelo_existente_no_vale"),
@@ -1462,6 +1472,36 @@ CASOS_MODELO = [
     P(dict(commits=["a\n\nTask: SMC-777", "b\n\nTask: SMC-778"], files=["scripts/x.py", MODELO_PATH],
            contents={**_modelo(), **_modelo(tarea="SMC-778")}), True, ["SMC-778"], "docs/threat-model/SMC-777.md",
       id="varias_tareas_una_existente_sin_tocar_no_vale"),
+    # N1: sin lista en la base falla aunque haya modelo
+    P(dict(lista=None, contents=_modelo()), True, ["falta", LISTA_PATH], MODELO_PATH, id="sin_lista_en_la_base_falla_aunque_haya_modelo"),
+    # Issue: el modelo declara `**Issue:** #N` y N está entre las que cierra el PR
+    P(dict(contents=_modelo(MODELO_OK.replace("**Issue:** #1", "**Issue:** #2"))), True, ["Issue", "#2"], MODELO_PATH,
+      id="modelo_de_otra_issue_no_vale"),
+    P(dict(contents=_modelo(MODELO_OK.replace("**Issue:** #1 · ", ""))), True, ["Issue"], MODELO_PATH, id="modelo_sin_issue_declarada_no_vale"),
+    P(dict(contents=_modelo(MODELO_OK.replace("**Issue:** #1", "<!-- **Issue:** #1 -->"))), True, ["Issue"], MODELO_PATH,
+      id="issue_en_comentario_html_no_cuenta"),
+    P(dict(contents=_modelo(), body="Task: SMC-777"), True, ["Issue", "#1"], MODELO_PATH, id="pr_que_no_cierra_ninguna_issue_con_modelo_no_vale"),
+    P(dict(contents=_modelo(), body="Closes #9\nCloses #1\nTask: SMC-777"), False, [], MODELO_PATH,
+      id="basta_con_que_una_de_las_issues_que_cierra_sea_la_del_modelo"),
+    P(dict(contents=_modelo(MODELO_OK.replace("**Issue:** #1", "**Issue:** #12"))), True, ["Issue", "#12"], MODELO_PATH, id="issue_12_no_es_la_1"),
+    # N9: el motivo de «no aplica» no puede ser un placeholder ni una excusa vacía
+    *[P(dict(body=TASK + f"\nThreat model: no aplica: {m}"), True, ["motivo"], None, id=f"motivo_no_valido_{i}") for i, m in enumerate(
+        ["<motivo>", ".", "<otro texto>", "<motivo> <motivo> <motivo>", "corto", "x" * 14, "...............", "solo <motivo>",
+         "<a>" * 10, "- - - - - - - - - - - -"])],
+    P(dict(body=TASK + "\nThreat model: no aplica: " + "x" * 15 + " ahora sí"), False, [], "no aplica: " + "x" * 15 + " ahora sí",
+      id="motivo_de_quince_o_mas_caracteres_pasa"),
+    # T13: «no aplica» no vale en tipo sec ni al tocar la lista, change_evidence.py o un workflow
+    *[P(dict(files=fs, title=t, body=TASK + "\nThreat model: no aplica: motivo que no se debe aceptar"), True, ["no aplica"], None, id=i)
+      for i, (fs, t) in {
+          "no_aplica_no_vale_en_tipo_sec": (["README.md"], "sec: algo"),
+          "no_aplica_no_vale_al_tocar_la_lista": ([LISTA_PATH], "feat: algo"),
+          "no_aplica_no_vale_al_tocar_change_evidence": (["scripts/change_evidence.py"], "feat: algo"),
+          "no_aplica_no_vale_al_tocar_un_workflow": ([".github/workflows/ci.yml"], "feat: algo"),
+          "no_aplica_no_vale_al_tocar_un_workflow_en_subcarpeta": ([".github/workflows/sub/x.yml"], "feat: algo"),
+          "no_aplica_no_vale_si_el_workflow_se_renombra_desde_fuera": (
+              [{"filename": "docs/otro.yml", "previous_filename": ".github/workflows/ci.yml", "status": "renamed"}], "feat: algo"),
+      }.items()],
+    P(dict(files=["README.md", MODELO_PATH], title="sec: algo", contents=_modelo()), False, [], MODELO_PATH, id="tipo_sec_con_modelo_pasa"),
 ]
 
 
@@ -1483,6 +1523,24 @@ CASOS_CONTENIDO = [
     P(MODELO_OK + "| T3 | DoS | x | y | 1 | 1 | 1 | z | `tests/a.py::t` | abierta |\n", ["T3"], id="una_fila_abierta_entre_cerradas"),
     P(MODELO_OK + "<!-- | T9 | x | y | 1 | 1 | 1 | z | w | abierta | -->\n", [], id="abierta_en_comentario_html_no_cuenta"),
     P(MODELO_OK + "\nLa amenaza T9 quedó abierta en la v0 y se cerró.\n", [], id="abierta_en_prosa_no_cuenta"),
+    # N7: `abierta` en cualquier celda de una línea de tabla, con o sin `|` inicial y con cualquier cabecera
+    P(MODELO_OK + "T3 | DoS | x | y | 1 | 1 | 1 | z | w | abierta\n", ["abierta"], id="abierta_sin_pipe_inicial_no_pasa"),
+    P(MODELO_OK + "T3 | DoS | x | y | 1 | 1 | 1 | z | w | `abierta` |\n", ["abierta"], id="abierta_sin_pipe_inicial_en_negrita_no_pasa"),
+    P(MODELO_OK + "\n| ID | Situación |\n|---|---|\n| T9 | abierta |\n", ["abierta"], id="abierta_en_tabla_sin_columna_estado_no_pasa"),
+    P(MODELO_OK + "\n| ID | Estado | Estado |\n|---|---|---|\n| T9 | mitigada | abierta |\n", ["abierta"], id="abierta_en_la_segunda_columna_estado_no_pasa"),
+    P(MODELO_OK + "\n| ID | Estado | Estado |\n|---|---|---|\n| T9 | mitigada | mitigada |\n", ["dos columnas"], id="dos_columnas_estado_no_pasan"),
+    P(MODELO_OK + "\n| ID | Nota |\n|---|---|\n| T9 | La puerta abierta es el riesgo |\n", [], id="abierta_dentro_de_una_frase_de_una_celda_no_cuenta"),
+    P(MODELO_OK + "\n| ID | Nota |\n|---|---|\n| T9 | La amenaza está abierta | \n", [], id="abierta_al_final_de_una_frase_de_una_celda_no_cuenta"),
+    # N7: `mitigada` exige mitigación y test no vacíos
+    P(MODELO_OK.replace("| z | `tests/test_x.py::test_x` | mitigada |", "|  | `tests/test_x.py::test_x` | mitigada |", 1), ["T1", "mitigación"],
+      id="mitigada_sin_mitigacion_no_pasa"),
+    P(MODELO_OK.replace("| z | `tests/test_x.py::test_x` | mitigada |", "| z |  | mitigada |", 1), ["T1", "test"], id="mitigada_sin_test_no_pasa"),
+    P(MODELO_OK.replace("| z | `tests/test_x.py::test_x` | mitigada |", "|  |  | mitigada |", 1), ["T1", "mitigación", "test"],
+      id="mitigada_sin_mitigacion_ni_test_no_pasa"),
+    P(MODELO_OK.replace("| z | `tests/test_x.py::test_x` | mitigada |", "| z |   | mitigada |", 1), ["T1", "test"], id="mitigada_con_test_en_blanco_no_pasa"),
+    P(MODELO_OK + "| T3 | DoS | x | y | 1 | 1 | 1 |  |  | aceptada |\n" + _S5 + "| T3 | porque | David Moya | 2026-11-07 |  |\n", [],
+      id="aceptada_no_exige_mitigacion_ni_test"),
+    P("| ID | Estado |\n|---|---|\n| T1 | mitigada |\n", ["T1", "mitigación"], id="mitigada_en_tabla_sin_columnas_de_mitigacion_no_pasa"),
     *[P(MODELO_OK + f"\nCampo: {ph}\n", ["placeholder"], id=f"placeholder_{i}") for i, ph in enumerate(
         ["<TASK_ID>", "<feature>", "<n>", "<slug>", "YYYY-MM-DD", "docs/adr/NNNN-x.md", "`tests/...::test_...`", "sí / no"])],
     P(MODELO_OK + "\n<!-- rellenar <TASK_ID> -->\n", [], id="placeholder_en_comentario_html_no_cuenta"),
@@ -1500,21 +1558,21 @@ CASOS_CONTENIDO = [
         ["Mitigada", "MITIGADA", " mitigada ", "`mitigada`", "**mitigada**", "_mitigada_"])],
     P(MODELO_OK.replace("T1", "T9").replace("| mitigada", "| abierto"), ["T9", "abierto"], id="el_problema_nombra_la_amenaza_y_el_estado"),
     # una aceptada exige su fila firmada en la sección 5 (columna «Fecha» con fecha)
-    P(ACEPTADA, ["T3", "firmada"], id="aceptada_sin_seccion_5_no_pasa"),
-    P(ACEPTADA + _S5 + "| T3 | porque | David Moya |  |  |\n", ["T3", "firmada"], id="aceptada_con_fecha_vacia_no_pasa"),
-    *[P(ACEPTADA + _S5 + f"| T3 | porque | David Moya | {f} |  |\n", ["T3", "firmada"], id=f"aceptada_con_fecha_ilegible_{i}") for i, f in enumerate(
+    P(ACEPTADA, ["T3", "fecha de aceptación"], id="aceptada_sin_seccion_5_no_pasa"),
+    P(ACEPTADA + _S5 + "| T3 | porque | David Moya |  |  |\n", ["T3", "fecha de aceptación"], id="aceptada_con_fecha_vacia_no_pasa"),
+    *[P(ACEPTADA + _S5 + f"| T3 | porque | David Moya | {f} |  |\n", ["T3", "fecha de aceptación"], id=f"aceptada_con_fecha_ilegible_{i}") for i, f in enumerate(
         ["pendiente", "2026-13-45", "2026-02-30", "07/11/2026", "2026-11-07T10:00", "20261107", "2026-1-7", "YYYY-MM-DD",
          "`tests/test_x.py::test_y`", "tests/test_x.py::test_y", "2026-11-07 y 2026-11-08", "hoy"])],
-    P(ACEPTADA + _S5 + "| T3 | porque |  | 2026-11-07 |  |\n", ["T3", "firmada"], id="aceptada_sin_nadie_que_acepte_no_pasa"),
-    P(ACEPTADA + _S5 + "| T3 | porque | David Moya |  | 2026-11-07 |\n", ["T3", "firmada"], id="la_fecha_se_busca_en_su_columna"),
-    P(ACEPTADA + _S5 + "| T9 | porque | David Moya | 2026-11-07 |  |\n", ["T3", "firmada"], id="la_fila_firmada_es_de_otra_amenaza"),
-    P(ACEPTADA + _S5.replace("5. Riesgos aceptados", "6. Otra cosa") + "| T3 | porque | David Moya | 2026-11-07 |  |\n", ["T3", "firmada"],
+    P(ACEPTADA + _S5 + "| T3 | porque |  | 2026-11-07 |  |\n", ["T3", "fecha de aceptación"], id="aceptada_sin_nadie_que_acepte_no_pasa"),
+    P(ACEPTADA + _S5 + "| T3 | porque | David Moya |  | 2026-11-07 |\n", ["T3", "fecha de aceptación"], id="la_fecha_se_busca_en_su_columna"),
+    P(ACEPTADA + _S5 + "| T9 | porque | David Moya | 2026-11-07 |  |\n", ["T3", "fecha de aceptación"], id="la_fila_firmada_es_de_otra_amenaza"),
+    P(ACEPTADA + _S5.replace("5. Riesgos aceptados", "6. Otra cosa") + "| T3 | porque | David Moya | 2026-11-07 |  |\n", ["T3", "fecha de aceptación"],
       id="la_tabla_firmada_fuera_de_la_seccion_5_no_vale"),
-    P(ACEPTADA + _S5 + "<!-- | T3 | porque | David Moya | 2026-11-07 |  | -->\n", ["T3", "firmada"], id="fila_firmada_en_comentario_html_no_vale"),
+    P(ACEPTADA + _S5 + "<!-- | T3 | porque | David Moya | 2026-11-07 |  | -->\n", ["T3", "fecha de aceptación"], id="fila_firmada_en_comentario_html_no_vale"),
     P(ACEPTADA + _S5 + "| T3 | porque | David Moya | 2026-11-07 |  |\n", [], id="aceptada_con_fecha_valida_pasa"),
     P(ACEPTADA + _S5 + "| `T3` | porque | David Moya | **2026-11-07** |  |\n", [], id="aceptada_con_fecha_en_negrita_pasa"),
     P(ACEPTADA + "| T4 | DoS | x | y | 1 | 1 | 1 | z | w | aceptada |\n" + _S5 + "| T3 | porque | David Moya | 2026-11-07 |  |\n",
-      ["T4", "firmada"], id="una_de_dos_aceptadas_sin_firmar_no_pasa"),
+      ["T4", "fecha de aceptación"], id="una_de_dos_aceptadas_sin_firmar_no_pasa"),
     P(MODELO_OK + "\n" + _S5 + "| T7 | sobra | David Moya |  |  |\n", [], id="una_fila_de_aceptacion_sin_aceptada_no_estorba"),
 ]
 
@@ -1533,6 +1591,13 @@ CASOS_PUROS = [
          ("security: x", None), ("secure(x): y", None), ("", None)])],
     P(lambda ce: ce.no_aplica_reason("Threat model: no aplica: x") == "x" and ce.no_aplica_reason("Threat model: no aplica:") == ""
       and ce.no_aplica_reason("nada") is None and ce.no_aplica_reason("<!-- Threat model: no aplica: x -->") is None, id="no_aplica_reason"),
+    *[P(lambda ce, m=m: ce.no_aplica_invalid(m) is not None, id=f"no_aplica_invalid_rechaza_{i}") for i, m in enumerate(
+        ["", "<motivo>", ".", "<x>", "corto", "x" * 14, "a b c d e f g", "<a> <b> <c> <d>", "-" * 20, "<motivo> ya"])],
+    *[P(lambda ce, m=m: ce.no_aplica_invalid(m) is None, id=f"no_aplica_invalid_acepta_{i}") for i, m in enumerate(
+        ["solo renombra una variable", "x" * 15 + " ok", "texto con <b>etiqueta</b> de más de quince", "añade un comentario de documentación"])],
+    *[P(lambda ce, t=t, e=e: ce.safe_text(t) == e, id=f"safe_text_{i}") for i, (t, e) in enumerate(
+        [("a\nb", "a b"), ("a\r\n::error::x", "a ::error::x"), ("\x1b[31mrojo\x1b[0m", "[31mrojo[0m"), ("tab\taqui", "tab aqui"),
+         ("normal ñ é", "normal ñ é"), ("a\u2028b\u202ec", "a bc"), ("a\x00b", "ab"), ("", "")])],
     P(lambda ce: [s["id"] for s in ce.status_at_merge(
         [_estado(1, "success", DESPUES), _estado(2, "success", DESPUES, ctx="security-review")], MERGE)[0]] == [2],
       id="status_at_merge_por_defecto_corta_solo_blind_review"),
@@ -1552,12 +1617,14 @@ def _filas_s5(ce, texto):
             if _re.match(r"\|\s*T\d+\s*\|", l)]
 
 
-def test_el_threat_model_de_smc_009_solo_espera_la_firma_de_david_y_cada_mitigacion_tiene_su_test(ce):
+def test_el_threat_model_de_smc_009_solo_espera_la_fecha_de_david_y_cada_mitigacion_tiene_su_test(ce):
     texto = (RAIZ / "docs/threat-model/SMC-009.md").read_text(encoding="utf-8")
     sin_comentarios = ce.HTML_COMMENT_RE.sub("", texto)
     filas = [[c.strip() for c in _re.split(r"(?<!\\)\|", l.strip().strip("|"))] for l in sin_comentarios.partition("## 5.")[0].splitlines()
              if _re.match(r"\|\s*T\d+\s*\|", l)]
-    assert len(filas) >= 10 and "T12" not in [f[0] for f in filas]
+    ids = [f[0] for f in filas]
+    assert len(ids) == len(set(ids)) and "T12" not in ids
+    assert {"T11", "T13", "T18", "T19", "T20", "T21", "T22", "T23", "T24", "T25"} <= set(ids)
     fuente = "".join((RAIZ / n).read_text(encoding="utf-8") for n in ("tests/test_change_evidence.py", "tests/test_vigilancia.py"))
     aceptadas = []
     for f in filas:
@@ -1573,19 +1640,22 @@ def test_el_threat_model_de_smc_009_solo_espera_la_firma_de_david_y_cada_mitigac
                 assert not caso or f'id="{caso}"' in fuente or f'id=f"{prefijo}_{{' in fuente, (f[0], caso)
         else:
             aceptadas.append(f[0])
-    # las amenazas de vigilancia (job de T52) ya son mitigadas, con tests de tests/test_vigilancia.py
+    # T11 ya no es una aceptación: pull_request_target la mitiga
     por_id = {f[0]: f for f in filas}
+    assert por_id["T11"][-1].strip("`* ").lower() == "mitigada" and "T11" not in aceptadas
+    # las amenazas de vigilancia (job de T52) son mitigadas, con tests de tests/test_vigilancia.py
     for t in ("T14", "T15", "T16"):
         assert por_id[t][-1].strip("`* ").lower() == "mitigada" and "tests/test_vigilancia.py::" in por_id[t][-2], t
-    # la firma es la columna «Fecha» de §5: la rellena David, ningún agente. Vacía en cada aceptación.
+    # la fecha de aceptación es la columna «Fecha» de §5: la rellena David, ningún agente. Vacía en cada aceptación.
     s5 = _filas_s5(ce, texto)
-    assert sorted(f[0] for f in s5) == sorted(aceptadas) and aceptadas, (aceptadas, s5)
+    assert sorted(f[0] for f in s5) == sorted(aceptadas) == ["T13", "T23", "T24", "T25"], (aceptadas, s5)
     for f in s5:
         assert len(f) == 5 and f[2] == "David Moya" and f[3] == "", f
-    # lo único que falta a la puerta es esa firma
-    problemas = ce.threat_model_problems(texto)
-    assert len(problemas) == len(aceptadas) and all("firmada" in p for p in problemas), problemas
+    # lo único que falta a la puerta es esa fecha, y el modelo declara la issue del PR
+    problemas = ce.threat_model_problems(texto, [28])
+    assert len(problemas) == len(aceptadas) and all("fecha de aceptación" in p for p in problemas), problemas
     assert {m for p in problemas for m in _re.findall(r"\bT\d+\b", p)} == set(aceptadas)
+    assert any("Issue" in p for p in ce.threat_model_problems(texto, [27]))
 
 
 # --- lectura de ficheros de la API ---
@@ -1642,7 +1712,7 @@ CASOS_MODO = [
     P(dict(files=["README.md"]), 0, "no aplica la puerta", "", "ERROR", id="sin_puerta_sale_con_0"),
     P(dict(files=["scripts/x.py"]), 1, "", "SMC-777", "", id="incumplido_sale_con_1_y_dice_que_falta"),
     P(dict(files=["scripts/x.py", MODELO_PATH], contents=_modelo(SUCIO)), 1, "", "abierta", "", id="amenaza_abierta_sale_con_1"),
-    P(dict(files=["README.md"], lista=None), 0, "", LISTA_PATH, "ERROR", id="sin_lista_en_la_base_avisa_por_stderr"),
+    P(dict(files=["README.md"], lista=None), 1, "", LISTA_PATH, "", id="sin_lista_en_la_base_falla_en_cerrado"),
     P(dict(files=FICHEROS_RELEASE, head_ref=RELEASE, lista="*\n"), 0, "release", "", "ERROR", id="pr_de_release_sale_con_0"),
     P(dict(files=["scripts/x.py"], fail={LISTA_PATH: fallo(403)}), 1, "", "ERROR", "", id="403_en_la_lista_no_es_lista_ausente"),
     P(dict(files=["README.md"], fail={"/pulls/7/files": ValueError("json roto")}), 1, "", "ERROR", "", id="excepcion_inesperada_sale_con_1"),
@@ -1694,8 +1764,8 @@ CASOS_REGISTRO = [
       lambda p, ce: p["security"]["required"] is True and p["security"]["reason"]
       and p["security"]["threat_model"] == "docs/threat-model/SMC-777.md" and p["security"]["review"] == "success",
       id="recoge_aplica_threat_model_y_security_review"),
-    P(dict(files=["scripts/x.py"], body="Task: SMC-777\nThreat model: no aplica: x"),
-      lambda p, ce: p["security"]["threat_model"] == "no aplica: x", id="recoge_la_linea_no_aplica"),
+    P(dict(files=["scripts/x.py"], body="Task: SMC-777\nThreat model: no aplica: motivo suficiente"),
+      lambda p, ce: p["security"]["threat_model"] == "no aplica: motivo suficiente", id="recoge_la_linea_no_aplica"),
     P(dict(files=["scripts/x.py"], statuses=[_estado(1, "success", ANTES)]),
       lambda p, ce: p["security"]["review"] is None and p["blind_review"]["state"] == "success", id="no_confunde_blind_review_con_security_review"),
     P(dict(files=["scripts/x.py"], statuses=[_sr(2, "failure", DESPUES), _sr(1, "success", ANTES)]),
@@ -1762,55 +1832,155 @@ def test_pack_de_release_anota_el_hueco_de_security_review(ce, monkeypatch, tmp_
 
 
 # --- el workflow y la lista de rutas del repositorio ---
-def _pr_meta():
+GATE_YML = RAIZ / ".github/workflows/security-gate.yml"
+
+
+def _yml(ruta):
     import yaml
-    return yaml.safe_load((RAIZ / ".github/workflows/pr-meta.yml").read_text(encoding="utf-8"))
+    return yaml.safe_load(ruta.read_text(encoding="utf-8"))
 
 
-def _c_nunca_target():
-    texto = (RAIZ / ".github/workflows/pr-meta.yml").read_text(encoding="utf-8")
-    on = _pr_meta().get("on") or _pr_meta().get(True)
-    return "pull_request" in on and "pull_request_target" not in on and "pull_request_target" not in _re.sub(r"(?m)^\s*#.*$", "", texto)
+def _gate_doc():
+    return _yml(GATE_YML)
+
+
+def _gate_job():
+    return _gate_doc()["jobs"]["security-gate"]
+
+
+def _sin_comentarios(ruta):
+    return _re.sub(r"(?m)^\s*#.*$", "", ruta.read_text(encoding="utf-8"))
+
+
+def _c_target():
+    doc = _gate_doc()
+    on = doc.get("on") or doc.get(True)
+    return set(on) == {"pull_request_target"} and {"opened", "edited", "synchronize", "reopened"} <= set(on["pull_request_target"]["types"])
+
+
+def _c_pr_meta_sin_puerta():
+    doc = _yml(RAIZ / ".github/workflows/pr-meta.yml")
+    texto = _sin_comentarios(RAIZ / ".github/workflows/pr-meta.yml")
+    return "security-gate" not in doc["jobs"] and "pull_request_target" not in texto and "change_evidence.py security" not in texto
+
+
+def _c_checkout_de_la_base():
+    pasos = [s for s in _gate_job()["steps"] if "uses" in s]
+    checkouts = [s for s in pasos if s["uses"].startswith("actions/checkout@")]
+    return (len(checkouts) == 1 and all(not ({"ref", "repository", "path"} & set(s.get("with") or {})) for s in checkouts)
+            and all(s["with"]["persist-credentials"] is False for s in checkouts))
+
+
+def _c_nada_de_la_cabeza_en_with():
+    todo = [v for s in _gate_job()["steps"] for v in (s.get("with") or {}).values()]
+    return not any("head" in str(v) for v in todo) and not _re.search(r"(?mi)^\s*(ref|repository):.*head", _sin_comentarios(GATE_YML))
 
 
 def _c_sin_interpolar():
-    job = _pr_meta()["jobs"]["security-gate"]
-    run = [s["run"] for s in job["steps"] if "run" in s]
+    job = _gate_job()
+    runs = [s["run"] for s in job["steps"] if "run" in s]
     env = {k: v for s in job["steps"] for k, v in (s.get("env") or {}).items()}
-    return (bool(run) and all("${{" not in r for r in run) and any("change_evidence.py security --pr" in r for r in run)
+    return (len(runs) >= 2 and all("${{" not in r for r in runs) and any("python3 scripts/change_evidence.py security --pr \"$PR_NUMBER\"" in r for r in runs)
             and "pull_request.number" in env["PR_NUMBER"] and "GITHUB_TOKEN" in env["GH_TOKEN"])
 
 
 def _c_actions_fijadas():
-    usos = [s for s in _pr_meta()["jobs"]["security-gate"]["steps"] if "uses" in s]
+    usos = [s for s in _gate_job()["steps"] if "uses" in s]
     return bool(usos) and all(_re.fullmatch(r"[\w./-]+@[0-9a-f]{40}", s["uses"]) for s in usos) \
-        and any((s.get("with") or {}).get("persist-credentials") is False for s in usos)
+        and all((s.get("with") or {}).get("persist-credentials") is False for s in usos if s["uses"].startswith("actions/checkout@"))
 
 
-def _c_solo_lectura():
-    doc = _pr_meta()
-    permisos = dict(doc.get("permissions") or {}) | dict(doc["jobs"]["security-gate"].get("permissions") or {})
-    return bool(permisos) and all(v == "read" for v in permisos.values())
+def _c_permisos():
+    doc, job = _gate_doc(), _gate_job()
+    assert "permissions" in doc and "permissions" in job
+    escrituras = {k: v for k, v in (dict(doc["permissions"]) | dict(job["permissions"])).items() if v != "read"}
+    return escrituras == {"statuses": "write"} and "statuses" not in doc["permissions"] and all(v == "read" for v in doc["permissions"].values())
 
 
-def _c_lista():
-    import fnmatch
+def _c_publica_el_estado_en_la_cabeza():
+    job = _gate_job()
+    paso = next(s for s in job["steps"] if "statuses/" in s.get("run", ""))
+    env = paso["env"]
+    return (paso.get("if") == "always()" and "head.sha" in env["HEAD_SHA"] and "steps.gate.outcome" in env["OUTCOME"]
+            and "-f context=security-gate" in paso["run"] and "repos/$REPO/statuses/$HEAD_SHA" in paso["run"]
+            and _re.search(r"\^\[0-9a-f\]\{40\}\$", paso["run"]) is not None)
+
+
+def _c_el_job_acaba_en_rojo_si_la_puerta_falla():
+    pasos = _gate_job()["steps"]
+    gate = next(s for s in pasos if s.get("id") == "gate")
+    ultimo = pasos[-1]
+    return gate.get("continue-on-error") is True and "steps.gate.outcome" in ultimo.get("if", "") and "exit 1" in ultimo["run"]
+
+
+def _rutas_lista():
     from importlib import util
     spec = util.spec_from_file_location("ce_lista", SCRIPT)
     mod = util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    rutas = mod.parse_security_paths((RAIZ / LISTA_PATH).read_text(encoding="utf-8"))
-    return (all(e in rutas for e in [".github/workflows/*", "scripts/*", "smc/report_html.py", "smc/dashboard.py", "smc/visor.py", "smc/evidencias.py"])
+    return mod.parse_security_paths((RAIZ / LISTA_PATH).read_text(encoding="utf-8"))
+
+
+def _c_lista_n4():
+    import fnmatch
+    rutas = _rutas_lista()
+    return all(any(fnmatch.fnmatchcase(f, r) for r in rutas) for f in [
+        ".github/workflows/ci.yml", ".github/pull_request_template.md", ".github/security-paths.txt", "osv-scanner.toml",
+        "release-please-config.json", "docs/threat-model/SMC-009.md", "docs/threat-model/TEMPLATE.md"])
+
+
+def _c_lista():
+    import fnmatch
+    rutas = _rutas_lista()
+    return (all(e in rutas for e in [".github/*", "scripts/*", "smc/report_html.py", "smc/dashboard.py", "smc/visor.py", "smc/evidencias.py",
+                                     "osv-scanner.toml", "release-please-config.json", "docs/threat-model/*"])
             and any(fnmatch.fnmatchcase("scripts/change_evidence.py", r) for r in rutas)
-            and any(fnmatch.fnmatchcase(".github/workflows/pr-meta.yml", r) for r in rutas))
+            and any(fnmatch.fnmatchcase(".github/workflows/security-gate.yml", r) for r in rutas))
 
 
 @pytest.mark.parametrize("comprobacion", [
-    P(_c_nunca_target, id="usa_pull_request_y_nunca_pull_request_target"),
+    P(_c_target, id="usa_pull_request_target_con_los_tipos_de_edicion"),
+    P(_c_pr_meta_sin_puerta, id="pr_meta_ya_no_tiene_la_puerta"),
+    P(_c_checkout_de_la_base, id="un_solo_checkout_el_de_la_base_sin_ref_ni_repositorio"),
+    P(_c_nada_de_la_cabeza_en_with, id="ningun_with_ni_ref_apunta_a_la_cabeza"),
     P(_c_sin_interpolar, id="no_interpola_datos_del_pr_en_el_shell"),
     P(_c_actions_fijadas, id="actions_fijadas_por_sha_y_sin_credenciales_persistidas"),
-    P(_c_solo_lectura, id="no_pide_mas_permisos_que_lectura"),
+    P(_c_permisos, id="solo_escribe_statuses_y_solo_en_el_job"),
+    P(_c_publica_el_estado_en_la_cabeza, id="publica_el_estado_security_gate_en_la_cabeza_siempre"),
+    P(_c_el_job_acaba_en_rojo_si_la_puerta_falla, id="el_job_acaba_en_rojo_si_la_puerta_falla"),
     P(_c_lista, id="la_lista_de_rutas_sensibles_del_repositorio"),
+    P(_c_lista_n4, id="la_lista_cubre_toda_la_carpeta_github_osv_release_y_threat_model"),
 ])
 def test_workflow_security_gate_y_lista_de_rutas(comprobacion):
     assert comprobacion()
+
+
+# --- N8: `ref` de la rama base escapado al leer release-please-config.json ---
+@pytest.mark.parametrize("ref", ["main", "feat/x", "a&ref=evil", "x#y", "x?y=1", "con espacio", "100%", "x\ny", "../main"])
+def test_allowed_release_files_escapa_ref(ce, monkeypatch, ref):
+    from urllib.parse import parse_qs, urlsplit
+    vistos = []
+    monkeypatch.setattr(ce, "gh_json", lambda p: vistos.append(p) or contenido('{"packages": {".": {"extra-files": ["extra.txt"]}}}'))
+    assert "extra.txt" in ce.allowed_release_files("o/r", ref)
+    u = urlsplit(vistos[0])
+    assert u.fragment == "" and not any(c in vistos[0] for c in " \n")
+    assert parse_qs(u.query, keep_blank_values=True) == {"ref": [ref]}
+
+
+# --- N9: nada de lo que controla el autor llega a la salida como comando de workflow ---
+@pytest.mark.parametrize("nombre", [
+    "scripts/x\n::error::falso.py", "scripts/x\r::set-output name=a::b.py", "scripts/\x1b]0;titulo\x07x.py", "scripts/a\u2028::debug::x.py",
+])
+def test_modo_security_no_imprime_lineas_de_comando_con_nombres_de_fichero(ce, monkeypatch, capsys, nombre):
+    rc, out, err, _ = _modo_security(ce, monkeypatch, capsys, files=[nombre])
+    assert rc == 1 and "scripts/" in out + err
+    lineas = (out + err).splitlines()
+    assert all(not l.lstrip().startswith("::") for l in lineas), lineas
+    assert not any(c in out + err for c in "\x1b\r\x07\u2028")
+
+
+def test_modo_security_no_imprime_lineas_de_comando_con_el_motivo(ce, monkeypatch, capsys):
+    rc, out, err, _ = _modo_security(ce, monkeypatch, capsys, files=["scripts/x.py"], title="feat: x",
+                                     body="Closes #1\nTask: SMC-777\nThreat model: no aplica: motivo\x1b[0m\r::error::inyectado largo")
+    assert rc == 0 and "::error::" in out
+    assert all(not l.lstrip().startswith("::") for l in (out + err).splitlines())
