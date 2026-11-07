@@ -31,3 +31,7 @@ Rama `t58-smc011` (sale de bf11873). Issue #33. Sin push ni PR.
 ## Notas
 - `~*` (marca todo) no da aviso: el plan no lo pedía y es legal; sigue sin librar `sec`, la lista, `change_evidence.py` ni workflows.
 - Prod: ninguna.
+
+## Corrección tras la devolución del coordinador
+- Cerrado el backtick que faltaba tras `test_t57_lista_sin_ruta_marcada_no_admite_no_aplica` en la fila T4 de SMC-011.md. Revisión de backticks impares por línea: solo quedan las vallas del bloque mermaid (líneas 22 y 32), ninguna celda.
+- T2 dice expresamente que `~` + NBSP o U+3000 es marca mal escrita: ruta sensible y sin exención.
