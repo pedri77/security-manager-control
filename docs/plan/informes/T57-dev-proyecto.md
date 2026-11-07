@@ -38,3 +38,17 @@ Los seis ponen en rojo al menos un test.
 ## Queda
 - Tras fusionar: la lista de la base debe ganar las marcas `~` (ya vienen en esta rama); hasta entonces el PR de esta rama se evalúa contra la lista sin marcas, estricta, y exige el modelo, que lleva.
 - Sincronizar la plantilla de enjambre-agentes (fuera de alcance). Sin versión ni CHANGELOG. Prod: ninguna.
+
+## Verificación del coordinador v2.4 (2026-11-07)
+- pytest completo en el worktree: 1661 passed. `grep -n 'smc/' scripts/change_evidence.py`: vacío. `def test_` = 784 (insignia README coincide).
+- superficies.py diff dev-proyecto: OK. gitleaks y grep de secretos: sin hallazgos.
+- `threat_model_problems(SMC-011.md, [33])` = `[]`; los 16 tests citados existen.
+- GET real (GITHUB_REPOSITORY=pedri77/security-manager-control, código de origin/main frente a la rama): #30 rc=0 y #24 rc=1 (falta SMC-007.md), salida idéntica (cmp).
+- Contraprueba, un mutante por copia `git archive` en scratchpad/mut/tmp*, lanzado desde la copia, `-k 't57 or n12 or t55 or t56'`:
+  - strict sin rutas de la lista (todas admiten) → 23 failed
+  - ninguna admite (`or bool(listed_hits)`) → 21 failed
+  - lista leída de la cabeza (`pr["head"]["sha"]`) → 38 failed
+  - basta una ruta marcada entre varias → 5 failed
+  - `is_sec` anulado en strict → 1 failed
+  - `~` no marca (marked=False) → 23 failed
+- Vía para librarse con `~`: ninguna hallada; la lista se lee de la base y tocarla es estricto (mutante de cabeza en rojo).
