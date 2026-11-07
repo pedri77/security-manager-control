@@ -587,7 +587,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en 05fa099829a43fc69fb12f1412f7868ac0e55d8f · evidencia informes/T54-dev-proyecto.md
 
-- [ ] **T55** — Cerrar el bloqueo de la segunda auditoría de seguridad de SMC-009
+- [~] **T55** — Cerrar el bloqueo de la segunda auditoría de seguridad de SMC-009
   - Issue: SMC-009 https://github.com/pedri77/security-manager-control/issues/28
   - Hace: (B2) `security-gate.yml` pasa el SHA del evento al script (`--head-sha`, por variable de entorno) y `change_evidence.py security` falla si no es la cabeza actual del PR; el estado se publica siempre sobre ese mismo SHA. El workflow lleva `concurrency` por número de PR con `cancel-in-progress: true`. (N11) El job solo corre si la base del PR es la rama por defecto del repositorio. (N12) «no aplica» no vale para ninguna ruta de `.github/security-paths.txt` salvo las de `smc/`. (N13) `docs/threat-model/SMC-009.md` dice bien de dónde sale cada cosa: workflow y script de la rama por defecto, lista y diff de la base del PR. (N14) Filas para los puntos 3, 4 y 5 de SMC-010 #29, `aceptada` con fecha vacía, o con el cálculo que muestre riesgo menor de 4; filas también para B2 y N11, `mitigada` con sus tests. (N15) `vigilancia.py` aplana los saltos de línea de los errores de `gh` antes de imprimirlos. (N16) `gh label create security` sin `--force`, y tolera que la etiqueta ya exista. Insignia del README al recuento real.
   - No hace: no rellena fechas de aceptación. No toca la regla de rama, la plantilla de enjambre-agentes, versión ni CHANGELOG. Nada más de SMC-010.
@@ -595,7 +595,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Depende: T53, T54
   - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde. Reproduce B2 con el arnés de la auditoría (`/private/tmp/claude-501/-Users-pedri77-Dev-Claude-proyectos-Claude/954a23bc-d0e3-4e6f-999b-858a552b0b36/scratchpad/as2h/race.py`) antes del arreglo y comprueba que deja de pasar. Con `gh` real, solo GET, la forma de `head.sha` y `base.ref` del PR y el texto real de error de `gh label create` cuando la etiqueta existe, si se puede ver sin crearla; si no, dilo. Un test comprueba en `security-gate.yml` el `concurrency` con `cancel-in-progress: true`, la condición de rama por defecto y que el SHA del estado es el mismo que recibe el script. Contraprueba en copia temporal, un mutante por copia, medida test a test: no comparar el SHA del evento con la cabeza; publicar sobre otro SHA; quitar `concurrency`; `cancel-in-progress: false`; quitar la condición de rama por defecto; «no aplica» válido para `osv-scanner.toml`; no aplanar los errores de `gh`; volver a `--force`. Cada uno debe poner en rojo al menos un test.
   - Prod: —
-  - Estado: libre
+  - Estado: reservada por coordinador-smc-f2p 2026-11-07
 
 ## Libro
 
