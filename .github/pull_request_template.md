@@ -17,7 +17,7 @@ Task: <PROJ>-<NNN>
 - Rollback: <!-- comando o pasos -->
 
 ## Seguridad y cumplimiento
-- [ ] Threat model: <!-- docs/threat-model/<TASK_ID>.md o "no aplica" -->
+- [ ] Threat model: <!-- docs/threat-model/<TASK_ID>.md, o la línea «Threat model: no aplica: <motivo>» solo si las rutas sensibles tocadas son de smc/ (ver .github/security-paths.txt) -->
 - [ ] ADR: <!-- docs/adr/NNNN-*.md o "no aplica" -->
 - [ ] Datos personales afectados: sí / no
 - [ ] Cambia prompts, modelos o tools LLM: sí / no  <!-- sí ⇒ evals actualizados -->

@@ -3,6 +3,8 @@
 # Jobs obligatorios en la regla de rama: pr-title, change-record. También el estado blind-review,
 # que nunca publica un workflow: lo publica la sesión principal tras la revisión ciega (S6) o David
 # en el PR de release (S7).
+# security-gate (S3) vive en security-gate.yml: va con `pull_request_target` y no se puede juzgar con la versión del propio PR.
+# Este workflow sigue con `pull_request`; los datos del PR llegan al shell solo por variables de entorno.
 name: pr-meta
 
 on:
