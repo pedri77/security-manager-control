@@ -575,7 +575,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: reservada por coordinador-smc-f2p 2026-11-07
 
-- [~] **T54** — Vigilancia: adopción de la issue, contenido de terceros y concurrencia
+- [ ] **T54** — Vigilancia: adopción de la issue, contenido de terceros y concurrencia
   - Issue: SMC-009 https://github.com/pedri77/security-manager-control/issues/28
   - Hace: en `scripts/vigilancia.py`, la issue abierta solo se adopta si la creó `github-actions[bot]` y lleva la etiqueta `security`; otra con el mismo título se ignora. Los campos de `osv-scanner` (paquete, versión, identificador, versión corregida) se validan con lista blanca de caracteres y longitud; lo que no cumple se sustituye y no puede formar menciones, enlaces, imágenes, comentarios HTML ni romper la tabla. En `.github/workflows/vigilancia.yml`, `concurrency` sin cancelar la que corre y `timeout-minutes`.
   - No hace: no toca `change_evidence.py`, la puerta, `docs/threat-model/SMC-009.md` (lo actualiza T53), el README, la plantilla de enjambre-agentes, versión ni CHANGELOG.
@@ -583,7 +583,6 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Depende: T52
   - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde salvo los dos tests de la insignia del README, que cierra T53. Con `gh` real, solo GET: forma real de `author` en `gh issue list --json author,labels`. Prueba los textos de la auditoría: `@org/team`, `|`, salto de línea, imagen externa y `<!--`. Contraprueba en copia temporal, un mutante por copia, medida test a test: adoptar sin mirar autor; adoptar sin mirar etiqueta; no escapar `@`; no escapar `|`; aceptar salto de línea; quitar `concurrency`. Cada uno debe poner en rojo al menos un test.
   - Prod: —
-  - Estado: reservada por coordinador-smc-f2p 2026-11-07
 
 ## Libro
 
