@@ -4,7 +4,7 @@
 # de rama cuando David lo decida.
 #
 # Va con `pull_request_target`: el workflow y el script salen de la rama por defecto, así que un PR no puede editar la
-# puerta que lo juzga (T11). Por eso el checkout es el de la rama base, sin `ref` ni `repository`, y el job no ejecuta
+# puerta que lo juzga (T11). Por eso el checkout es el de la rama por defecto, sin `ref` ni `repository`, y el job no ejecuta
 # nada del PR: el script solo lo lee por la API (título, descripción, ficheros y contenidos por SHA). Nunca hay que
 # añadir aquí un checkout de la cabeza ni un paso que ejecute código del PR.
 #
