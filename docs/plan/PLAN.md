@@ -565,6 +565,26 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en 00c100303b86cf6282d19f9f6cd7376d1fc0c68d · evidencia informes/T52-dev-proyecto.md
 
+- [ ] **T53** — Cerrar el bloqueo de la auditoría de seguridad de SMC-009
+  - Issue: SMC-009 https://github.com/pedri77/security-manager-control/issues/28
+  - Hace: en `scripts/change_evidence.py`. (B1) La exención de release exige que también `previous_filename`, si existe, sea un fichero de versión, o rechaza los estados `renamed` y `copied`. (T11) La puerta pasa a `.github/workflows/security-gate.yml`, con job `security-gate`, evento `pull_request_target` y permisos de solo lectura, y sale de `pr-meta.yml`. El checkout es el de la rama base y nunca la cabeza del PR: no ejecuta nada del PR y solo lo lee por API. Antes de escribirlo, comprueba en la documentación oficial de GitHub si el check de un `pull_request_target` cuenta como check requerido del PR, en la cabeza. Si no cuenta, el job publica un estado de commit `security-gate` sobre el SHA de la cabeza con `statuses: write`. Dilo en el informe con la fuente. (T13 y N9) «no aplica» no vale en PR de tipo `sec` ni en los que tocan la lista de rutas, `change_evidence.py` o un workflow; el motivo tiene al menos 15 caracteres y no puede ser `<motivo>` ni otro placeholder `<...>`; al imprimir se quitan caracteres de control de nombres de fichero y textos del PR. (Issue) El modelo declara `**Issue:** #N`, como trae la plantilla, y N debe estar entre las issues que cierra el PR. (N1) Lista ausente en la base: la puerta aplica y falla en cerrado; tocar la lista activa la puerta también en ese caso. (N4) La lista añade `.github/*` en lugar de `.github/workflows/*`, más `osv-scanner.toml`, `release-please-config.json` y `docs/threat-model/*`. (N7) Una fila `mitigada` exige celdas de mitigación y de test no vacías, y `abierta` en cualquier celda o línea de tabla del modelo, fuera de comentarios, no pasa. (N8) `allowed_release_files` escapa `ref`. (N5) En el modelo y en los mensajes, «fecha de aceptación» en vez de «firma»; la firma real es el estado `security-review` que publica David. En `docs/threat-model/SMC-009.md`: T11 pasa a `mitigada` con sus tests y sale de la sección 5; T13 sigue `aceptada`, acotada a lo que queda; corrige T2, T3, T5, T14 y T17 según la auditoría; añade amenazas de B1, N1, N2, N3, N5, N6 y de quién publica los estados (las de N6 y quién publica, `aceptada` y remitidas a SMC-010 #29); explica por qué se retiró T12. Al final integra la rama base, que traerá T54, y sube la insignia de tests del README al recuento real.
+  - No hace: no firma ni rellena fechas de aceptación. No toca la regla de rama, `vigilancia.py`, `vigilancia.yml`, la plantilla de enjambre-agentes, versión ni CHANGELOG. Nada de SMC-010.
+  - Toca: `scripts/change_evidence.py`, `tests/test_change_evidence.py`, `.github/workflows/security-gate.yml`, `.github/workflows/pr-meta.yml`, `.github/security-paths.txt`, `docs/threat-model/SMC-009.md`, `README.md`, `docs/plan/informes/T53-dev-proyecto.md`
+  - Depende: T51
+  - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde. Reproduce primero B1 con el arnés de la auditoría (`/private/tmp/claude-501/-Users-pedri77-Dev-Claude-proyectos-Claude/954a23bc-d0e3-4e6f-999b-858a552b0b36/scratchpad/aud/h.py`) y comprueba que deja de pasar. GitHub real, solo GET: `security --pr` sobre #24, #26, #23 y #22 con la lista inyectada, y `previous_filename` en un renombrado real. Un test comprueba que `security-gate.yml` no hace checkout de la cabeza ni usa `github.event.pull_request.head` en `ref`, y que no tiene permisos de escritura salvo `statuses: write` si hiciera falta. Contraprueba en copia temporal, un mutante por copia, medida test a test: exención sin mirar `previous_filename`; volver a `pull_request`; checkout de la cabeza; «no aplica» en PR `sec`; motivo `<motivo>`; modelo de otra issue; lista ausente que pasa; `mitigada` sin test; `abierta` sin `|` inicial que pasa; `ref` sin escapar en `allowed_release_files`. Cada uno debe poner en rojo al menos un test.
+  - Prod: —
+  - Estado: libre
+
+- [ ] **T54** — Vigilancia: adopción de la issue, contenido de terceros y concurrencia
+  - Issue: SMC-009 https://github.com/pedri77/security-manager-control/issues/28
+  - Hace: en `scripts/vigilancia.py`, la issue abierta solo se adopta si la creó `github-actions[bot]` y lleva la etiqueta `security`; otra con el mismo título se ignora. Los campos de `osv-scanner` (paquete, versión, identificador, versión corregida) se validan con lista blanca de caracteres y longitud; lo que no cumple se sustituye y no puede formar menciones, enlaces, imágenes, comentarios HTML ni romper la tabla. En `.github/workflows/vigilancia.yml`, `concurrency` sin cancelar la que corre y `timeout-minutes`.
+  - No hace: no toca `change_evidence.py`, la puerta, `docs/threat-model/SMC-009.md` (lo actualiza T53), el README, la plantilla de enjambre-agentes, versión ni CHANGELOG.
+  - Toca: `scripts/vigilancia.py`, `tests/test_vigilancia.py`, `.github/workflows/vigilancia.yml`, `docs/plan/informes/T54-dev-proyecto.md`
+  - Depende: T52
+  - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde salvo los dos tests de la insignia del README, que cierra T53. Con `gh` real, solo GET: forma real de `author` en `gh issue list --json author,labels`. Prueba los textos de la auditoría: `@org/team`, `|`, salto de línea, imagen externa y `<!--`. Contraprueba en copia temporal, un mutante por copia, medida test a test: adoptar sin mirar autor; adoptar sin mirar etiqueta; no escapar `@`; no escapar `|`; aceptar salto de línea; quitar `concurrency`. Cada uno debe poner en rojo al menos un test.
+  - Prod: —
+  - Estado: libre
+
 ## Libro
 
 ### Hechos
@@ -604,6 +624,8 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 - La tabla del Anexo II del RD 311/2022 se puede reconstruir con fiabilidad suficiente; lo dudoso va con `verificar: true`.
 
 ### Decisiones
+- 2026-11-07 · `security-gate` con `pull_request_target`, sin checkout del PR: corrige la regla «nunca `pull_request_target`» de T51, que era demasiado tajante; el riesgo de ese evento es ejecutar código del PR, y aquí no se ejecuta nada · sesión principal
+- 2026-11-07 · La firma real de un riesgo aceptado es el estado `security-review` que publica David; la fecha del modelo no autentica · sesión principal
 - 2026-11-07 · Sin Renovate ni PR automáticos de dependencias: `change-record` los rechazaría sin issue; la vigilancia diaria abre issue y el arreglo entra por el flujo normal · sesión principal
 - 2026-11-07 · Puerta de seguridad dentro de `change_evidence.py` y no en otro script: reutiliza lectura de API y corte en `merged_at`, y la plantilla sigue siendo un fichero · sesión principal
 - 2026-11-06 · `gh api -i` adoptado (SMC-008): el estado HTTP sale de la línea de estado, con cualquier cuerpo. Medido con 200 y 404 reales. Sustituye el reconocimiento por stderr de T47 y T48 y retira la excepción del 403 o 404 con cuerpo vacío · sesión principal
