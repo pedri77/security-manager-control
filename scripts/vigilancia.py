@@ -92,6 +92,7 @@ def _cell(value, rx):
     return f"`{value}`"
 
 
+ARTIFACT = "osv-vigilancia"   # artefacto del workflow con el JSON completo de osv-scanner (90 días)
 MAX_FIXED = 10          # versiones corregidas por fila; el resto se resume
 MAX_BODY = 60000        # por debajo de los 65 536 caracteres de una issue o comentario de GitHub
 
@@ -128,7 +129,7 @@ def render_body(fs):
     note = ""
     if shown < len(fs):
         note = (f"\n\nLista recortada: se muestran {shown} de {len(fs)} hallazgos por el tope de tamaño de la issue; "
-                "el resto está en la salida del job `vigilancia`.")
+                f"el JSON completo de osv-scanner está en el artefacto `{ARTIFACT}` de la ejecución de `vigilancia.yml`.")
     return head + "\n".join(rows) + note + tail
 
 

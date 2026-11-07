@@ -45,7 +45,7 @@ Una primera pasada de m5 sobrevivió (222 passed): el único caso con salto tamb
 
 ## Cambios en `scripts/vigilancia.py`
 - `_cell`: todo campo de terceros (paquete, versión, identificador, alias CVE y cada versión corregida) que pase la lista blanca va entero en código en línea (`` `www.evil.com/login` ``), no solo los que llevan `@`. Lo que no pasa sigue siendo `(valor no válido)` (texto fijo nuestro). La lista blanca sigue sin comilla invertida, `|`, salto de línea ni espacios.
-- Tope: `MAX_BODY = 60000` (< 65 536 de issue y de comentario). `render_body` añade filas mientras quepan (con 200 caracteres de margen para el aviso) y, si recorta, escribe «Lista recortada: se muestran N de M hallazgos por el tope de tamaño de la issue; el resto está en la salida del job `vigilancia`». La cabecera sigue diciendo el total real y el script sigue saliendo con 1 (rojo). Una fila acota además sus versiones corregidas a 10 (`MAX_FIXED`, «y N más»), para que una sola fila no pueda pasar del tope.
+- Tope: `MAX_BODY = 60000` (< 65 536 de issue y de comentario). `render_body` añade filas mientras quepan (con 200 caracteres de margen para el aviso) y, si recorta, escribe «Lista recortada: se muestran N de M hallazgos por el tope de tamaño de la issue; el resto está en la salida del job `vigilancia`» [FALSO, corregido en la tercera vuelta: el aviso ahora remite al artefacto `osv-vigilancia`]. La cabecera sigue diciendo el total real y el script sigue saliendo con 1 (rojo). Una fila acota además sus versiones corregidas a 10 (`MAX_FIXED`, «y N más»), para que una sola fila no pueda pasar del tope.
 - Efecto en la tabla: `| `django` | `1.11.0` | `PYSEC-2017-44` (`CVE-2017-12794`) | `1.10.8`, `1.11.5` |`. Cambia el formato visible de las filas; actualizadas las aserciones de T52/T54 que lo fijaban.
 
 ## Tests nuevos (`tests/test_vigilancia.py`: 270 casos, eran 232)
@@ -70,5 +70,38 @@ Una primera pasada de m5 sobrevivió (222 passed): el único caso con salto tamb
 | m8 quitar el tope del cuerpo (`MAX_BODY = 10**9`) | 3 | `test_cuerpo_enorme_se_recorta_bajo_el_limite_de_github_y_lo_dice`, `test_cuerpo_enorme_de_punta_a_punta_issue_bajo_limite_y_en_rojo`, `test_comentario_de_actualizacion_tambien_cabe` |
 
 ## Queda / decisiones
-- El recorte pierde los hallazgos del final (orden por paquete, versión, id); quedan en la salida del job. No se mide la longitud en bytes: el contenido es ASCII por la lista blanca y el texto fijo en español tiene pocos caracteres no ASCII.
+- El recorte pierde los hallazgos del final (orden por paquete, versión, id); [corrección, tercera vuelta: NO quedaban en la salida del job, el workflow no imprimía el JSON; ahora quedan en el artefacto `osv-vigilancia`, ver abajo]. No se mide la longitud en bytes: el contenido es ASCII por la lista blanca y el texto fijo en español tiene pocos caracteres no ASCII.
 - Los alias distintos del primero CVE no se muestran (como antes).
+
+---
+# Tercera vuelta (aprobada por David) · base integrada con `git merge --no-ff 2834c62`
+
+## El fallo
+El aviso de recorte decía «el resto está en la salida del job». Falso: `vigilancia.yml` mandaba el JSON a `$RUNNER_TEMP/osv.json` sin imprimirlo y el script solo imprime el recuento. Los hallazgos recortados no estaban en ningún sitio. Las dos frases falsas de este informe (segunda vuelta: descripción del tope y «Queda / decisiones») quedan marcadas arriba como falsas.
+
+## Cambios
+- `vigilancia.yml`: último paso `actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2` (el mismo SHA de `pr-meta.yml`, con test que los compara), `if: always()`, nombre fijo `osv-vigilancia`, ruta `${{ runner.temp }}/osv.json`, `retention-days: 90`, `if-no-files-found: ignore` (si el escáner no llegó a escribirlo, no falla).
+- `vigilancia.py`: constante `ARTIFACT = "osv-vigilancia"`; el aviso dice «el JSON completo de osv-scanner está en el artefacto `osv-vigilancia` de la ejecución de `vigilancia.yml`». No se imprime ningún hallazgo en el log (test: stdout y stderr sin `PYSEC` ni `django`).
+- Tests nuevos (6; `tests/test_vigilancia.py` ahora 276): paso único con SHA, nombre igual a `vig.ARTIFACT`, ruta, retención 90; `if: always()`; `if-no-files-found: ignore`; mismo SHA que `pr-meta.yml`; es el último paso y el script no imprime hallazgos; el aviso nombra el artefacto y no menciona el log.
+
+## Verifica
+- `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q`: 1463 passed, 2 failed (1465 tests); los 2 son los de la insignia del README (T53). `tests/test_vigilancia.py`: 276 passed.
+- Contraprueba, 12 mutantes en copias limpias, uno por copia, lanzando desde la copia:
+| Mutante | Fallan | Primer test en rojo |
+|---|---|---|
+| m1 adoptar sin autor ni etiqueta | 11 | `test_issue_ajena_con_el_mismo_titulo_no_se_adopta_ni_se_toca` |
+| m2 adoptar sin etiqueta | 1 | `test_issue_del_bot_sin_etiqueta_security_no_se_adopta` |
+| m3 no escapar `@` | 6 | `…[mencion-package]` |
+| m4 no escapar `\|` | 7 | `…[barra-package]` |
+| m5 aceptar salto de línea | 11 | `…[salto_final-package]` |
+| m6 quitar `concurrency` | 1 | `test_concurrency_sin_cancelar_la_que_corre` |
+| m7 versión fuera de código en línea | 35 | `test_cuerpo_lista_paquete_version_id_y_corregida` |
+| m7b paquete fuera de código en línea | 26 | `test_cuerpo_lista_paquete_version_id_y_corregida` |
+| m8 quitar el tope del cuerpo | 4 | `test_cuerpo_enorme_se_recorta_bajo_el_limite_de_github_y_lo_dice` |
+| m9 subir el artefacto solo si el job acaba en verde (sin `if: always()`) | 1 | `test_artefacto_se_sube_tambien_con_el_job_en_rojo` |
+| m10 aviso de recorte que no nombra el artefacto («en el log») | 1 | `test_aviso_de_recorte_nombra_el_artefacto_y_no_el_log` |
+| m11 quitar `if-no-files-found: ignore` | 1 | `test_artefacto_no_falla_si_el_escaner_no_escribio_el_fichero` |
+
+## Queda
+- El artefacto contiene el JSON crudo del escáner (texto de terceros, descargable con permiso de lectura del repo; el repo es público, pero el artefacto de un repo público lo puede descargar cualquier usuario con sesión de GitHub). Es la misma información pública de OSV; no lleva datos del repo más allá de rutas de lockfile.
+- Verificación real del paso en Actions: solo se ejecuta tras el merge; los tests comprueban la definición, no la subida.

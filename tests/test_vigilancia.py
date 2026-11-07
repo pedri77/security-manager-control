@@ -1218,3 +1218,45 @@ def test_comentario_de_actualizacion_tambien_cabe(ent):
     assert ent.correr(1, d).returncode == 1
     i = ent.get_estado()["issues"][0]
     assert len(i["comentarios"][0]) < 65536 and len(i["body"]) < 65536
+
+
+# ───────────── T54 tercera vuelta · lo recortado queda en un artefacto, no en el log ─────────────
+def paso_artefacto(wf):
+    pasos = [p for j in wf["jobs"].values() for p in j["steps"] if "upload-artifact" in p.get("uses", "")]
+    assert len(pasos) == 1, "debe haber un único paso upload-artifact"
+    return pasos[0]
+
+
+def test_workflow_sube_el_json_del_escaner_como_artefacto(wf, vig):
+    p = paso_artefacto(wf)
+    assert p["uses"] == "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9"
+    assert p["with"]["name"] == vig.ARTIFACT == "osv-vigilancia"
+    assert p["with"]["path"] == "${{ runner.temp }}/osv.json"
+    assert p["with"]["retention-days"] == 90
+
+
+def test_artefacto_se_sube_tambien_con_el_job_en_rojo(wf):
+    assert str(paso_artefacto(wf)["if"]).replace(" ", "") == "always()"
+
+
+def test_artefacto_no_falla_si_el_escaner_no_escribio_el_fichero(wf):
+    assert paso_artefacto(wf)["with"]["if-no-files-found"] == "ignore"
+
+
+def test_mismo_sha_de_upload_artifact_que_pr_meta():
+    sha = lambda f: re.search(r"actions/upload-artifact@([0-9a-f]{40})", f.read_text()).group(1)
+    assert sha(WORKFLOW) == sha(RAIZ / ".github/workflows/pr-meta.yml")
+
+
+def test_el_artefacto_es_el_ultimo_paso_y_el_script_no_imprime_hallazgos(wf, vig, ent):
+    pasos = next(iter(wf["jobs"].values()))["steps"]
+    assert "upload-artifact" in pasos[-1]["uses"]
+    r = ent.correr(1, OSV_HALLAZGOS)
+    assert "PYSEC" not in r.stdout + r.stderr and "django" not in r.stdout + r.stderr
+
+
+def test_aviso_de_recorte_nombra_el_artefacto_y_no_el_log(vig):
+    cuerpo = vig.render_body(enorme(3000))
+    aviso = cuerpo[cuerpo.index("Lista recortada"):].split("\n")[0]
+    assert f"`{vig.ARTIFACT}`" in aviso and "artefacto" in aviso
+    assert "salida del job" not in cuerpo and "log" not in aviso.lower().replace("catalog", "")
