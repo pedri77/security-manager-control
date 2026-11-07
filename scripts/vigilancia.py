@@ -25,6 +25,7 @@ import json
 import re
 import subprocess
 import sys
+import unicodedata
 
 TITLE = "[vigilancia] vulnerabilidades en dependencias"
 LABEL = "security"
@@ -43,6 +44,25 @@ MANIFEST = re.compile(r"(^|/)(pyproject\.toml|package\.json|go\.mod|Cargo\.toml)
 
 class Error(Exception):
     pass
+
+
+class GhError(Error):
+    """`gh` salió con error; `stderr` guarda su texto tal cual."""
+
+    def __init__(self, msg, stderr=""):
+        super().__init__(msg)
+        self.stderr = stderr
+
+
+def flat(texto):
+    """Una sola línea: saltos de línea, retornos y caracteres de control o de formato pasan a espacio. Lo que viene de
+    `gh` o del sistema de ficheros no puede abrir una línea `::error::` ni otro comando de workflow al imprimirse."""
+    t = "".join(" " if (unicodedata.category(c) in ("Cc", "Cf", "Zl", "Zp") or c.isspace()) else c for c in str(texto))
+    return re.sub(r" {2,}", " ", t).strip()
+
+
+# `gh label create` sin `--force` cuando la etiqueta existe (gh 2.89.0, pkg/cmd/label/create.go, tras un 422 already_exists)
+LABEL_EXISTS_RE = re.compile(r'label with name ".*" already exists(;|$)')
 
 
 def _fixed(vulns, name):
@@ -154,8 +174,17 @@ def classify(code, text):
 def gh(args, stdin=None):
     r = subprocess.run(["gh", *args], input=stdin, capture_output=True, text=True)
     if r.returncode != 0:
-        raise Error(f"gh {' '.join(args[:2])} falló ({r.returncode}): {r.stderr.strip()}")
+        raise GhError(f"gh {' '.join(args[:2])} falló ({r.returncode}): {flat(r.stderr)}", r.stderr)
     return r.stdout
+
+
+def ensure_label():
+    """Crea la etiqueta sin `--force` (no pisa color ni descripción de una existente); si ya existe, sigue."""
+    try:
+        gh(["label", "create", LABEL, "--color", "D93F0B", "--description", "Seguridad"])
+    except GhError as e:
+        if not LABEL_EXISTS_RE.match(e.stderr.strip()):
+            raise
 
 
 def _mine(i):
@@ -191,7 +220,7 @@ def main(argv=None):
         with open(a.json, encoding="utf-8", errors="replace") as f:
             text = f.read()
     except OSError as e:
-        print(f"::error::No se puede leer la salida del escáner: {e}")
+        print(f"::error::No se puede leer la salida del escáner: {flat(e)}")
         return 2
     state, fs = classify(a.code, text)
     try:
@@ -215,7 +244,7 @@ def main(argv=None):
             return 0
         body = render_body(fs)
         if issue is None:
-            gh(["label", "create", LABEL, "--color", "D93F0B", "--description", "Seguridad", "--force"])
+            ensure_label()
             gh(["issue", "create", "--title", TITLE, "--label", LABEL, "--body-file", "-"], stdin=body)
             print(f"::error::{len(fs)} vulnerabilidades: issue creada")
         elif (issue.get("body") or "").strip() != body.strip():
@@ -226,7 +255,7 @@ def main(argv=None):
             print(f"::error::{len(fs)} vulnerabilidades: issue #{issue['number']} sin cambios")
         return 1
     except Error as e:
-        print(f"::error::{e}")
+        print(f"::error::{flat(e)}")
         return 2
 
 

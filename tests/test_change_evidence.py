@@ -1353,11 +1353,11 @@ def _gate(ce, monkeypatch, **kw):
     return gh, ce.evaluate_security("o/r", 7)
 
 
-def _modo_security(ce, monkeypatch, capsys, **kw):
+def _modo_security(ce, monkeypatch, capsys, head_sha="H", **kw):
     import argparse
     gh = _sec(ce, monkeypatch, **kw)
     monkeypatch.setattr(ce, "repo_slug", lambda: "o/r")
-    rc = ce.mode_security(argparse.Namespace(pr=7))
+    rc = ce.mode_security(argparse.Namespace(pr=7, head_sha=head_sha))
     cap = capsys.readouterr()
     return rc, cap.out, cap.err, gh
 
@@ -1433,10 +1433,10 @@ CASOS_MODELO = [
     P(dict(contents=_modelo()), False, [], "docs/threat-model/SMC-777.md", id="threat_model_en_la_cabeza_pasa"),
     P(dict(contents=_modelo(ref="main")), True, ["SMC-777"], None, id="threat_model_solo_en_la_base_no_vale"),
     P(dict(), True, ["docs/threat-model/SMC-777.md"], None, id="sin_threat_model_ni_linea_falla"),
-    P(dict(body=TASK + "\nThreat model: no aplica: solo renombra una variable"), False, [],
+    P(dict(files=["smc/visor.py", MODELO_PATH], lista="smc/*\nscripts/*\n", body=TASK + "\nThreat model: no aplica: solo renombra una variable"), False, [],
       "no aplica: solo renombra una variable", id="linea_no_aplica_con_motivo_pasa"),
-    P(dict(body=TASK + "\nThreat model: No Aplica: motivo suficiente"), False, [], "no aplica: motivo suficiente", id="linea_no_aplica_sin_distinguir_mayusculas"),
-    P(dict(body=TASK + "\n<!-- nota -->\nThreat model: no aplica: motivo real y suficiente"), False, [], "no aplica: motivo real y suficiente",
+    P(dict(files=["smc/visor.py", MODELO_PATH], lista="smc/*\nscripts/*\n", body=TASK + "\nThreat model: No Aplica: motivo suficiente"), False, [], "no aplica: motivo suficiente", id="linea_no_aplica_sin_distinguir_mayusculas"),
+    P(dict(files=["smc/visor.py", MODELO_PATH], lista="smc/*\nscripts/*\n", body=TASK + "\n<!-- nota -->\nThreat model: no aplica: motivo real y suficiente"), False, [], "no aplica: motivo real y suficiente",
       id="linea_tras_un_comentario_cerrado_pasa"),
     *[P(dict(body=TASK + f"\n{linea}\n"), True, [], None, id=f"linea_sin_motivo_{i}") for i, linea in enumerate(
         ["Threat model: no aplica:", "Threat model: no aplica:    ", "Threat model: no aplica:\t", "Threat model: no aplica",
@@ -1454,7 +1454,7 @@ CASOS_MODELO = [
     # el modelo debe estar añadido o modificado en pulls/N/files: uno ya existente sin tocar, o de otra tarea, no vale
     P(dict(files=["scripts/x.py"], contents=_modelo()), True, ["SMC-777", "no lo añade ni lo modifica"], None,
       id="modelo_existente_en_la_cabeza_sin_tocar_no_vale"),
-    P(dict(files=["scripts/x.py"], contents=_modelo(), body=TASK + "\nThreat model: no aplica: motivo suficiente"), False, [], "no aplica: motivo suficiente",
+    P(dict(files=["smc/visor.py"], lista="smc/*\nscripts/*\n", contents=_modelo(), body=TASK + "\nThreat model: no aplica: motivo suficiente"), False, [], "no aplica: motivo suficiente",
       id="modelo_sin_tocar_con_linea_no_aplica_pasa_por_la_linea"),
     P(dict(files=["scripts/x.py", "docs/threat-model/SMC-999.md"], contents={**_modelo(), **_modelo(tarea="SMC-999")}), True,
       ["SMC-777", "no lo añade ni lo modifica"], None, id="task_de_otra_tarea_con_modelo_existente_no_vale"),
@@ -1488,7 +1488,7 @@ CASOS_MODELO = [
     *[P(dict(body=TASK + f"\nThreat model: no aplica: {m}"), True, ["motivo"], None, id=f"motivo_no_valido_{i}") for i, m in enumerate(
         ["<motivo>", ".", "<otro texto>", "<motivo> <motivo> <motivo>", "corto", "x" * 14, "...............", "solo <motivo>",
          "<a>" * 10, "- - - - - - - - - - - -"])],
-    P(dict(body=TASK + "\nThreat model: no aplica: " + "x" * 15 + " ahora sí"), False, [], "no aplica: " + "x" * 15 + " ahora sí",
+    P(dict(files=["smc/visor.py", MODELO_PATH], lista="smc/*\nscripts/*\n", body=TASK + "\nThreat model: no aplica: " + "x" * 15 + " ahora sí"), False, [], "no aplica: " + "x" * 15 + " ahora sí",
       id="motivo_de_quince_o_mas_caracteres_pasa"),
     # T13: «no aplica» no vale en tipo sec ni al tocar la lista, change_evidence.py o un workflow
     *[P(dict(files=fs, title=t, body=TASK + "\nThreat model: no aplica: motivo que no se debe aceptar"), True, ["no aplica"], None, id=i)
@@ -1624,7 +1624,7 @@ def test_el_threat_model_de_smc_009_solo_espera_la_fecha_de_david_y_cada_mitigac
              if _re.match(r"\|\s*T\d+\s*\|", l)]
     ids = [f[0] for f in filas]
     assert len(ids) == len(set(ids)) and "T12" not in ids
-    assert {"T11", "T13", "T18", "T19", "T20", "T21", "T22", "T23", "T24", "T25"} <= set(ids)
+    assert {"T11", "T13", "T18", "T19", "T20", "T21", "T22", "T23", "T24", "T25", "T28", "T29", "T30", "T31", "T32", "T33", "T34"} <= set(ids)
     fuente = "".join((RAIZ / n).read_text(encoding="utf-8") for n in ("tests/test_change_evidence.py", "tests/test_vigilancia.py"))
     aceptadas = []
     for f in filas:
@@ -1648,7 +1648,7 @@ def test_el_threat_model_de_smc_009_solo_espera_la_fecha_de_david_y_cada_mitigac
         assert por_id[t][-1].strip("`* ").lower() == "mitigada" and "tests/test_vigilancia.py::" in por_id[t][-2], t
     # la fecha de aceptación es la columna «Fecha» de §5: la rellena David, ningún agente. Vacía en cada aceptación.
     s5 = _filas_s5(ce, texto)
-    assert sorted(f[0] for f in s5) == sorted(aceptadas) == ["T13", "T23", "T24", "T25"], (aceptadas, s5)
+    assert sorted(f[0] for f in s5) == sorted(aceptadas) == ["T13", "T23", "T24", "T25", "T30", "T31", "T32"], (aceptadas, s5)
     for f in s5:
         assert len(f) == 5 and f[2] == "David Moya" and f[3] == "", f
     # lo único que falta a la puerta es esa fecha, y el modelo declara la issue del PR
@@ -1736,12 +1736,12 @@ def test_modo_security(ce, monkeypatch, capsys, kw, rc_esperado, en_out, en_err,
     _sec(ce, monkeypatch, **kw)
     monkeypatch.setattr(ce, "repo_slug", lambda: "o/r")
     if cli:
-        monkeypatch.setattr("sys.argv", ["change_evidence.py", "security", "--pr", "7"])
+        monkeypatch.setattr("sys.argv", ["change_evidence.py", "security", "--pr", "7", "--head-sha", "H"])
         with pytest.raises(SystemExit) as ei:
             ce.main()
         rc = ei.value.code
     else:
-        rc = ce.mode_security(argparse.Namespace(pr=7))
+        rc = ce.mode_security(argparse.Namespace(pr=7, head_sha="H"))
     cap = capsys.readouterr()
     assert rc == rc_esperado and en_out in cap.out and en_err in cap.err and (not no_en_err or no_en_err not in cap.err)
 
@@ -1764,7 +1764,7 @@ CASOS_REGISTRO = [
       lambda p, ce: p["security"]["required"] is True and p["security"]["reason"]
       and p["security"]["threat_model"] == "docs/threat-model/SMC-777.md" and p["security"]["review"] == "success",
       id="recoge_aplica_threat_model_y_security_review"),
-    P(dict(files=["scripts/x.py"], body="Task: SMC-777\nThreat model: no aplica: motivo suficiente"),
+    P(dict(files=["smc/visor.py"], lista="smc/*\nscripts/*\n", body="Task: SMC-777\nThreat model: no aplica: motivo suficiente"),
       lambda p, ce: p["security"]["threat_model"] == "no aplica: motivo suficiente", id="recoge_la_linea_no_aplica"),
     P(dict(files=["scripts/x.py"], statuses=[_estado(1, "success", ANTES)]),
       lambda p, ce: p["security"]["review"] is None and p["blind_review"]["state"] == "success", id="no_confunde_blind_review_con_security_review"),
@@ -1901,7 +1901,7 @@ def _c_publica_el_estado_en_la_cabeza():
     job = _gate_job()
     paso = next(s for s in job["steps"] if "statuses/" in s.get("run", ""))
     env = paso["env"]
-    return (paso.get("if") == "always()" and "head.sha" in env["HEAD_SHA"] and "steps.gate.outcome" in env["OUTCOME"]
+    return (_re.sub(r"\s+", "", paso.get("if")) == "${{!cancelled()}}" and "head.sha" in job["env"]["HEAD_SHA"] and "steps.gate.outcome" in env["OUTCOME"]
             and "-f context=security-gate" in paso["run"] and "repos/$REPO/statuses/$HEAD_SHA" in paso["run"]
             and _re.search(r"\^\[0-9a-f\]\{40\}\$", paso["run"]) is not None)
 
@@ -1980,7 +1980,179 @@ def test_modo_security_no_imprime_lineas_de_comando_con_nombres_de_fichero(ce, m
 
 
 def test_modo_security_no_imprime_lineas_de_comando_con_el_motivo(ce, monkeypatch, capsys):
-    rc, out, err, _ = _modo_security(ce, monkeypatch, capsys, files=["scripts/x.py"], title="feat: x",
+    rc, out, err, _ = _modo_security(ce, monkeypatch, capsys, files=["smc/visor.py"], lista="smc/*\n", title="feat: x",
                                      body="Closes #1\nTask: SMC-777\nThreat model: no aplica: motivo\x1b[0m\r::error::inyectado largo")
     assert rc == 0 and "::error::" in out
     assert all(not l.lstrip().startswith("::") for l in (out + err).splitlines())
+
+
+# --- T55 · B2: el estado se publica sobre el SHA que se evaluó ---
+EVENTO_SHA = "a" * 40
+VIVA_SHA = "b" * 40
+
+
+class _CabezaQueSeMueve(FakeSec):
+    """Como FakeSec, pero la cabeza que devuelve `pulls/N` va cambiando en cada lectura: `cabezas[i]`."""
+
+    def __init__(self, cabezas, **kw):
+        super().__init__(**kw)
+        self.cabezas = list(cabezas)
+        self.lecturas = 0
+
+    def __call__(self, path):
+        if path.split("?")[0].endswith("/pulls/7"):
+            sha = self.cabezas[min(self.lecturas, len(self.cabezas) - 1)]
+            self.lecturas += 1
+            self.paths.append(path)
+            return {**self.pr, "head": {**self.pr["head"], "sha": sha}}
+        return super().__call__(path)
+
+
+def _security_con_cabezas(ce, monkeypatch, capsys, cabezas, head_sha, **kw):
+    import argparse
+    contents = {("main", LISTA_PATH): "scripts/*\n"}
+    gh = _CabezaQueSeMueve(cabezas, contents=contents, **kw)
+    monkeypatch.setattr(ce, "gh_json", gh)
+    monkeypatch.setattr(ce, "PER_PAGE", 100)
+    monkeypatch.setattr(ce, "repo_slug", lambda: "o/r")
+    rc = ce.mode_security(argparse.Namespace(pr=7, head_sha=head_sha))
+    cap = capsys.readouterr()
+    return rc, cap.out, cap.err, gh
+
+
+def test_b2_la_cabeza_del_evento_no_es_la_actual_falla(ce, monkeypatch, capsys):
+    """Reproduce race.py: el evento trae A, el PR ya está en B (inocuo). Antes salía 0 y el workflow publicaba success sobre A."""
+    rc, out, err, _ = _security_con_cabezas(ce, monkeypatch, capsys, [VIVA_SHA], EVENTO_SHA)
+    assert rc == 1 and "ERROR" in err and EVENTO_SHA[:7] in err and VIVA_SHA[:7] in err
+    assert "no aplica la puerta" not in out
+
+
+def test_b2_la_cabeza_del_evento_es_la_actual_pasa(ce, monkeypatch, capsys):
+    rc, out, err, _ = _security_con_cabezas(ce, monkeypatch, capsys, [EVENTO_SHA], EVENTO_SHA)
+    assert rc == 0 and "ERROR" not in err and "no aplica la puerta" in out
+
+
+def test_b2_la_cabeza_que_se_mueve_durante_la_evaluacion_falla(ce, monkeypatch, capsys):
+    """Coincide al empezar y deja de ser la cabeza antes de acabar: los ficheros leídos podrían ser de otro commit."""
+    rc, out, err, gh = _security_con_cabezas(ce, monkeypatch, capsys, [EVENTO_SHA, VIVA_SHA], EVENTO_SHA)
+    assert rc == 1 and "ERROR" in err and gh.lecturas == 2
+
+
+def test_b2_la_cabeza_que_se_mueve_en_una_puerta_que_no_aplica_tambien_falla(ce, monkeypatch, capsys):
+    rc, _, err, _ = _security_con_cabezas(ce, monkeypatch, capsys, [EVENTO_SHA, VIVA_SHA], EVENTO_SHA, files=["README.md"])
+    assert rc == 1 and "ERROR" in err
+
+
+@pytest.mark.parametrize("sha", ["", "H2", "h", "HH"])
+def test_b2_cualquier_sha_distinto_de_la_cabeza_falla(ce, monkeypatch, capsys, sha):
+    rc, _, err, _ = _modo_security(ce, monkeypatch, capsys, head_sha=sha, files=["README.md"])
+    assert rc == 1 and "ERROR" in err
+
+
+def test_b2_el_modo_security_exige_head_sha(ce, monkeypatch, capsys):
+    monkeypatch.setattr("sys.argv", ["change_evidence.py", "security", "--pr", "7"])
+    with pytest.raises(SystemExit) as ei:
+        ce.main()
+    assert ei.value.code == 2 and "--head-sha" in capsys.readouterr().err
+
+
+def test_b2_el_modo_security_pasa_head_sha_al_modo(ce, monkeypatch):
+    visto = {}
+    monkeypatch.setattr(ce, "mode_security", lambda a: visto.update(sha=a.head_sha, pr=a.pr) or 0)
+    monkeypatch.setattr("sys.argv", ["change_evidence.py", "security", "--pr", "7", "--head-sha", EVENTO_SHA])
+    with pytest.raises(SystemExit):
+        ce.main()
+    assert visto == {"sha": EVENTO_SHA, "pr": 7}
+
+
+def test_b2_los_otros_modos_no_piden_head_sha(ce, monkeypatch):
+    monkeypatch.setattr(ce, "mode_pr", lambda a: 0)
+    monkeypatch.setattr("sys.argv", ["change_evidence.py", "pr", "--pr", "7"])
+    with pytest.raises(SystemExit) as ei:
+        ce.main()
+    assert ei.value.code == 0
+
+
+# --- T55 · N12: «no aplica» no vale en ninguna ruta de la lista salvo las de smc/ ---
+LISTA_REAL = (RAIZ / LISTA_PATH).read_text(encoding="utf-8")
+MOTIVO_15 = "Threat model: no aplica: " + "x" * 15
+
+
+@pytest.mark.parametrize("ruta", [
+    "osv-scanner.toml", "release-please-config.json", "scripts/vigilancia.py", "scripts/otro.py", "docs/threat-model/SMC-100.md",
+    ".github/CODEOWNERS", ".github/pull_request_template.md", ".github/actions/x/action.yml", ".github/dependabot.yml",
+])
+def test_n12_no_aplica_no_vale_en_las_rutas_de_la_lista_fuera_de_smc(ce, monkeypatch, ruta):
+    _, r = _gate(ce, monkeypatch, files=[ruta], lista=LISTA_REAL, body=TASK + "\n" + MOTIVO_15)
+    assert r["required"] is True and any("no aplica" in p and "no vale" in p for p in r["problems"])
+    assert r["threat_model"] is None
+
+
+@pytest.mark.parametrize("ruta", ["smc/report_html.py", "smc/dashboard.py", "smc/visor.py", "smc/evidencias.py"])
+def test_n12_en_las_rutas_de_smc_no_aplica_sigue_valiendo(ce, monkeypatch, ruta):
+    _, r = _gate(ce, monkeypatch, files=[ruta], lista=LISTA_REAL, body=TASK + "\n" + MOTIVO_15)
+    assert r["required"] is True and r["problems"] == [] and r["threat_model"] == "no aplica: " + "x" * 15
+
+
+def test_n12_un_renombrado_desde_una_ruta_sensible_fuera_de_smc_tampoco_vale(ce, monkeypatch):
+    f = {"filename": "smc/dashboard.py", "previous_filename": "osv-scanner.toml", "status": "renamed"}
+    _, r = _gate(ce, monkeypatch, files=[f], lista=LISTA_REAL, body=TASK + "\n" + MOTIVO_15)
+    assert r["problems"] and r["threat_model"] is None
+
+
+def test_n12_una_ruta_de_smc_junto_a_una_de_scripts_no_vale(ce, monkeypatch):
+    _, r = _gate(ce, monkeypatch, files=["smc/visor.py", "scripts/vigilancia.py"], lista=LISTA_REAL, body=TASK + "\n" + MOTIVO_15)
+    assert r["problems"]
+
+
+def test_n12_con_threat_model_las_rutas_de_la_lista_siguen_pasando(ce, monkeypatch):
+    _, r = _gate(ce, monkeypatch, files=["osv-scanner.toml", MODELO_PATH], lista=LISTA_REAL, contents=_modelo())
+    assert r["problems"] == [] and r["threat_model"] == MODELO_PATH
+
+
+# --- T55 · el workflow: concurrency, rama por defecto y mismo SHA en el script y en el estado ---
+def _c_concurrency():
+    c = _gate_doc().get("concurrency") or _gate_job().get("concurrency")
+    return (isinstance(c, dict) and c.get("cancel-in-progress") is True and "pull_request.number" in str(c.get("group"))
+            and "security-gate" in str(c.get("group")))
+
+
+def _c_cancel_in_progress_true():
+    c = _gate_doc().get("concurrency") or {}
+    return c.get("cancel-in-progress") is True
+
+
+def _c_rama_por_defecto():
+    cond = str(_gate_job().get("if", ""))
+    return (_re.sub(r"\s+", "", cond).strip("${}") == "github.event.pull_request.base.ref==github.event.repository.default_branch")
+
+
+def _c_mismo_sha():
+    job = _gate_job()
+    env = job.get("env") or {}
+    pasos = job["steps"]
+    script = next(s for s in pasos if "change_evidence.py security" in s.get("run", ""))
+    estado = next(s for s in pasos if "statuses/" in s.get("run", ""))
+    texto = _sin_comentarios(GATE_YML)
+    return (str(env.get("HEAD_SHA")).replace(" ", "") == "${{github.event.pull_request.head.sha}}"
+            and texto.count("pull_request.head.sha") == 1
+            and '--head-sha "$HEAD_SHA"' in script["run"] and "repos/$REPO/statuses/$HEAD_SHA" in estado["run"]
+            and not (script.get("env") or {}).get("HEAD_SHA") and not (estado.get("env") or {}).get("HEAD_SHA")
+            and "github.sha" not in texto and "GITHUB_SHA" not in texto)
+
+
+def _c_no_publica_si_se_cancela():
+    estado = next(s for s in _gate_job()["steps"] if "statuses/" in s.get("run", ""))
+    cond = _re.sub(r"\s+", "", str(estado.get("if")))
+    return "!cancelled()" in cond
+
+
+@pytest.mark.parametrize("comprobacion", [
+    P(_c_concurrency, id="concurrency_por_numero_de_pr_con_cancel_in_progress_true"),
+    P(_c_cancel_in_progress_true, id="cancel_in_progress_es_true"),
+    P(_c_rama_por_defecto, id="solo_corre_si_la_base_es_la_rama_por_defecto"),
+    P(_c_mismo_sha, id="el_sha_del_estado_es_el_que_recibe_el_script"),
+    P(_c_no_publica_si_se_cancela, id="una_ejecucion_cancelada_no_publica_estado"),
+])
+def test_t55_workflow_security_gate(comprobacion):
+    assert comprobacion()

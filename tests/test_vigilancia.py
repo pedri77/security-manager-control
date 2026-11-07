@@ -450,7 +450,7 @@ def fin(rc=0, out=""):
     sys.stdout.write(out)
     sys.exit(rc)
 if est.get("falla") == args[:2] or est.get("falla") == args[0]:
-    sys.stderr.write("gh: simulated failure (HTTP 500)\n")
+    sys.stderr.write(est.get("stderr") or "gh: simulated failure (HTTP 500)\n")
     fin(1)
 if args[:2] == ["issue", "list"]:
     # Misma forma que `gh issue list --json number,title,body,author,labels` medida con gh real.
@@ -460,6 +460,10 @@ if args[:2] == ["issue", "list"]:
                                    for n in i.get("labels", ["security"])]}
                        for i in est["issues"] if i["state"] == "open"]))
 if args[:2] == ["label", "create"]:
+    if est.get("etiqueta_existe") and "--force" not in args:
+        # texto real de gh 2.89.0 (pkg/cmd/label/create.go), tras un 422 already_exists
+        sys.stderr.write('label with name "%s" already exists; use `--force` to update its color and description\n' % args[2])
+        fin(1)
     fin(0)
 if args[:2] == ["issue", "create"]:
     n = max([i["number"] for i in est["issues"]] + [0]) + 1
@@ -1260,3 +1264,76 @@ def test_aviso_de_recorte_nombra_el_artefacto_y_no_el_log(vig):
     aviso = cuerpo[cuerpo.index("Lista recortada"):].split("\n")[0]
     assert f"`{vig.ARTIFACT}`" in aviso and "artefacto" in aviso
     assert "salida del job" not in cuerpo and "log" not in aviso.lower().replace("catalog", "")
+
+
+# ───────────── T55 · N15: los errores de gh no pueden formar comandos de workflow ─────────────
+INYECCION = "falló\n::error::inyectado\r::set-output name=x::y\n::warning::otro"
+
+
+def _lineas_de_comando(r):
+    return [l for l in (r.stdout + r.stderr).splitlines() if l.lstrip().startswith("::")]
+
+
+def test_n15_el_stderr_de_gh_con_saltos_no_forma_lineas_de_comando(ent):
+    s = ent.get_estado()
+    s["falla"], s["stderr"] = ["issue", "list"], INYECCION
+    ent.set_estado(s)
+    r = ent.correr(1, OSV_HALLAZGOS)
+    assert r.returncode == 2
+    assert len(_lineas_de_comando(r)) == 1 and _lineas_de_comando(r)[0].startswith("::error::")
+    assert "inyectado" in r.stdout and "\r" not in r.stdout
+
+
+@pytest.mark.parametrize("sep", ["\n", "\r", "\r\n", "\u2028", "\x1b", "\x00"])
+def test_n15_cualquier_separador_o_control_se_aplana(ent, sep):
+    s = ent.get_estado()
+    s["falla"], s["stderr"] = ["issue", "list"], f"a{sep}::error::b"
+    ent.set_estado(s)
+    r = ent.correr(1, OSV_HALLAZGOS)
+    assert len(_lineas_de_comando(r)) == 1
+    assert len(r.stdout.strip().splitlines()) == 1
+
+
+def test_n15_la_ruta_ilegible_del_json_con_saltos_no_forma_lineas_de_comando(ent):
+    r = subprocess.run([sys.executable, "-I", str(SCRIPT), "--code", "1", "--json", str(ent.dir / "no\n::error::falso\nexiste.json")],
+                       cwd=ent.dir, env=ent.env, capture_output=True, text=True)
+    assert r.returncode == 2 and len(_lineas_de_comando(r)) == 1 and len(r.stdout.strip().splitlines()) == 1
+
+
+def test_n15_flat_deja_el_texto_normal_igual(vig):
+    assert vig.flat("gh issue list falló (1): gh: Not Found (HTTP 404)") == "gh issue list falló (1): gh: Not Found (HTTP 404)"
+    assert "\n" not in vig.flat("a\nb\r\nc") and vig.flat("a\nb") == "a b"
+
+
+# ───────────── T55 · N16: sin `--force` en `gh label create`, y tolera que la etiqueta exista ─────────────
+def test_n16_label_create_no_lleva_force(ent):
+    assert ent.correr(1, OSV_HALLAZGOS).returncode == 1
+    crea = [a for a in ent.llamadas() if a[:2] == ["label", "create"]]
+    assert len(crea) == 1 and "--force" not in crea[0] and "-f" not in crea[0] and "security" in crea[0]
+    assert "--force" not in SCRIPT.read_text(encoding="utf-8").replace("`--force`", "")
+
+
+def test_n16_si_la_etiqueta_ya_existe_se_sigue_y_se_crea_la_issue(ent):
+    s = ent.get_estado()
+    s["etiqueta_existe"] = True
+    ent.set_estado(s)
+    r = ent.correr(1, OSV_HALLAZGOS)
+    assert r.returncode == 1 and "issue creada" in r.stdout
+    e = ent.get_estado()
+    assert len(e["issues"]) == 1 and e["issues"][0]["labels"] == ["security"]
+    assert [a[:2] for a in ent.llamadas()].count(["issue", "create"]) == 1
+
+
+def test_n16_otro_fallo_de_label_create_sigue_siendo_rojo_y_no_crea_issue(ent):
+    s = ent.get_estado()
+    s["falla"], s["stderr"] = ["label", "create"], "gh: Forbidden (HTTP 403)\n"
+    ent.set_estado(s)
+    r = ent.correr(1, OSV_HALLAZGOS)
+    assert r.returncode == 2 and ent.get_estado()["issues"] == []
+
+
+def test_n16_un_texto_que_solo_cita_already_exists_en_otro_fallo_no_se_traga(ent):
+    s = ent.get_estado()
+    s["falla"], s["stderr"] = ["label", "create"], "gh: algo falló (HTTP 500) already exists\n"
+    ent.set_estado(s)
+    assert ent.correr(1, OSV_HALLAZGOS).returncode == 2

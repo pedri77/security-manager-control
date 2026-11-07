@@ -72,6 +72,7 @@ NO_APLICA_MIN = 15  # caracteres de motivo, sin contar placeholders `<...>`
 EMPTY_CELLS = ("", "-", "--", "—", "–", "n/a", "na", "ninguno", "ninguna", "pendiente", "tbd")
 CHANGE_EVIDENCE_PATH = "scripts/change_evidence.py"
 WORKFLOWS_PREFIX = ".github/workflows/"
+NO_APLICA_PREFIX = "smc/"  # única parte de la lista de rutas sensibles donde «no aplica» puede valer (N12)
 # Restos de TEMPLATE.md que un threat model terminado no puede conservar.
 THREAT_PLACEHOLDERS = ("<TASK_ID>", "<feature>", "<n>", "<slug>", "YYYY-MM-DD", "NNNN", "tests/...", "sí / no")
 RELEASE_BRANCH_PREFIX = "release-please--branches--"
@@ -512,14 +513,36 @@ def no_aplica_invalid(motivo: str) -> str | None:
     return None
 
 
+class HeadMovedError(RuntimeError):
+    """La cabeza del PR ya no es el commit sobre el que se va a publicar el estado."""
+
+
+def _check_head(pr: dict, head_sha: str, number: int, when: str) -> None:
+    actual = (pr.get("head") or {}).get("sha")
+    if actual != head_sha:
+        raise HeadMovedError(f"PR #{number}: la cabeza {when} es {str(actual)[:12]} y el evento trae {head_sha[:12]}: "
+                             "la evaluación no vale para ese commit")
+
+
 def evaluate_security(repo: str, number: int, pr: dict | None = None, tasks: list[str] | None = None,
-                      maint: bool | None = None) -> dict:
+                      maint: bool | None = None, head_sha: str | None = None) -> dict:
     """Puerta de seguridad de un PR. Devuelve required, reason, threat_model, problems y warnings.
 
     La lista de rutas se lee de la rama BASE; el threat model, de la cabeza. Cualquier fallo de la API
     propaga (la puerta falla en cerrado). `pr`, `tasks` y `maint` se pasan si el llamador ya los tiene.
+    Con `head_sha` (el commit sobre el que se publicará el estado) la cabeza del PR debe ser ese commit al
+    empezar y al acabar: si se mueve, lanza HeadMovedError (la cabeza nueva tendrá su propia evaluación).
     """
     pr = pr if pr is not None else gh_json(f"repos/{repo}/pulls/{number}")
+    if head_sha is None:
+        return _evaluate_security(repo, number, pr, tasks, maint)
+    _check_head(pr, head_sha, number, "actual")
+    out = _evaluate_security(repo, number, pr, tasks, maint)
+    _check_head(gh_json(f"repos/{repo}/pulls/{number}"), head_sha, number, "al acabar")
+    return out
+
+
+def _evaluate_security(repo: str, number: int, pr: dict, tasks: list[str] | None, maint: bool | None) -> dict:
     body = pr.get("body") or ""
     if tasks is None:
         commits = gh_pages(f"repos/{repo}/pulls/{number}/commits")
@@ -544,6 +567,7 @@ def evaluate_security(repo: str, number: int, pr: dict | None = None, tasks: lis
     if SECURITY_PATHS_FILE in touched:
         reasons.append(f"toca la lista de rutas sensibles ({SECURITY_PATHS_FILE})")
     missing_list = listing is None
+    listed_hits: list[str] = []
     if missing_list:
         # sin lista en la base no se puede saber qué es sensible: la puerta aplica y falla en cerrado
         reasons.append(f"falta la lista de rutas sensibles ({SECURITY_PATHS_FILE}) en la rama base {safe_text(pr['base']['ref'])}")
@@ -551,6 +575,7 @@ def evaluate_security(repo: str, number: int, pr: dict | None = None, tasks: lis
     else:
         globs = parse_security_paths(listing)
         hits = sorted(n for n in touched if any(fnmatch.fnmatchcase(n, g) for g in globs))
+        listed_hits = hits
         if hits:
             shown = ", ".join(safe_text(h) for h in hits[:5])
             reasons.append("toca rutas sensibles: " + shown + (f" y {len(hits) - 5} más" if len(hits) > 5 else ""))
@@ -561,16 +586,19 @@ def evaluate_security(repo: str, number: int, pr: dict | None = None, tasks: lis
     out["required"], out["reason"] = True, "; ".join(reasons)
     if missing_list:
         out["problems"].append(f"falta {SECURITY_PATHS_FILE} en la rama base {safe_text(pr['base']['ref'])}: la puerta falla en cerrado")
-    # «no aplica» no vale donde el riesgo es mayor: tipo sec, la lista, esta puerta o un workflow
+    # «no aplica» no vale donde el riesgo es mayor: tipo sec, la lista, esta puerta, un workflow o cualquier ruta de
+    # la lista que no sea de smc/ (N12)
     strict = (is_sec or SECURITY_PATHS_FILE in touched or CHANGE_EVIDENCE_PATH in touched
-              or any(n.startswith(WORKFLOWS_PREFIX) for n in touched))
+              or any(n.startswith(WORKFLOWS_PREFIX) for n in touched)
+              or any(not h.startswith(NO_APLICA_PREFIX) for h in listed_hits))
     motivo_raw = no_aplica_reason(body)
     motivo = None
     if motivo_raw is not None:
         bad = no_aplica_invalid(motivo_raw)
         if strict:
             out["problems"].append("la línea 'Threat model: no aplica' no vale en un PR de tipo sec ni si toca la lista de rutas, "
-                                   f"{CHANGE_EVIDENCE_PATH} o un workflow: hace falta el threat model")
+                                   f"{CHANGE_EVIDENCE_PATH}, un workflow o cualquier ruta de la lista fuera de {NO_APLICA_PREFIX}: "
+                                   "hace falta el threat model")
         elif bad:
             out["problems"].append(f"motivo no válido en la línea 'Threat model: no aplica': {bad}")
         else:
@@ -796,7 +824,7 @@ def mode_security(args: argparse.Namespace) -> int:
     """Puerta de seguridad: 1 si aplica y no se cumple, o si no se pudo leer la API (falla en cerrado)."""
     try:
         repo = repo_slug()
-        r = evaluate_security(repo, args.pr)
+        r = evaluate_security(repo, args.pr, head_sha=args.head_sha)
     except Exception as e:  # noqa: BLE001 — cualquier fallo de lectura o de forma cierra la puerta
         print(f"ERROR: PR #{args.pr}: no se pudo evaluar la puerta de seguridad ({safe_text(reason(e))})", file=sys.stderr)
         return 1
@@ -873,6 +901,8 @@ def main() -> None:
     a.add_argument("--out", default="change-record")
     c = sub.add_parser("security")
     c.add_argument("--pr", type=int, required=True)
+    c.add_argument("--head-sha", required=True,
+                   help="commit del evento sobre el que se publicará el estado: debe ser la cabeza actual del PR")
     b = sub.add_parser("release")
     b.add_argument("--tag", required=True)
     b.add_argument("--out", required=True)
