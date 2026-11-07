@@ -597,7 +597,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en a5bef6a63312ee032efd720122d6fc358dbc297b · evidencia informes/T55-dev-proyecto.md
 
-- [ ] **T56** — Cerrar el FAIL de revisión ciega del PR #30
+- [~] **T56** — Cerrar el FAIL de revisión ciega del PR #30
   - Issue: SMC-009 https://github.com/pedri77/security-manager-control/issues/28
   - Hace: en `tests/test_change_evidence.py`. (G3) Un test ejecuta de verdad el fragmento `run` del paso que publica el estado en `.github/workflows/security-gate.yml`, leído del YAML, con un `gh` falso en el `PATH` que captura `state`, y con `OUTCOME` en `success`, `failure`, `cancelled` y `skipped`: solo `success` publica `success`; el resto publica `failure`. Si el fragmento no se deja ejecutar aislado, se extrae a un script y el test lo ejecuta, y dilo. (M10) Casos de la puerta con solo rutas de `smc/`, PR no `sec`, la lista real y motivos `.`, `<motivo>`, la plantilla sin rellenar y uno de 14 caracteres: todos dan problema; uno válido no. Además, usabilidad: la línea `Threat model: no aplica: <motivo>` también vale como casilla de lista (`- [ ] Threat model:` o `- [x] Threat model:`), como trae la plantilla del PR, y sigue sin valer dentro de comentarios HTML. En `scripts/vigilancia.py`, la comparación del cuerpo de la issue normaliza saltos de línea (`\r\n` y `\n`) y espacios finales antes de decidir si comentar.
   - No hace: no cambia el comportamiento de la puerta salvo la casilla de lista. No toca la regla de rama, la plantilla de enjambre-agentes, versión ni CHANGELOG.
@@ -605,7 +605,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Depende: T55
   - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde. Ejecuta el arnés de la revisión ciega (`/private/tmp/claude-501/-Users-pedri77-Dev-Claude-proyectos-Claude/954a23bc-d0e3-4e6f-999b-858a552b0b36/scratchpad/rc14m/mut.py`, como dato, sobre una copia del código final): G3 y M10 deben salir en ROJO, y M3 puede seguir verde porque es equivalente. Contraprueba propia, un mutante por copia: casilla dentro de comentario HTML que vale; comparación del cuerpo sin normalizar. Los tests citados en el modelo existen. Insignia del README al recuento real.
   - Prod: —
-  - Estado: libre
+  - Estado: reservada por coordinador-smc-f2p 2026-11-07
 
 ## Libro
 
