@@ -61,7 +61,8 @@ SECURITY_REVIEW_CONTEXT = "security-review"
 SECURITY_PATHS_FILE = ".github/security-paths.txt"
 THREAT_MODEL_DIR = "docs/threat-model"
 FILES_API_CAP = 3000  # `pulls/N/files` no devuelve más de 3000 ficheros y no avisa: llegar ahí es lectura incompleta
-NO_APLICA_RE = re.compile(r"^[ \t]*Threat model:[ \t]*no aplica:(.*)$", re.MULTILINE | re.IGNORECASE)
+# La línea puede ir como casilla de lista (`- [ ] `, `- [x] `, `* [ ] `), que es como la trae la plantilla del PR.
+NO_APLICA_RE = re.compile(r"^[ \t]*(?:[-*][ \t]+\[[ xX]\][ \t]+)?Threat model:[ \t]*no aplica:(.*)$", re.MULTILINE | re.IGNORECASE)
 SEC_TITLE_RE = re.compile(r"^\s*sec(?:\([^)]*\))?!?:", re.IGNORECASE)
 THREAT_STATES = ("mitigada", "aceptada")  # vocabulario cerrado del estado de una amenaza
 ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")

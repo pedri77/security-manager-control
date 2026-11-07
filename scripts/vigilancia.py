@@ -187,6 +187,13 @@ def ensure_label():
             raise
 
 
+def same_body(a, b):
+    """GitHub guarda los cuerpos con `\\r\\n` si se editan en la web y sin espacios finales: se comparan sin eso."""
+    def norm(t):
+        return "\n".join(l.rstrip(" \t") for l in (t or "").replace("\r\n", "\n").replace("\r", "\n").split("\n")).strip()
+    return norm(a) == norm(b)
+
+
 def _mine(i):
     """Solo se adopta la issue que creó el bot de Actions y lleva la etiqueta: el título lo puede copiar cualquiera."""
     a = i["author"]
@@ -247,7 +254,7 @@ def main(argv=None):
             ensure_label()
             gh(["issue", "create", "--title", TITLE, "--label", LABEL, "--body-file", "-"], stdin=body)
             print(f"::error::{len(fs)} vulnerabilidades: issue creada")
-        elif (issue.get("body") or "").strip() != body.strip():
+        elif not same_body(issue.get("body"), body):
             gh(["issue", "comment", str(issue["number"]), "--body-file", "-"], stdin="Los hallazgos han cambiado.\n\n" + body)
             gh(["issue", "edit", str(issue["number"]), "--body-file", "-"], stdin=body)
             print(f"::error::{len(fs)} vulnerabilidades: issue #{issue['number']} actualizada")
