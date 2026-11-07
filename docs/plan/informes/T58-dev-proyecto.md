@@ -35,3 +35,9 @@ Rama `t58-smc011` (sale de bf11873). Issue #33. Sin push ni PR.
 ## Corrección tras la devolución del coordinador
 - Cerrado el backtick que faltaba tras `test_t57_lista_sin_ruta_marcada_no_admite_no_aplica` en la fila T4 de SMC-011.md. Revisión de backticks impares por línea: solo quedan las vallas del bloque mermaid (líneas 22 y 32), ninguna celda.
 - T2 dice expresamente que `~` + NBSP o U+3000 es marca mal escrita: ruta sensible y sin exención.
+
+## Verificación del coordinador v2.4 (2026-11-07)
+- Primera entrega (237ca54) devuelta: faltaba un backtick en la fila T4 del modelo. Corregida en 3b99ceb.
+- pytest completo: 1685 passed; 793 `def test_` = insignia del README. `threat_model_problems(SMC-011.md, [33])` = `[]`; los tests citados existen; filas T2 y T4 con backticks pares.
+- superficies.py diff: OK. gitleaks sobre el diff completo: sin hallazgos; grep de secretos: vacío.
+- Contraprueba, un mutante por copia limpia (`git archive`, lanzado desde la copia): `lstrip("~ \t")` → 7 failed; sin avisos → 9; sin comprobación estricta de change_evidence.py → 1; sin la de workflows → 2.
