@@ -2,6 +2,13 @@
 
 Formato basado en Keep a Changelog. Versionado semántico.
 
+## [0.9.0](https://github.com/pedri77/security-manager-control/compare/v0.8.7...v0.9.0) (2026-11-07)
+
+
+### Funcionalidades
+
+* **security:** puerta de seguridad en PR y vigilancia diaria de dependencias ([#30](https://github.com/pedri77/security-manager-control/issues/30)) ([04c5f38](https://github.com/pedri77/security-manager-control/commit/04c5f380ecfa24cf0a29a7adfe449f14c96d7b83))
+
 ## [0.8.7](https://github.com/pedri77/security-manager-control/compare/v0.8.6...v0.8.7) (2026-11-06)
 
 
