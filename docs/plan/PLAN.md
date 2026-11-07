@@ -575,7 +575,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: reservada por coordinador-smc-f2p 2026-11-07
 
-- [ ] **T54** — Vigilancia: adopción de la issue, contenido de terceros y concurrencia
+- [~] **T54** — Vigilancia: adopción de la issue, contenido de terceros y concurrencia
   - Issue: SMC-009 https://github.com/pedri77/security-manager-control/issues/28
   - Hace: en `scripts/vigilancia.py`, la issue abierta solo se adopta si la creó `github-actions[bot]` y lleva la etiqueta `security`; otra con el mismo título se ignora. Los campos de `osv-scanner` (paquete, versión, identificador, versión corregida) se validan con lista blanca de caracteres y longitud; lo que no cumple se sustituye y no puede formar menciones, enlaces, imágenes, comentarios HTML ni romper la tabla. En `.github/workflows/vigilancia.yml`, `concurrency` sin cancelar la que corre y `timeout-minutes`.
   - Vuelta tras revisión del coordinador: `www.evil.com/login` pasa la lista blanca y GFM lo convierte en enlace automático; `GH-12` enlaza a una issue y `~~` tacha. Cada campo de terceros se muestra entero dentro de un código en línea, donde GFM no forma enlaces, menciones, referencias ni formato; la lista blanca sigue excluyendo la comilla invertida y `|`. El cuerpo de la issue tiene un tope por debajo del límite de GitHub (65 536 caracteres): si se pasa, recorta la lista y lo dice, y el job sigue en rojo.
@@ -585,6 +585,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Depende: T52
   - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde salvo los dos tests de la insignia del README, que cierra T53. Con `gh` real, solo GET: forma real de `author` en `gh issue list --json author,labels`. Prueba los textos de la auditoría: `@org/team`, `|`, salto de línea, imagen externa y `<!--`. Contraprueba en copia temporal, un mutante por copia, medida test a test: adoptar sin mirar autor; adoptar sin mirar etiqueta; no escapar `@`; no escapar `|`; aceptar salto de línea; quitar `concurrency`; algún campo fuera de código en línea; quitar el tope del cuerpo; subir el artefacto solo si el job acaba en verde; aviso de recorte que no nombra el artefacto. Cada uno debe poner en rojo al menos un test.
   - Prod: —
+  - Estado: reservada por coordinador-smc-f2p 2026-11-07
 
 ## Libro
 
