@@ -12,12 +12,18 @@ on:
 permissions:
   contents: read
 
+# Una sola vigilancia a la vez y sin cancelar la que corre: cortarla a media escritura de la issue la dejaría a medias.
+concurrency:
+  group: vigilancia
+  cancel-in-progress: false
+
 env:
   OSV_IMAGE: ghcr.io/google/osv-scanner:v2.7.0@sha256:4f3b7e2c64b9d38a5febc5a7e4a3dfef1d1362f726dea7a2ef4762b46469fcd0
 
 jobs:
   vigilancia:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       issues: write
@@ -35,3 +41,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: python3 scripts/vigilancia.py --code "$(cat "$RUNNER_TEMP/osv.code")" --json "$RUNNER_TEMP/osv.json"
+      # El JSON completo para quien lo necesite si la issue se recorta (nunca se imprime en el log). Sube también con el
+      # job en rojo; si el escáner no llegó a escribir el fichero, no falla.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: osv-vigilancia
+          path: ${{ runner.temp }}/osv.json
+          retention-days: 90
+          if-no-files-found: ignore
