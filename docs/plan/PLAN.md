@@ -619,6 +619,16 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en 041553e4d26d59e23d1d3d7159663300381a2b4e · evidencia informes/T57-dev-proyecto.md
 
+- [ ] **T58** — Cerrar los no bloqueantes de la auditoría de SMC-011
+  - Issue: SMC-011 https://github.com/pedri77/security-manager-control/issues/33
+  - Hace: en `scripts/change_evidence.py`, `parse_security_rules` quita cualquier espacio en blanco tras la marca, también Unicode (NBSP, U+3000), y la ruta queda sensible con la marca; si un glob queda empezando por un carácter no ASCII, por espacio o por `./`, o contiene espacios internos, se avisa en la salida de la puerta sin cambiar la decisión. En `tests/test_change_evidence.py`: el test de T1 de SMC-011 simula en la cabeza la lista con `~scripts/*` y la base sin marcas, y exige modelo; tests con base `~scripts/*` tocando `scripts/change_evidence.py` y con base `~.github/*` tocando un workflow, que exigen modelo; caso NBSP en la marca mal escrita. En `docs/threat-model/SMC-011.md`, T2 y T4 citan esos tests y describen bien el comportamiento.
+  - No hace: no cambia qué rutas admiten «no aplica» ni la regla estricta. No toca workflows, `vigilancia.py`, la plantilla de enjambre-agentes, versión ni CHANGELOG.
+  - Toca: `scripts/change_evidence.py`, `tests/test_change_evidence.py`, `docs/threat-model/SMC-011.md`, `README.md`, `docs/plan/informes/T58-dev-proyecto.md`
+  - Depende: T57
+  - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde. `threat_model_problems(SMC-011.md, [33])` da `[]`. Contraprueba en copia temporal, un mutante por copia, medida test a test: volver a `lstrip("~ \t")`; quitar los avisos; quitar la comprobación estricta de `change_evidence.py` con base `~scripts/*`; quitar la de workflows con base `~.github/*`. Cada uno debe poner en rojo al menos un test.
+  - Prod: —
+  - Estado: libre
+
 ## Libro
 
 ### Hechos
