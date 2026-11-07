@@ -607,6 +607,18 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en 999bb5f36461a0878357fd2701e2a4453d70857a · evidencia informes/T56-dev-proyecto.md
 
+## Ola 25 (SMC-011)
+
+- [ ] **T57** — Rutas que admiten «no aplica» configurables con `~`
+  - Issue: SMC-011 https://github.com/pedri77/security-manager-control/issues/33
+  - Hace: en `scripts/change_evidence.py`, se elimina `NO_APLICA_PREFIX`. El lector de `.github/security-paths.txt` reconoce una marca `~` al inicio de la ruta (tras quitar espacios): la ruta sigue siendo sensible, y además admite «no aplica». «No aplica» solo vale si todas las rutas sensibles tocadas, también por el origen de un renombrado, casan con rutas marcadas, y nunca en un PR `sec`; tocar la lista sigue siendo estricto. En `.github/security-paths.txt`, las cuatro rutas de `smc/` llevan `~`, y el comentario explica la marca sin nombrar `smc/`. La plantilla del PR dice lo mismo. Crea `docs/threat-model/SMC-011.md` con la plantilla, con `**Issue:** #33`: al menos marcar con `~` una ruta sensible para librarse del modelo (cubierto: tocar la lista es estricto y se lee de la base), y una marca mal escrita (`~ ruta`, `~~ruta`). Sin aceptaciones de riesgo si se puede; si hace falta alguna, con fecha vacía para David.
+  - No hace: no toca workflows, `vigilancia.py`, la regla de rama, la plantilla de enjambre-agentes, versión ni CHANGELOG. Nada de #29.
+  - Toca: `scripts/change_evidence.py`, `tests/test_change_evidence.py`, `.github/security-paths.txt`, `.github/pull_request_template.md`, `docs/threat-model/SMC-011.md`, `README.md`, `docs/plan/informes/T57-dev-proyecto.md`
+  - Depende: T56
+  - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde. `grep -n 'smc/' scripts/change_evidence.py` vacío. GitHub real, solo GET: `security --pr --head-sha` sobre #30 y #24 da el mismo resultado que con el código de `main`. El modelo SMC-011.md pasa `threat_model_problems` con la issue 33. Contraprueba en copia temporal, un mutante por copia, medida test a test: ignorar la marca de modo que todas admitan; ignorarla de modo que ninguna admita; leer la marca de la cabeza; aceptar «no aplica» con una ruta marcada y otra sin marcar; aceptar «no aplica» en `sec` con todo marcado; tratar `~` como parte del glob. Cada uno debe poner en rojo al menos un test.
+  - Prod: —
+  - Estado: libre
+
 ## Libro
 
 ### Hechos
