@@ -13,7 +13,7 @@ Agente dev-proyecto v1.5 · rama `t53-smc009` (sale de 6beaab1) · issue #28 · 
 - **N5**: «fecha de aceptación» en mensajes y modelo (`_signed` -> `_accepted_on`).
 - **N7**: tablas por `_tables`: una línea es de tabla si lleva un `|` sin escapar (con o sin inicial). `abierta`/`abierto` como celda entera en cualquier línea de tabla no pasa; dos o más columnas «Estado» no pasan; `mitigada` exige celdas de «Mitigación» y «Test…» no vacías (vacías son también `-`, `n/a`, `pendiente`…) y las columnas deben existir.
 - **N8**: `allowed_release_files` escapa `ref` con `quote(safe='')`.
-- **Modelo `docs/threat-model/SMC-009.md` v2**: T11 `mitigada` (sale de §5); T13 `aceptada` acotada; T2, T3, T4, T5, T6, T7, T8, T10, T17 corregidas; T14 acotada a lo que prueban sus tests; nuevas T18 (B1), T19 (N1), T20 (N5), T21 (N4), T22 (N9), T23 (N6, aceptada, SMC-010 #29), T24 (quién publica los estados, aceptada, SMC-010 #29); nota de por qué se retiró T12. §5: T13, T23, T24 con «Fecha» vacía. Declara `**Issue:** #28`.
+- **Modelo `docs/threat-model/SMC-009.md` v2**: T11 `mitigada` (sale de §5); T13 `aceptada` acotada; T2, T3, T4, T5, T6, T7, T8, T10, T17 corregidas; T14 acotada a lo que prueban sus tests; nuevas T18 (B1), T19 (N1), T20 (N5), T21 (N4), T22 (N9), T23 (N6: el pack reevalúa la puerta al publicar; aceptada, SMC-010 #29 punto 1), T24 (quién publica los estados, aceptada, SMC-010 #29), T25 (regla de rama / medición tras fusionar, aceptada); nota de por qué se retiró T12. §5: T13, T23, T24, T25 con «Fecha» vacía. Declara `**Issue:** #28`.
 - README: insignia `tests-693` (recuento real de `def test_`).
 
 ## T11: documentación oficial de GitHub y decisión
@@ -42,7 +42,7 @@ Lectura: la documentación dice que `pull_request_target` es un evento elegible 
 Diez de diez en rojo. Los tests nuevos fallaban antes del código (100 en rojo con 499 verdes; luego 12 en rojo hasta escribir workflow y modelo).
 
 ## Desajustes y decisiones
-- **N2, N3 y N6**: el brief no da el texto de esos hallazgos y no tenía el informe de la auditoría. No inventé N2 ni N3 (T12 explica en una nota que no tienen fila). N6 lo interpreté como «la puerta es consultiva hasta entrar en la regla de rama / el check de `pull_request_target` no se mide hasta fusionar» (T23, aceptada, SMC-010). Si N6 era otra cosa, hay que reescribir T23. «Quién publica los estados» es T24. Hay que añadir N2/N3 con su texto.
+- **N2, N3, N6**: el coordinador dio después su texto. N6 = T23 (el pack reevalúa la puerta al publicar; aceptada, SMC-010 #29). Mi interpretación previa pasó a T25 (aceptada). N2 y N3 los cierra T54: se añadirán al integrarla.
 - **T14 / T54**: T54 aún no está en la rama base (la fusión solo trajo cambios de PLAN.md). T14 queda `mitigada` acotada a permisos/stdin/entorno, que sus tests prueban; el contenido de terceros de la issue no se declara mitigado hasta que T54 lo fusione. Tras T54 habrá que añadir su fila/tests y ajustar la insignia (cuenta de `def test_`).
 - Los casos `no_aplica_no_vale_*` se generan desde un diccionario; el modelo cita la función completa, no cada id.
 - El estado `security-review` sigue siendo la firma real (decisión del Libro); el modelo solo guarda la fecha.

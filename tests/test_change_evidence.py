@@ -1624,7 +1624,7 @@ def test_el_threat_model_de_smc_009_solo_espera_la_fecha_de_david_y_cada_mitigac
              if _re.match(r"\|\s*T\d+\s*\|", l)]
     ids = [f[0] for f in filas]
     assert len(ids) == len(set(ids)) and "T12" not in ids
-    assert {"T11", "T13", "T18", "T19", "T20", "T21", "T22", "T23", "T24"} <= set(ids)
+    assert {"T11", "T13", "T18", "T19", "T20", "T21", "T22", "T23", "T24", "T25"} <= set(ids)
     fuente = "".join((RAIZ / n).read_text(encoding="utf-8") for n in ("tests/test_change_evidence.py", "tests/test_vigilancia.py"))
     aceptadas = []
     for f in filas:
@@ -1648,7 +1648,7 @@ def test_el_threat_model_de_smc_009_solo_espera_la_fecha_de_david_y_cada_mitigac
         assert por_id[t][-1].strip("`* ").lower() == "mitigada" and "tests/test_vigilancia.py::" in por_id[t][-2], t
     # la fecha de aceptación es la columna «Fecha» de §5: la rellena David, ningún agente. Vacía en cada aceptación.
     s5 = _filas_s5(ce, texto)
-    assert sorted(f[0] for f in s5) == sorted(aceptadas) == ["T13", "T23", "T24"], (aceptadas, s5)
+    assert sorted(f[0] for f in s5) == sorted(aceptadas) == ["T13", "T23", "T24", "T25"], (aceptadas, s5)
     for f in s5:
         assert len(f) == 5 and f[2] == "David Moya" and f[3] == "", f
     # lo único que falta a la puerta es esa fecha, y el modelo declara la issue del PR
