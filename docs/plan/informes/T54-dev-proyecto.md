@@ -36,3 +36,39 @@ Una primera pasada de m5 sobrevivió (222 passed): el único caso con salto tamb
 - Una issue antigua creada por un humano con ese título queda huérfana tras este cambio; no se toca.
 - Sin límite de tamaño del cuerpo total (65 536 caracteres de GitHub): no pedido, no cambiado.
 - Acción de prod: ninguna (el despliegue es el merge a main; `vigilancia.yml` no está en `api/**`).
+
+---
+# Segunda vuelta (tras la revisión del coordinador) · base integrada con `git merge --no-ff 7651aca` (77e1c01)
+
+## Qué falló en la primera vuelta
+`www.evil.com/login` pasaba la lista blanca (sin `://`) y GFM lo autoenlaza; `GH-12` enlaza a una issue; `a~~b~~c` tacha. Mi comprobación de autolink solo miraba `://`. La lista blanca no puede cubrir todo el Markdown: el control es el código en línea.
+
+## Cambios en `scripts/vigilancia.py`
+- `_cell`: todo campo de terceros (paquete, versión, identificador, alias CVE y cada versión corregida) que pase la lista blanca va entero en código en línea (`` `www.evil.com/login` ``), no solo los que llevan `@`. Lo que no pasa sigue siendo `(valor no válido)` (texto fijo nuestro). La lista blanca sigue sin comilla invertida, `|`, salto de línea ni espacios.
+- Tope: `MAX_BODY = 60000` (< 65 536 de issue y de comentario). `render_body` añade filas mientras quepan (con 200 caracteres de margen para el aviso) y, si recorta, escribe «Lista recortada: se muestran N de M hallazgos por el tope de tamaño de la issue; el resto está en la salida del job `vigilancia`». La cabecera sigue diciendo el total real y el script sigue saliendo con 1 (rojo). Una fila acota además sus versiones corregidas a 10 (`MAX_FIXED`, «y N más»), para que una sola fila no pueda pasar del tope.
+- Efecto en la tabla: `| `django` | `1.11.0` | `PYSEC-2017-44` (`CVE-2017-12794`) | `1.10.8`, `1.11.5` |`. Cambia el formato visible de las filas; actualizadas las aserciones de T52/T54 que lo fijaban.
+
+## Tests nuevos (`tests/test_vigilancia.py`: 270 casos, eran 232)
+- `test_campo_valido_pero_peligroso_va_entero_en_codigo_en_linea` (5 campos x 6 valores: `www.evil.com/login`, `GH-12`, `a~~b~~c`, `x@evil.com`, `a__b__c`, `evil.com/login`): fuera del código en línea no queda `www.`, `GH-`, `~~`, `@`, `__`.
+- `test_cada_celda_de_datos_es_un_codigo_en_linea_o_la_marca`, `test_www_evil_com_login_en_el_paquete_se_muestra_como_codigo`, `test_la_lista_blanca_sigue_sin_comilla_invertida_ni_barra`.
+- Cuerpo enorme: 3000 hallazgos (a mano, función y de punta a punta con `gh` simulado) quedan por debajo de 65 536 y de `MAX_BODY`, con aviso, el recuento mostrado coincide con las filas, la cabecera dice 3000, sale en rojo; el comentario de actualización también cabe; 50 hallazgos no se recortan; una fila con 5000 versiones corregidas se acota.
+- Rojo previo: con el `vigilancia.py` de la primera vuelta y los tests nuevos, 61 fallos.
+
+## Verifica
+- `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q`: **1457 passed, 2 failed** (1459 tests); los 2 son los de la insignia del README (T53). `tests/test_vigilancia.py`: 270 passed.
+- Contraprueba: 9 mutantes, cada uno en su copia limpia (rsync del worktree sin `.git` ni `.venv`) y lanzando `pytest tests/test_vigilancia.py` desde la copia:
+| Mutante | Fallan | Primeros en rojo |
+|---|---|---|
+| m1 adoptar sin mirar autor ni etiqueta | 11 | `test_issue_ajena_con_el_mismo_titulo_no_se_adopta_ni_se_toca` |
+| m2 adoptar sin mirar etiqueta | 1 | `test_issue_del_bot_sin_etiqueta_security_no_se_adopta` |
+| m3 no escapar `@` (sin código si lleva `@`) | 6 | `…[mencion-package]`, `test_mencion_de_npm_se_neutraliza_en_codigo_no_se_borra` |
+| m4 no escapar `\|` | 7 | `…[barra-package]`, `…[barra-version]` |
+| m5 aceptar salto de línea | 11 | `…[salto_final-*]`, `…[salto_solo-*]` |
+| m6 quitar `concurrency` | 1 | `test_concurrency_sin_cancelar_la_que_corre` |
+| m7 versión fuera de código en línea | 35 | `test_cuerpo_lista_paquete_version_id_y_corregida`, `test_valor_no_valido_se_sustituye_por_marca_fija` |
+| m7b paquete fuera de código en línea | 26 | `test_cuerpo_lista_paquete_version_id_y_corregida`, `…[mencion-package]` |
+| m8 quitar el tope del cuerpo (`MAX_BODY = 10**9`) | 3 | `test_cuerpo_enorme_se_recorta_bajo_el_limite_de_github_y_lo_dice`, `test_cuerpo_enorme_de_punta_a_punta_issue_bajo_limite_y_en_rojo`, `test_comentario_de_actualizacion_tambien_cabe` |
+
+## Queda / decisiones
+- El recorte pierde los hallazgos del final (orden por paquete, versión, id); quedan en la salida del job. No se mide la longitud en bytes: el contenido es ASCII por la lista blanca y el texto fijo en español tiene pocos caracteres no ASCII.
+- Los alias distintos del primero CVE no se muestran (como antes).

@@ -80,30 +80,56 @@ def findings(data):
 
 
 def _cell(value, rx):
-    """Valor del escáner apto para una celda: pasa la lista blanca o se sustituye por INVALID.
+    """Valor del escáner apto para una celda: pasa la lista blanca y va ENTERO dentro de código en línea, o se sustituye.
 
-    Un `@` se neutraliza envolviendo el valor en un código en línea (`@org/team`): GitHub no crea menciones, ni notifica,
-    dentro de código, y el nombre legítimo (`@scope/paquete`) se sigue leyendo entero. `://` se rechaza para que no
-    haya enlaces automáticos.
+    En código en línea GitHub no forma menciones (`@org/team`), ni enlaces automáticos (`www.evil.com/login`, que no lleva
+    `://`), ni referencias a issues (`GH-12`), ni formato (`a~~b~~c`), ni notifica. Por eso la lista blanca ya no puede
+    contener la comilla invertida (cerraría el código) ni `|` (rompería la tabla). Lo que no cumple se sustituye por
+    INVALID, que es texto fijo nuestro.
     """
     if not isinstance(value, str) or not rx.fullmatch(value) or "://" in value:
         return INVALID
-    return f"`{value}`" if "@" in value else value
+    return f"`{value}`"
+
+
+MAX_FIXED = 10          # versiones corregidas por fila; el resto se resume
+MAX_BODY = 60000        # por debajo de los 65 536 caracteres de una issue o comentario de GitHub
+
+
+def _row(h):
+    ident = _cell(h["id"], ID_RE)
+    cve = h["aliases"][0] if h["aliases"] and isinstance(h["aliases"][0], str) \
+        and h["aliases"][0].startswith("CVE-") else None
+    if cve is not None and _cell(cve, ID_RE) != INVALID:
+        ident += f" ({_cell(cve, ID_RE)})"
+    if h["fixed"]:
+        fixed = ", ".join(_cell(f, VERSION_RE) for f in h["fixed"][:MAX_FIXED])
+        if len(h["fixed"]) > MAX_FIXED:
+            fixed += f" y {len(h['fixed']) - MAX_FIXED} más"
+    else:
+        fixed = "sin versión corregida"
+    return f"| {_cell(h['package'], NAME_RE)} | {_cell(h['version'], VERSION_RE)} | {ident} | {fixed} |"
 
 
 def render_body(fs):
-    rows = ["| Paquete | Versión | Identificador | Versión corregida |", "|---|---|---|---|"]
-    for h in fs:
-        ident = _cell(h["id"], ID_RE)
-        cve = h["aliases"][0] if h["aliases"] and isinstance(h["aliases"][0], str) \
-            and h["aliases"][0].startswith("CVE-") else None
-        if cve is not None and _cell(cve, ID_RE) != INVALID:
-            ident += f" ({cve})"
-        fixed = ", ".join(_cell(f, VERSION_RE) for f in h["fixed"]) if h["fixed"] else "sin versión corregida"
-        rows.append(f"| {_cell(h['package'], NAME_RE)} | {_cell(h['version'], VERSION_RE)} | {ident} | {fixed} |")
-    return (f"`osv-scanner` encuentra {len(fs)} vulnerabilidades en las dependencias de la rama principal.\n\n"
-            + "\n".join(rows) + "\n\nLa excepción, si procede, va en `osv-scanner.toml` con `reason` e `ignoreUntil`. "
+    head = f"`osv-scanner` encuentra {len(fs)} vulnerabilidades en las dependencias de la rama principal.\n\n"
+    tail = ("\n\nLa excepción, si procede, va en `osv-scanner.toml` con `reason` e `ignoreUntil`. "
             "Esta issue la mantiene `vigilancia.yml`: se actualiza sola y se cierra cuando ya no hay hallazgos.\n")
+    rows = ["| Paquete | Versión | Identificador | Versión corregida |", "|---|---|---|---|"]
+    size = len(head) + len(tail) + sum(len(r) + 1 for r in rows) + 200     # 200: margen para el aviso de recorte
+    shown = 0
+    for h in fs:
+        r = _row(h)
+        if size + len(r) + 1 > MAX_BODY:
+            break
+        rows.append(r)
+        size += len(r) + 1
+        shown += 1
+    note = ""
+    if shown < len(fs):
+        note = (f"\n\nLista recortada: se muestran {shown} de {len(fs)} hallazgos por el tope de tamaño de la issue; "
+                "el resto está en la salida del job `vigilancia`.")
+    return head + "\n".join(rows) + note + tail
 
 
 def classify(code, text):

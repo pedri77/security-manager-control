@@ -585,8 +585,8 @@ def test_versiones_corregidas_mezcladas_no_rompen_la_ordenacion(vig):
 
 def test_cuerpo_lista_paquete_version_id_y_corregida(vig):
     cuerpo = vig.render_body(vig.findings(OSV_HALLAZGOS))
-    assert "| django | 1.11.0 | PYSEC-2017-44 (CVE-2017-12794) | 1.10.8, 1.11.5 |" in cuerpo
-    assert "| pyyaml | 5.3.0 | PYSEC-2020-96" in cuerpo
+    assert "| `django` | `1.11.0` | `PYSEC-2017-44` (`CVE-2017-12794`) | `1.10.8`, `1.11.5` |" in cuerpo
+    assert "| `pyyaml` | `5.3.0` | `PYSEC-2020-96`" in cuerpo
 
 
 def test_cuerpo_determinista_y_sin_orden_de_entrada(vig):
@@ -1043,13 +1043,13 @@ def test_campos_que_no_son_texto_se_sustituyen(vig, valor):
 
 def test_valor_no_valido_se_sustituye_por_marca_fija(vig):
     cuerpo = vig.render_body([hallazgo(package="a|b")])
-    assert f"| {vig.INVALID} | 1.11.0 |" in cuerpo
+    assert f"| {vig.INVALID} | `1.11.0` |" in cuerpo
     assert not set(vig.INVALID) & set("@|<>!#`:/\n&")
 
 
 def test_mencion_de_npm_se_neutraliza_en_codigo_no_se_borra(vig):
     cuerpo = vig.render_body([hallazgo(package="@org/team", id="GHSA-xxxx-yyyy-zzzz")])
-    assert "| `@org/team` | 1.11.0 |" in cuerpo
+    assert "| `@org/team` | `1.11.0` |" in cuerpo
     assert "@" not in fuera_de_codigo(cuerpo)
 
 
@@ -1058,8 +1058,7 @@ def test_mencion_de_npm_se_neutraliza_en_codigo_no_se_borra(vig):
                                     "golang.org/x/crypto", "libssl1.1", "a", "pkg~beta"])
 def test_nombres_legitimos_de_paquete_pasan(vig, nombre):
     cuerpo = vig.render_body([hallazgo(package=nombre)])
-    celda = f"`{nombre}`" if "@" in nombre else nombre
-    assert f"| {celda} | 1.11.0 |" in cuerpo
+    assert f"| `{nombre}` | `1.11.0` |" in cuerpo
     assert "@" not in fuera_de_codigo(cuerpo)
 
 
@@ -1067,7 +1066,7 @@ def test_nombres_legitimos_de_paquete_pasan(vig, nombre):
                                    "RUSTSEC-2023-0001", "OSV-2020-1", "MAL-2024-1234", "DSA-5000-1",
                                    "UBUNTU-CVE-2024-1234", "ALPINE-CVE-2024-1"])
 def test_identificadores_legitimos_pasan(vig, ident):
-    assert f"| {ident} |" in vig.render_body([hallazgo(id=ident, aliases=[])])
+    assert f"| `{ident}` |" in vig.render_body([hallazgo(id=ident, aliases=[])])
 
 
 @pytest.mark.parametrize("version", ["1.11.0", "5.3.0", "2.0.0b1", "1.11rc1", "1.2.3+build.5", "1.0.0-rc.1+meta",
@@ -1075,19 +1074,18 @@ def test_identificadores_legitimos_pasan(vig, ident):
                                      "2024.1", "0"])
 def test_versiones_legitimas_pasan_incluido_el_mas(vig, version):
     cuerpo = vig.render_body([hallazgo(version=version, fixed=[version])])
-    assert f"| {version} | PYSEC-2017-44 (CVE-2017-12794) | {version} |" in cuerpo
+    assert f"| `{version}` | `PYSEC-2017-44` (`CVE-2017-12794`) | `{version}` |" in cuerpo
 
 
 def test_fixtures_reales_se_renderizan_igual_que_antes(vig):
     cuerpo = vig.render_body(vig.findings(OSV_HALLAZGOS))
-    assert not any("`" in f for f in filas(cuerpo))    # ningún valor legítimo lleva código
-    assert "| django | 1.11.0 | PYSEC-2018-2 (CVE-2018-14574) | 1.11.15, 2.0.8 |" in cuerpo
+    assert "| `django` | `1.11.0` | `PYSEC-2018-2` (`CVE-2018-14574`) | `1.11.15`, `2.0.8` |" in cuerpo
 
 
 def test_longitud_maxima_de_la_lista_blanca(vig):
-    assert f"| {'a' * 100} |" in vig.render_body([hallazgo(package="a" * 100)])
+    assert f"| `{'a' * 100}` |" in vig.render_body([hallazgo(package="a" * 100)])
     assert f"| {vig.INVALID} |" in vig.render_body([hallazgo(package="a" * 101)])
-    assert f"| {'1' * 64} |" in vig.render_body([hallazgo(version="1" * 64)])
+    assert f"| `{'1' * 64}` |" in vig.render_body([hallazgo(version="1" * 64)])
     assert f"| {vig.INVALID} |" in vig.render_body([hallazgo(version="1" * 65)])
 
 
@@ -1114,3 +1112,109 @@ def test_timeout_en_cada_job(wf):
     for nombre, job in wf["jobs"].items():
         t = job.get("timeout-minutes")
         assert isinstance(t, int) and 1 <= t <= 30, nombre
+
+
+# ───────────── T54 vuelta · todo campo de terceros va entero en código en línea; tope del cuerpo ─────────────
+EXTRA = {"www": "www.evil.com/login", "gh": "GH-12", "tachado": "a~~b~~c", "correo": "x@evil.com",
+         "negrita": "a__b__c", "ruta": "evil.com/login"}
+
+
+def celdas(fila):
+    return [c.strip() for c in fila.strip().strip("|").split("|")]
+
+
+def sin_codigo(cuerpo):
+    return re.sub(r"`[^`\n]+`", "", cuerpo)
+
+
+@pytest.mark.parametrize("campo", ["package", "version", "id", "fixed", "alias"])
+@pytest.mark.parametrize("clave", sorted(EXTRA))
+def test_campo_valido_pero_peligroso_va_entero_en_codigo_en_linea(vig, campo, clave):
+    v = EXTRA[clave]
+    if campo == "package":
+        h = hallazgo(package=v)
+    elif campo == "version":
+        h = hallazgo(version=v)
+    elif campo == "id":
+        h = hallazgo(id=v)
+    elif campo == "fixed":
+        h = hallazgo(fixed=[v])
+    else:
+        h = hallazgo(aliases=["CVE-" + v])
+    fila = filas(vig.render_body([h]))[2]
+    resto = sin_codigo(fila)
+    # Fuera del código en línea no queda ni rastro del valor: ni www., ni GH-, ni ~~, ni @ de correo.
+    for peligro in ("www.", "GH-", "~~", "@", "__", "evil", "login"):
+        assert peligro not in resto, (peligro, fila)
+    mostrado = "CVE-" + v if campo == "alias" else v
+    if campo == "alias":                       # un alias que no cumple la lista blanca se omite
+        assert "CVE-" + v not in resto
+    elif "@" not in v or campo == "package":       # el valor, si se muestra, va en bloque completo
+        assert f"`{mostrado}`" in fila or vig.INVALID in fila, fila
+
+
+def test_www_evil_com_login_en_el_paquete_se_muestra_como_codigo(vig):
+    fila = filas(vig.render_body([hallazgo(package="www.evil.com/login")]))[2]
+    assert fila.startswith("| `www.evil.com/login` |")
+
+
+def test_cada_celda_de_datos_es_un_codigo_en_linea_o_la_marca(vig):
+    cuerpo = vig.render_body(vig.findings(OSV_HALLAZGOS))
+    for f in filas(cuerpo)[2:]:
+        c = celdas(f)
+        assert len(c) == 4
+        for celda in c[:3]:
+            assert re.fullmatch(r"`[^`]+`( \(`[^`]+`\))?", celda), celda
+        assert all(re.fullmatch(r"`[^`]+`", x) for x in c[3].split(", ")) or c[3] == "sin versión corregida"
+
+
+def test_la_lista_blanca_sigue_sin_comilla_invertida_ni_barra(vig):
+    for rx in (vig.NAME_RE, vig.VERSION_RE, vig.ID_RE):
+        assert not rx.fullmatch("a`b") and not rx.fullmatch("a|b") and not rx.fullmatch("a\nb")
+
+
+def enorme(n, fixed=1):
+    return [hallazgo(package=f"paquete-{i:06d}", version="1.0.%d" % i, id=f"GHSA-{i:04d}-aaaa-bbbb",
+                     aliases=[f"CVE-2024-{i:05d}"], fixed=["2.0.%d" % k for k in range(fixed)]) for i in range(n)]
+
+
+def test_cuerpo_enorme_se_recorta_bajo_el_limite_de_github_y_lo_dice(vig):
+    cuerpo = vig.render_body(enorme(3000))
+    assert len(cuerpo) < 65536 and len(cuerpo) <= vig.MAX_BODY
+    assert "Lista recortada" in cuerpo
+    m = re.search(r"se muestran (\d+) de 3000 hallazgos", cuerpo)
+    assert m and int(m.group(1)) == len(filas(cuerpo)) - 2 and 0 < int(m.group(1)) < 3000
+    assert "3000 vulnerabilidades" in cuerpo
+
+
+def test_cuerpo_que_cabe_no_se_recorta(vig):
+    cuerpo = vig.render_body(enorme(50))
+    assert "Lista recortada" not in cuerpo and len(filas(cuerpo)) == 52
+
+
+def test_una_fila_con_miles_de_versiones_corregidas_tambien_se_acota(vig):
+    cuerpo = vig.render_body([hallazgo(fixed=["1.%d" % i for i in range(5000)])])
+    assert len(cuerpo) < 5000 and "más" in cuerpo
+
+
+def test_cuerpo_enorme_de_punta_a_punta_issue_bajo_limite_y_en_rojo(ent):
+    d = copy.deepcopy(OSV_HALLAZGOS)
+    base = d["results"][0]["packages"][0]
+    base["groups"] = [{"ids": [f"GHSA-{i:04d}-aaaa-bbbb"], "aliases": []} for i in range(3000)]
+    base["vulnerabilities"] = [{"id": f"GHSA-{i:04d}-aaaa-bbbb"} for i in range(3000)]
+    d["results"][0]["packages"] = [base]
+    r = ent.correr(1, d)
+    assert r.returncode == 1, r.stderr
+    body = ent.get_estado()["issues"][0]["body"]
+    assert len(body) < 65536 and "Lista recortada" in body
+
+
+def test_comentario_de_actualizacion_tambien_cabe(ent):
+    ent.correr(1, OSV_HALLAZGOS)
+    d = copy.deepcopy(OSV_HALLAZGOS)
+    base = d["results"][0]["packages"][0]
+    base["groups"] = [{"ids": [f"GHSA-{i:04d}-aaaa-bbbb"], "aliases": []} for i in range(3000)]
+    base["vulnerabilities"] = [{"id": f"GHSA-{i:04d}-aaaa-bbbb"} for i in range(3000)]
+    assert ent.correr(1, d).returncode == 1
+    i = ent.get_estado()["issues"][0]
+    assert len(i["comentarios"][0]) < 65536 and len(i["body"]) < 65536
