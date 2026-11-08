@@ -876,7 +876,7 @@ def test_workflow_escanea_la_rama_principal_y_llama_al_script(wf):
     txt = WORKFLOW.read_text()
     assert "scripts/vigilancia.py" in txt
     assert "scan source -r" in txt and "--format json" in txt
-    assert "ref: main" in txt or "ref: ${{ github.event.repository.default_branch }}" in txt
+    assert "ref: main" not in txt
 
 
 def test_workflow_no_traga_el_codigo_del_escaner():
@@ -1369,3 +1369,111 @@ def test_t56_cuerpo_con_crlf_y_hallazgos_distintos_sigue_comentando(ent):
     menos["results"][0]["packages"] = menos["results"][0]["packages"][:1]
     assert ent.correr(1, menos).returncode == 1
     assert len([a for a in ent.llamadas() if a[:2] == ["issue", "comment"]]) == 1
+
+
+# ───────────── T59 · SMC-012: ninguna rama fija en workflows ni scripts ─────────────
+RAMA_POR_DEFECTO = "${{ github.event.repository.default_branch }}"
+RAMAS_FIJAS = ("main", "master")
+# tests.yml fija `branches: [main]` (T59 no lo toca, hallazgo en el informe de T59): se admite mientras siga así.
+# El test `test_t59_la_excepcion_de_tests_yml_sigue_haciendo_falta` falla cuando se arregle, para quitarla.
+WORKFLOWS_CON_RAMA_FIJA_CONOCIDA = {"tests.yml"}
+
+
+def ramas_fijas_en_yaml(doc):
+    """Claves `ref` con un valor `main`/`master` y `branches` que sean solo una de esas ramas (lista de uno o texto)."""
+    halladas = []
+
+    def anda(nodo):
+        if isinstance(nodo, dict):
+            for k, v in nodo.items():
+                if k == "ref" and isinstance(v, str) and v.strip() in RAMAS_FIJAS:
+                    halladas.append(f"ref: {v.strip()}")
+                if k == "branches":
+                    vs = [v] if isinstance(v, str) else v if isinstance(v, list) else []
+                    vs = [x.strip() for x in vs if isinstance(x, str)]
+                    if len(vs) == 1 and vs[0] in RAMAS_FIJAS:
+                        halladas.append(f"branches: [{vs[0]}]")
+                anda(v)
+        elif isinstance(nodo, list):
+            for x in nodo:
+                anda(x)
+
+    anda(doc)
+    return halladas
+
+
+RE_REF_PY = re.compile(r"""\bref["']?\s*[:=]\s*["'](?:main|master)["']""")
+RE_BRANCHES_PY = re.compile(r"""\bbranches["']?\s*[:=]\s*\[\s*["'](?:main|master)["']\s*\]""")
+
+
+def ramas_fijas_en_python(texto):
+    halladas = []
+    for linea in texto.splitlines():
+        codigo = linea.split("#", 1)[0]
+        if RE_REF_PY.search(codigo) or RE_BRANCHES_PY.search(codigo):
+            halladas.append(linea.strip())
+    return halladas
+
+
+def _fijas_por_workflow():
+    return {w.name: ramas_fijas_en_yaml(yaml.safe_load(w.read_text())) for w in sorted((RAIZ / ".github/workflows").glob("*.yml"))}
+
+
+def test_t59_el_checkout_de_la_vigilancia_usa_la_rama_por_defecto(wf):
+    pasos = [p for j in wf["jobs"].values() for p in j["steps"] if str(p.get("uses", "")).startswith("actions/checkout@")]
+    assert len(pasos) == 1 and pasos[0]["with"]["ref"] == RAMA_POR_DEFECTO
+    assert pasos[0]["with"]["persist-credentials"] is False
+
+
+def test_t59_ningun_workflow_fija_una_sola_rama_salvo_la_excepcion_conocida():
+    malos = {n: f for n, f in _fijas_por_workflow().items() if f and n not in WORKFLOWS_CON_RAMA_FIJA_CONOCIDA}
+    assert malos == {}
+
+
+def test_t59_la_excepcion_de_tests_yml_sigue_haciendo_falta():
+    fijas = _fijas_por_workflow()
+    assert set(WORKFLOWS_CON_RAMA_FIJA_CONOCIDA) == {n for n, f in fijas.items() if f and n in WORKFLOWS_CON_RAMA_FIJA_CONOCIDA}
+
+
+def test_t59_ningun_script_fija_una_sola_rama():
+    malos = {p.name: ramas_fijas_en_python(p.read_text()) for p in sorted((RAIZ / "scripts").glob("*.py"))}
+    assert {n: f for n, f in malos.items() if f} == {}
+
+
+@pytest.mark.parametrize("texto,esperado", [
+    ("a:\n  with: { ref: main }\n", ["ref: main"]),
+    ("a:\n  with: { ref: master }\n", ["ref: master"]),
+    ("a:\n  with: { ref: 'main' }\n", ["ref: main"]),
+    ("on:\n  push:\n    branches: [main]\n", ["branches: [main]"]),
+    ("on:\n  push:\n    branches: [master]\n", ["branches: [master]"]),
+    ("on:\n  push:\n    branches: main\n", ["branches: [main]"]),
+    ("on:\n  push:\n    branches:\n      - main\n", ["branches: [main]"]),
+    ("on:\n  push:\n    branches: [main, master]\n", []),
+    ("on:\n  push:\n    branches: [main, master] # main\n", []),
+    ("a:\n  with: { ref: '${{ needs.release-please.outputs.tag_name }}' }\n", []),
+    ("a:\n  with: { ref: '${{ github.event.repository.default_branch }}' }\n", []),
+    ("a:\n  # ref: main\n  run: echo ref main\n", []),
+    ("a:\n  with: { ref: mainline }\n", []),
+])
+def test_t59_detector_de_rama_fija_en_yaml(texto, esperado):
+    assert ramas_fijas_en_yaml(yaml.safe_load(texto)) == esperado
+
+
+@pytest.mark.parametrize("linea,fija", [
+    ('x = {"ref": "main"}', True), ("ref = 'main'", True), ('ref: "master"', True), ("branches = ['main']", True),
+    ("branches = ['main', 'master']", False), ("# ref = 'main'", False), ("ref = rama", False),
+    ("f'{x}?ref={quote(ref)}'", False), ("ref = 'mainline'", False),
+])
+def test_t59_detector_de_rama_fija_en_python(linea, fija):
+    assert bool(ramas_fijas_en_python(linea)) is fija
+
+
+def test_t59_el_threat_model_de_smc_012_pasa_la_puerta_y_sus_tests_existen():
+    sys.path.insert(0, str(RAIZ / "scripts"))
+    import change_evidence as ce
+    texto = (RAIZ / "docs/threat-model/SMC-012.md").read_text(encoding="utf-8")
+    assert ce.threat_model_problems(texto, [36]) == []
+    citados = set(re.findall(r"`(tests/[\w./-]+\.py)::(\w+)", texto))
+    assert citados
+    for fichero, nombre in citados:
+        assert re.search(rf"^\s*def {nombre}\b", (RAIZ / fichero).read_text(encoding="utf-8"), re.M), f"{fichero}::{nombre}"
