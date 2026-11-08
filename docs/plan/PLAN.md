@@ -629,6 +629,18 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Prod: —
   - Estado: hecha en c7bbcebb2145eb49e0076d9469f180c5f8ff58ad · evidencia informes/T58-dev-proyecto.md
 
+## Ola 26 (SMC-012)
+
+- [x] **T59** — La vigilancia hace checkout de la rama por defecto
+  - Issue: SMC-012 https://github.com/pedri77/security-manager-control/issues/36
+  - Hace: en `.github/workflows/vigilancia.yml`, el checkout usa `ref: ${{ github.event.repository.default_branch }}` en vez de `main`. En `tests/test_vigilancia.py`, un test lee el YAML y exige ese `ref`; otro recorre `.github/workflows/*.yml` y `scripts/*.py` y falla si algún `ref:` o `branches:` fija una sola rama `main` o `master` (se admiten `[main, master]` y la rama por defecto). Crea `docs/threat-model/SMC-012.md` con la plantilla y `**Issue:** #36`.
+  - No hace: no toca `vigilancia.py`, otros workflows, la plantilla de enjambre-agentes, versión ni CHANGELOG.
+  - Toca: `.github/workflows/vigilancia.yml`, `tests/test_vigilancia.py`, `docs/threat-model/SMC-012.md`, `README.md`, `docs/plan/informes/T59-dev-proyecto.md`
+  - Depende: T58
+  - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde. `threat_model_problems(SMC-012.md, [36])` da `[]`. Medido: `actionlint` si está, y con `gh` real, solo GET, que `repository.default_branch` de SMC es `main` y el de pedri77/MalwareIntel es `master`. Contraprueba en copia temporal, un mutante por copia: volver a `ref: main`; poner `ref: master`; `branches: [main]` en un workflow. Cada uno debe poner en rojo al menos un test. Insignia del README al recuento real.
+  - Prod: —
+  - Estado: hecha en df8cb6cc781b1400b126fe71d97fface3b24fa58 · evidencia informes/T59-dev-proyecto.md
+
 ## Libro
 
 ### Hechos
@@ -669,6 +681,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 - 2026-11-07 · T56 hecha (SMC-009, issue #28, FAIL de revisión ciega del PR #30): G3 cerrado con un test que ejecuta con `bash` y un `gh` falso el `run` real del paso que publica el estado (leído del YAML, entorno mínimo, nada del PR): solo `OUTCOME=success` publica `success`, y un SHA ilegible no llama a `gh`; M10 cerrado con casos de la puerta con solo rutas de `smc/` (motivos `.`, `<motivo>`, 14 caracteres, plantilla sin rellenar: problema; motivo válido: pasa). La línea `Threat model: no aplica: …` vale también como casilla de lista (`- [ ]`, `- [x]`, `* [ ]`) y no dentro de comentarios HTML. `vigilancia.py` compara el cuerpo de la issue sin diferencias de `\r\n` ni espacios finales. Arnés de la revisión ciega sobre el código final: 26 de 27 mutantes en rojo, solo M3 verde (equivalente). 1634 passed, insignia 765; las fechas de David (13a2826) intactas y el modelo pasa su propia puerta. Contraprueba propia: casilla en comentario HTML y cuerpo sin normalizar, en rojo.
 - 2026-11-07 · T57 hecha (SMC-011, issue #33): `~` al inicio de la ruta en `.github/security-paths.txt` marca las rutas que admiten «no aplica»; `NO_APLICA_PREFIX` eliminado. Una ruta que casa con regla marcada y no marcada no admite; marca mal escrita deja la ruta sensible sin exención. 1661 tests, insignia 784; #30 y #24 con GET real idénticos a main; 6 mutantes en copias limpias en rojo (23, 21, 38, 5, 1, 23). Hasta que la base de GitHub lleve las marcas, su lista sigue estricta.
 - 2026-11-07 · T58 hecha (SMC-011, issue #33): `parse_security_rules` quita todo espacio Unicode tras la marca (NBSP, U+3000: marca mal escrita, ruta sensible sin exención); avisos de glob con no ASCII, `./` o espacios internos, sin cambiar la decisión; tests de T1 con la cabeza marcada y de T4 con base `~scripts/*` y `~.github/*`. 1685 tests, insignia 793; 4 mutantes en copias limpias en rojo (7, 9, 1, 2). `~*` sin aviso aceptado.
+- 2026-11-08 · T59 hecha (SMC-012, issue #36): el checkout de `vigilancia.yml` usa `github.event.repository.default_branch` (SMC `main`, MalwareIntel `master`, medido con GET); tests que prohíben `ref:`/`branches:` de una sola rama `main`/`master` en workflows y scripts, con excepción nombrada solo para `tests.yml` (`branches: [main]`, propio de SMC, hallazgo abierto: un test avisa cuando se arregle). 1712 tests, insignia 800; actionlint limpio; 3 mutantes en copias limpias en rojo (3, 2, 1).
 
 ### Supuestos
 - La tabla del Anexo II del RD 311/2022 se puede reconstruir con fiabilidad suficiente; lo dudoso va con `verificar: true`.
