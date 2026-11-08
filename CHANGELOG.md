@@ -2,6 +2,13 @@
 
 Formato basado en Keep a Changelog. Versionado semántico.
 
+## [0.9.1](https://github.com/pedri77/security-manager-control/compare/v0.9.0...v0.9.1) (2026-11-08)
+
+
+### Correcciones
+
+* **security:** rutas que admiten «no aplica» configurables en la lista ([#34](https://github.com/pedri77/security-manager-control/issues/34)) ([5e435c7](https://github.com/pedri77/security-manager-control/commit/5e435c7e8540ed9855f2f0fcf9e8143e65ae94bf))
+
 ## [0.9.0](https://github.com/pedri77/security-manager-control/compare/v0.8.7...v0.9.0) (2026-11-07)
 
 
