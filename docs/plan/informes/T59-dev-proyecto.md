@@ -32,3 +32,11 @@ falla cuando se arregle tests.yml, para obligar a quitarla. Conviene una tarea a
 | `branches: [main]` en ci.yml | 1 (`test_t59_ningun_workflow_fija...`) |
 
 Prod: ninguna.
+
+## Verificación del coordinador v2.4 (2026-11-08)
+- pytest completo tras el último arreglo: 1712 passed; 800 `def test_` = insignia del README. `threat_model_problems(SMC-012.md, [36])` = `[]`, tests citados existen.
+- superficies.py diff: OK. gitleaks sobre el diff: sin hallazgos; grep de secretos vacío.
+- La excepción del test nombra solo `tests.yml` (`WORKFLOWS_CON_RAMA_FIJA_CONOCIDA`); ci.yml y release.yml tienen `[main, master]`; pr-meta, security-gate y vigilancia sin rama fija. Un test falla cuando tests.yml se arregle.
+- GET real: `default_branch` de pedri77/security-manager-control = main; de pedri77/MalwareIntel = master.
+- actionlint (imagen Docker rhysd/actionlint ya presente, `--network none`): rc=0 sin avisos.
+- Contraprueba, un mutante por copia limpia (`git archive`, desde la copia, tests/test_vigilancia.py): `ref: main` → 3 failed; `ref: master` → 2 failed; `branches: [main]` en ci.yml → 1 failed.
