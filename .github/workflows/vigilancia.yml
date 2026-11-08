@@ -1,5 +1,5 @@
 # vigilancia.yml — SMC-009 · vigilancia diaria de dependencias
-# Una CVE publicada después del último PR no la ve `sca` (solo corre en PR). Aquí se escanea la rama principal con
+# Una CVE publicada después del último PR no la ve `sca` (solo corre en PR). Aquí se escanea la rama por defecto del repositorio con
 # la MISMA imagen que ci.yml (un test compara las dos) y se mantiene una única issue abierta (scripts/vigilancia.py).
 # Con hallazgos acaba en rojo; con error del escáner también, y no toca ninguna issue.
 name: vigilancia
@@ -29,7 +29,7 @@ jobs:
       issues: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with: { ref: main, persist-credentials: false }
+        with: { ref: "${{ github.event.repository.default_branch }}", persist-credentials: false }
       - name: osv-scanner (rama principal)
         run: |
           code=0
