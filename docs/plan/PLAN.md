@@ -631,7 +631,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
 
 ## Ola 26 (SMC-012)
 
-- [ ] **T59** — La vigilancia hace checkout de la rama por defecto
+- [~] **T59** — La vigilancia hace checkout de la rama por defecto
   - Issue: SMC-012 https://github.com/pedri77/security-manager-control/issues/36
   - Hace: en `.github/workflows/vigilancia.yml`, el checkout usa `ref: ${{ github.event.repository.default_branch }}` en vez de `main`. En `tests/test_vigilancia.py`, un test lee el YAML y exige ese `ref`; otro recorre `.github/workflows/*.yml` y `scripts/*.py` y falla si algún `ref:` o `branches:` fija una sola rama `main` o `master` (se admiten `[main, master]` y la rama por defecto). Crea `docs/threat-model/SMC-012.md` con la plantilla y `**Issue:** #36`.
   - No hace: no toca `vigilancia.py`, otros workflows, la plantilla de enjambre-agentes, versión ni CHANGELOG.
@@ -639,7 +639,7 @@ Regla de reparto: en la ola 5 NINGUNA tarea toca `smc/cli.py`, `smc/gap.py`, `sm
   - Depende: T58
   - Verifica: `PYTHONDONTWRITEBYTECODE=1 uv run --extra dev pytest -q` en verde. `threat_model_problems(SMC-012.md, [36])` da `[]`. Medido: `actionlint` si está, y con `gh` real, solo GET, que `repository.default_branch` de SMC es `main` y el de pedri77/MalwareIntel es `master`. Contraprueba en copia temporal, un mutante por copia: volver a `ref: main`; poner `ref: master`; `branches: [main]` en un workflow. Cada uno debe poner en rojo al menos un test. Insignia del README al recuento real.
   - Prod: —
-  - Estado: libre
+  - Estado: reservada por coordinador-smc-f2p 2026-11-08
 
 ## Libro
 
