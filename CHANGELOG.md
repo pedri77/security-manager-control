@@ -2,6 +2,13 @@
 
 Formato basado en Keep a Changelog. Versionado semántico.
 
+## [0.9.2](https://github.com/pedri77/security-manager-control/compare/v0.9.1...v0.9.2) (2026-11-08)
+
+
+### Correcciones
+
+* **security:** la vigilancia hace checkout de la rama por defecto ([#37](https://github.com/pedri77/security-manager-control/issues/37)) ([0fd8d62](https://github.com/pedri77/security-manager-control/commit/0fd8d62ac4874802da5ca9f4d774ebba2af976ca))
+
 ## [0.9.1](https://github.com/pedri77/security-manager-control/compare/v0.9.0...v0.9.1) (2026-11-08)
 
 
